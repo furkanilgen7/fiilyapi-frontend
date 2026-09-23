@@ -40,3 +40,14 @@ export const MONTH_OVER_MONTH_MISSING_REASON =
  */
 export const FUEL_KPI_SITE_FILTER_UNSUPPORTED_NOTE =
   "Yakıt özeti ucu şantiye süzgeci almıyor — bu kart tüm şantiyelerin toplamıdır.";
+
+/**
+ * M5_3 #107 — `summaryQuery`/`logsQuery` dışındaki DÖRT kaynak
+ * (`fuelQuery` · `equipmentQuery` · `personnelQuery` · `siteOptions`)
+ * hataya düşerse View bunu HİÇ okumuyordu: yakıt kartı gerekçesiz "—"
+ * basıyor, ekipman/operatör/şantiye adları sessizce "—" düşüyordu.
+ * `EquipmentWorkRecentList`in `logsQuery.isError` deseniyle AYNI: görünür
+ * bir uyarı, sessiz düşüş yok.
+ */
+export const AUXILIARY_DATA_ERROR_NOTICE =
+  "Yakıt / ekipman / personel / şantiye bilgilerinden biri yüklenemedi — bazı adlar veya kartlar eksik görünebilir.";

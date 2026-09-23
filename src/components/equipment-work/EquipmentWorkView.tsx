@@ -28,6 +28,7 @@ import { EquipmentWorkSummaryTable } from "./EquipmentWorkSummaryTable";
 import { EquipmentWorkWeeklyChart } from "./EquipmentWorkWeeklyChart";
 import {
   ADD_RECORD_DISABLED_REASON,
+  AUXILIARY_DATA_ERROR_NOTICE,
   EQUIPMENT_FILTER_DISABLED_REASON,
   EXPORT_ERROR_FALLBACK,
   VIEW_MODE_DISABLED_REASON,
@@ -274,6 +275,21 @@ export function EquipmentWorkView() {
       {summaryQuery.isError && (
         <p className="makine-cal__notice" role="alert">
           {backendErrorMessage(summaryQuery.error)}
+        </p>
+      )}
+
+      {/* M5_3 #107 — summaryQuery/logsQuery DIŞINDAKİ dört kaynak hataya
+          düşerse sessizce "—"ye düşmez; görünür bir uyarı basılır. */}
+      {(fuelQuery.isError ||
+        equipmentQuery.isError ||
+        personnelQuery.isError ||
+        siteOptions.isError) && (
+        <p
+          className="makine-cal__notice"
+          role="alert"
+          data-testid="makine-cal-auxiliary-error"
+        >
+          {AUXILIARY_DATA_ERROR_NOTICE}
         </p>
       )}
 

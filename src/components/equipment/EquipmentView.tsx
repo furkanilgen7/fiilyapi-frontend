@@ -14,6 +14,7 @@ import {
 import { useEquipmentSummary } from "@/lib/api/hooks/useEquipmentSummary";
 import { usePersonnel, PERSONNEL_MAX_LIMIT } from "@/lib/api/hooks/usePersonnel";
 import { useSiteOptions } from "@/lib/api/hooks/useSiteOptions";
+import { isLoaded } from "@/lib/api/query-state";
 import { isForbidden } from "@/lib/api/unwrap";
 import { hasAtLeast } from "@/lib/auth/permissions";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
@@ -24,6 +25,7 @@ import {
   EQUIPMENT_OPERATOR_LOAD_ERROR_LABEL,
   EQUIPMENT_OWNERSHIP_LABELS,
   EQUIPMENT_SITE_LOAD_ERROR_LABEL,
+  EQUIPMENT_SITE_UNKNOWN_LABEL,
 } from "./equipment-labels";
 import { EquipmentCard } from "./EquipmentCard";
 import { EquipmentKpiStrip } from "./EquipmentKpiStrip";
@@ -78,7 +80,10 @@ export function EquipmentView() {
     if (siteId === null) return null; // K6 — depoda, atama yok
     if (siteOptions.isError) return EQUIPMENT_SITE_LOAD_ERROR_LABEL;
     if (siteOptions.isLoading) return undefined;
-    return siteLabelById.get(siteId) ?? null;
+    // #76 — harita YÜKLENDİ ama site_id DOLU kayıt onda yoksa (dar proje
+    // erişimi/kırpılma) bu "atanmadı" DEĞİLDİR; `null` dönseydi kart yanlışlıkla
+    // "Depoda (Atanmadı)" basardı.
+    return siteLabelById.get(siteId) ?? EQUIPMENT_SITE_UNKNOWN_LABEL;
   }
 
   function resolveOperatorName(operatorId: string | null): string | null | undefined {
@@ -144,7 +149,7 @@ export function EquipmentView() {
           bağımsız kaynağı vardır (ekipman · özet · şantiye · personel). */}
       {equipmentQuery.data !== undefined && <span hidden data-testid="makine-loaded-equipment" />}
       {summaryQuery.data !== undefined && <span hidden data-testid="makine-loaded-summary" />}
-      {!siteOptions.isLoading && <span hidden data-testid="makine-loaded-sites" />}
+      {isLoaded(siteOptions) && <span hidden data-testid="makine-loaded-sites" />}
       {personnelQuery.data !== undefined && <span hidden data-testid="makine-loaded-personnel" />}
 
       {documentTarget && (

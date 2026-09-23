@@ -111,7 +111,8 @@ describe("PurchaseOrdersView — SIP başlık, şerit ve KPI", () => {
   it("DÖRT KPI kartı da sunucunun kendi alanlarından gelir (38-43)", () => {
     render(<PurchaseOrdersView />);
     expect(screen.getByTestId("sip-kpi-active").textContent).toBe("8");
-    expect(screen.getByTestId("sip-kpi-month").textContent).toBe("₺ 1,2M");
+    // M5_3 #232 — mockup SIP:40 `₺1,24M` boşluksuz + iki ondalık basar.
+    expect(screen.getByTestId("sip-kpi-month").textContent).toBe("₺1,24M");
     expect(screen.getByTestId("sip-kpi-transit").textContent).toBe("3");
     expect(screen.getByTestId("sip-kpi-delivered").textContent).toBe("5");
   });

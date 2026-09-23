@@ -235,6 +235,21 @@ describe("ProjectTimelineView — görünüm anahtarı (K4)", () => {
     expect(columns.map((node) => node.textContent)).toEqual(["2025", "2026"]);
   });
 
+  it("KAYIT 218: yıllık kipte kaydırma/Bugün butonları DEVRE DIŞIdır (ızgara zaten %100 sabit)", () => {
+    nav.search = "gorunum=yillik";
+    render(<ProjectTimelineView />);
+    expect(screen.getByRole("button", { name: "Izgarayı geriye kaydır" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Izgarayı ileriye kaydır" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Bugün" })).toBeDisabled();
+  });
+
+  it("KAYIT 218: aylık kipte aynı butonlar AKTİFtir", () => {
+    render(<ProjectTimelineView />);
+    expect(screen.getByRole("button", { name: "Izgarayı geriye kaydır" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Izgarayı ileriye kaydır" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Bugün" })).toBeEnabled();
+  });
+
   it("Yıllık düğmesi URL'e yazar (durum paylaşılabilir)", () => {
     render(<ProjectTimelineView />);
     fireEvent.click(screen.getByTestId("tkv-zoom-yearly"));

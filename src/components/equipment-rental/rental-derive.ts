@@ -65,8 +65,10 @@ export function rentalHoursVarianceTotal(lines: readonly RentalInvoiceLineRespon
 } {
   const rented = lines.filter((line) => line.line_kind === "rented");
 
-  // Doğrulanacak kiralık satır yoksa yeşil bir güvence verilmez.
-  if (rented.length === 0) return { totalHours: "0", status: "unknown" };
+  // Doğrulanacak kiralık satır yoksa yeşil bir güvence verilmez. `totalHours`
+  // dolu kümedeki İKİ HANELİ biçimle (satır 72) AYNI fonksiyondan üretilir —
+  // aksi hâlde "0" ile "0.00" aynı ekranda görünebilirdi (KAYIT 97).
+  if (rented.length === 0) return { totalHours: sumDecimalStrings([]), status: "unknown" };
 
   const known = rented.filter((line) => line.hours_variance !== null);
   const totalHours = sumDecimalStrings(known.map((line) => line.hours_variance as string));

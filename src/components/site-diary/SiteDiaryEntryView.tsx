@@ -176,8 +176,8 @@ export function DiaryEntryScreen({
    *
    * Şantiyesizken ekran YAZILAMAZ olmalı: `useSite` bile koşmaz
    * (`enabled: siteId.length > 0`), yani `POST` gövdesinin `site_id`si BOŞ
-   * giderdi. Ayrıca `base` bu hâlde `/projeler//santiyeler/` gibi ÇİFT SLAŞLI
-   * bozuk bir yol kurar — mod anahtarı da bu yüzden basılmaz.
+   * giderdi. Ayrıca `routes.projects.sites.*` bu hâlde `/projeler//santiyeler/`
+   * gibi ÇİFT SLAŞLI bozuk bir yol kurar — mod anahtarı da bu yüzden basılmaz.
    */
   const hasSite = siteKey.length > 0;
   if (!hasSite) {
@@ -201,10 +201,6 @@ export function DiaryEntryScreen({
   const isReadOnly = !permission.canWrite || isSubmitted;
   const canReopen = hasAtLeast(permission.level, "admin");
   const isDirty = entry ? isDiaryFormDirty(entry, form) : false;
-
-  // YOL baglantisi ADRESTEKI anahtarlarla kurulur — kanonik UUID gecirilseydi
-  // kullanicinin okunur adresi bir tikta UUID'ye geri duserdi.
-  const base = routes.projects.sites.detail({ projectId: projectKey, siteId: siteKey });
 
   // Sağ panel türevleri — hepsi SAF fonksiyonlarda (ayrı `.ts` dosyaları),
   // bileşenin içinde hesap YOK.
@@ -341,9 +337,15 @@ export function DiaryEntryScreen({
         <div className="diary__head-actions">
           <DiaryModeSwitch
             active="entry"
-            entryHref={`${base}/gunluk-kayit`}
-            planningHref={`${base}/gunluk-kayit/planlama`}
-            summaryHref={`${base}/gunluk-kayit/ozet`}
+            entryHref={routes.projects.sites.diary({ projectId: projectKey, siteId: siteKey })}
+            planningHref={routes.projects.sites.diaryPlanning({
+              projectId: projectKey,
+              siteId: siteKey,
+            })}
+            summaryHref={routes.projects.sites.diarySummary({
+              projectId: projectKey,
+              siteId: siteKey,
+            })}
           />
           {permission.canWrite && !isSubmitted && (
             <>
@@ -436,7 +438,7 @@ export function DiaryEntryScreen({
             // proje-genel `/hakedisler` yazmıştı; kullanıcı kararı (2026-08-04):
             // mockup kazanır. Aynı ekrandaki GK408 "Hakedişler →" de buraya
             // gidiyor — ekran içi tutarsızlık böylece kapandı.
-            paymentsHref={`${base}/hakedisler`}
+            paymentsHref={routes.projects.sites.progressPayments({ projectId: projectKey, siteId: siteKey })}
           />
           <DiaryWorkDoneCard
             value={form.workDone}
@@ -453,7 +455,7 @@ export function DiaryEntryScreen({
             days={planQuery.data?.days}
             isLoading={planQuery.isLoading}
             isError={planQuery.isError}
-            planningHref={`${base}/gunluk-kayit/planlama`}
+            planningHref={routes.projects.sites.diaryPlanning({ projectId: projectKey, siteId: siteKey })}
           />
         </div>
 
@@ -472,7 +474,7 @@ export function DiaryEntryScreen({
           <DiaryPaymentAccrualCard
             accrual={accrual}
             monthLabel={formatMonthName(period.month)}
-            paymentsHref={`${base}/hakedisler`}
+            paymentsHref={routes.projects.sites.progressPayments({ projectId: projectKey, siteId: siteKey })}
             createHref={
               paymentsPermission.canWrite ? routes.progressPayments.new({ projectId }) : null
             }

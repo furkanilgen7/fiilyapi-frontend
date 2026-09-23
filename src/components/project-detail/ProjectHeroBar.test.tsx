@@ -44,10 +44,13 @@ describe("ProjectHeroBar", () => {
     expect(screen.getByText("₺ 22,4M")).toBeInTheDocument();
   });
 
-  it("Toplam Sozlesme NULL ise yer tutucudur — '—' basar, title'da contracts aciklamasi verir (spec §7.1)", () => {
+  // M5_1 kayıt #202: eskiden ortak `pendingModuleLabel("contracts")` metni
+  // basılıyordu ("bu yüzeye henüz bağlanmadı") — BAYAT, alan GERÇEKTEN bağlı;
+  // null yalnız BU projeye bedel girilmediğini gösterir.
+  it("Toplam Sozlesme NULL ise yer tutucudur — '—' basar, title DEĞER eksikliğini söyler (spec §7.1)", () => {
     const noContract: ProjectDetail = { ...BASE, contract_amount: null };
     render(<ProjectHeroBar project={noContract} projectKey={BASE.id} activePath={`/projeler/${BASE.id}`} />);
-    const value = screen.getByTitle("Sözleşme verisi bu yüzeye henüz bağlanmadı");
+    const value = screen.getByTitle("Bu proje için sözleşme bedeli tanımlanmadı");
     expect(value).toHaveTextContent("—");
   });
 

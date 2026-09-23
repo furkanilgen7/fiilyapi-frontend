@@ -136,7 +136,18 @@ export function WarehouseModal({ onClose }: WarehouseModalProps) {
             {...control}
             value={siteId}
             disabled={isPending}
-            onChange={(event) => setSiteId(event.target.value)}
+            onChange={(event) => {
+              const nextSiteId = event.target.value;
+              setSiteId(nextSiteId);
+              // M5_1 kayıt #58: şantiye BOŞALINCA niyet de sıfırlanmalı —
+              // eskiden yalnız checkbox `onChange`de yazılıyordu, ham state
+              // `shouldReturnToEntry` şantiye boşalınca SIFIRLANMIYORDU. Kutu
+              // görünen türevle (`checked={shouldReturnToEntry &&
+              // selectedSite !== null}`) boş görünse de `onSuccess`teki
+              // gerçek okuma ham state'i okuduğu için şantiye yeniden
+              // seçilince eski niyet sessizce diriliyordu.
+              if (nextSiteId === EMPTY_OPTION_VALUE) setShouldReturnToEntry(false);
+            }}
             data-testid="whf-site"
           >
             <option value={EMPTY_OPTION_VALUE}>{TEXT.siteEmptyOption}</option>

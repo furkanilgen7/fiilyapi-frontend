@@ -231,6 +231,27 @@ describe("buildSubcontractorDirectory · üç kaynaklı istemci agregasyonu", ()
     expect(directory.summary.activeContractCount).toBe(2);
   });
 
+  // M5_1 kayıt #344: adı hiçbir firmayla eşleşmeyen TASLAK sözleşme eskiden
+  // hiçbir sayaca girmiyordu (`!contract.is_draft` dalı yalnız yayınlanmışı
+  // sayardı) — artık ayrı bir sayaçla dışarı verilir.
+  it("adı hiçbir firmayla eşleşmeyen TASLAK sözleşme de sessizce yutulmaz", () => {
+    const directory = build({
+      subcontractors: [firm()],
+      contracts: [
+        contract({ id: "sc-1" }),
+        contract({
+          id: "sc-draft-orphan",
+          counterparty_name: "Kayıtsız Boya A.Ş.",
+          amount: "999.00",
+          is_draft: true,
+        }),
+      ],
+    });
+    expect(directory.orphanDraftContractCount).toBe(1);
+    // Yayın yetimi sayacına KARIŞMAZ.
+    expect(directory.orphanContractCount).toBe(0);
+  });
+
   // kalan-6 no 324 — yetim sözleşmeler `firmIdByContractId`e `null` olarak
   // GİRİYORDU; bu yüzden o sözleşmeye bağlı bir hakedişin KENDİ
   // `subcontractor_name`i doğru firmayla eşleşse bile yedek yol devreye

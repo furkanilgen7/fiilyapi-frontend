@@ -343,6 +343,60 @@ describe("AiPanel", () => {
     expect(kart).toBeEnabled();
     expect(kart).toHaveTextContent("4 mesaj");
   });
+
+  it("KAYIT 19: gecmis sohbetteki bitis-sebebi uyarisi role=status tasir (canli turdakiyle AYNI)", async () => {
+    const conversationId = "11111111-1111-1111-1111-111111111111";
+    stubFetch(sse([]), {
+      [`/ai/conversations/${conversationId}`]: {
+        id: conversationId,
+        title: "Güneşkent Hakediş Analizi",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        bloklar_saklanmadi_notu: "Bu sohbetin kartları saklanmadı.",
+        messages: [
+          {
+            id: "m-1",
+            role: "kullanici",
+            content: "gunluk ozeti",
+            created_at: new Date().toISOString(),
+            duration_ms: null,
+            finish_reason: null,
+            tool_names: [],
+            tool_states: [],
+          },
+          {
+            id: "m-2",
+            role: "asistan",
+            content: "Yarım cevap",
+            created_at: new Date().toISOString(),
+            duration_ms: 900,
+            finish_reason: "filtrelendi",
+            tool_names: [],
+            tool_states: [],
+          },
+        ],
+      },
+      "/ai/conversations": {
+        items: [
+          {
+            id: conversationId,
+            title: "Güneşkent Hakediş Analizi",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            message_count: 2,
+          },
+        ],
+        total: 1,
+      },
+    });
+    const user = userEvent.setup();
+    ciz(<AiPanel />);
+    const kart = await screen.findByRole("button", { name: /Güneşkent Hakediş Analizi/ });
+    await user.click(kart);
+
+    const uyari = await screen.findByText(SEBEP_CUMLELERI.filtrelendi);
+    expect(uyari).toHaveAttribute("role", "status");
+  });
 });
 
 describe("turaUygula", () => {

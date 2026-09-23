@@ -199,4 +199,36 @@ describe("EquipmentView — M1 başlık, sekme, KPI ve kart ızgarası", () => {
     const grid = screen.getByTestId("makine-grid");
     expect(grid).toHaveTextContent("Yüklenemedi");
   });
+
+  /**
+   * M5_3 #75 — eskiden bayrak yalnız `!siteOptions.isLoading`e bakıyordu;
+   * `useSiteOptions` hatada da `isLoading=false` döner, yani hata da
+   * "yüklendi" sanılırdı (görsel e2e kadrajı yanlış olguyu yeşil geçirirdi).
+   */
+  it("siteOptions.isError iken YÜKLENDİ izi BASILMAZ", () => {
+    vi.mocked(useSiteOptions).mockReturnValue({
+      options: [],
+      isLoading: false,
+      isError: true,
+    });
+    render(<EquipmentView />);
+    expect(screen.queryByTestId("makine-loaded-sites")).not.toBeInTheDocument();
+  });
+
+  /**
+   * M5_3 #76 — `site_id` DOLU ama harita YÜKLENDİĞİ hâlde o id'yi
+   * İÇERMİYORSA (dar proje erişimi/kırpılma) kart eskiden `null`a düşüp
+   * "Depoda (Atanmadı)" YALANINI basıyordu. Artık nötr bir etiket basar.
+   */
+  it("site_id haritada YOKSA (ama harita yüklendi) 'Depoda (Atanmadı)' YAZMAZ", () => {
+    vi.mocked(useSiteOptions).mockReturnValue({
+      options: [], // site-1 haritada YOK ama sorgu BAŞARILI
+      isLoading: false,
+      isError: false,
+    });
+    render(<EquipmentView />);
+    const grid = screen.getByTestId("makine-grid");
+    expect(grid).not.toHaveTextContent("Depoda (Atanmadı)");
+    expect(grid).toHaveTextContent("Şantiye bilgisi görüntülenemiyor");
+  });
 });

@@ -7,6 +7,7 @@ import { AccessDenied } from "@/components/settings/AccessDenied";
 import { Button } from "@/components/ui/button/Button";
 import { useContracts } from "@/lib/api/hooks/useContracts";
 import { isForbidden } from "@/lib/api/unwrap";
+import { useModulePermission } from "@/lib/auth/useModulePermission";
 
 import { ContractsSummaryStrip } from "./ContractsSummaryStrip";
 import { ContractsTable } from "./ContractsTable";
@@ -37,6 +38,12 @@ export function ContractsView() {
   const searchParams = useSearchParams();
   const tab = parseContractTab(searchParams);
   const contractsQuery = useContracts({ type: tab });
+  // M5_3 #400 — taşeron sekmesindeki "+ Yeni Sözleşme" eskiden HİÇ izin
+  // kontrolüyle sarılmadan render ediliyordu; kapı yalnız hedef formda
+  // (SubcontractorContractCreateView) vardı. Backend yine de yazmayı
+  // reddeder ama liste ekranında görünür/tıklanabilir bir buton yanlış bir
+  // yetki izlenimi verirdi.
+  const permission = useModulePermission("contracts");
 
   if (isForbidden(contractsQuery.error)) return <AccessDenied />;
 
@@ -69,7 +76,7 @@ export function ContractsView() {
           {/* 30 "+ Yeni Sözleşme" — ONAYLI KARAR S2: taşeron sekmesinde FSO
               formuna gider, işveren sekmesinde DEVRE DIŞI + görünür gerekçe
               (işveren sözleşmesi proje formunda kurulur). Buton SİLİNMEZ. */}
-          {tab === "subcontractor" ? (
+          {tab === "subcontractor" && permission.canWrite ? (
             <Link href={routes.contracts.newSubcontractor()} className="szl__new-btn">
               + Yeni Sözleşme
             </Link>
@@ -78,7 +85,9 @@ export function ContractsView() {
               variant="primary"
               className="szl__new-btn szl__new-btn--disabled"
               disabled
-              title={EMPLOYER_NEW_REASON}
+              title={
+                tab === "subcontractor" ? WRITE_PERMISSION_REASON : EMPLOYER_NEW_REASON
+              }
               data-testid="szl-new-contract-disabled"
             >
               + Yeni Sözleşme
@@ -103,3 +112,6 @@ export function ContractsView() {
 
 /** S2 gerekçesi — hem butonun `title`ı hem ekrandaki görünür not. */
 const EMPLOYER_NEW_REASON = "İşveren sözleşmesi proje formunda kurulur.";
+
+/** M5_3 #400 — yazma yetkisi yoksa taşeron sekmesindeki buton bu gerekçeyi taşır. */
+const WRITE_PERMISSION_REASON = "Bu modülde yazma yetkiniz yok.";

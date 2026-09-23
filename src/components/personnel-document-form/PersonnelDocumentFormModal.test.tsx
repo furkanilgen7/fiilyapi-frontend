@@ -224,6 +224,16 @@ describe("PersonnelDocumentFormModal — iki adımlı dosya akışı", () => {
   });
 });
 
+describe("PersonnelDocumentFormModal — M5_3 #172 dosya seçici backend whitelist'iyle eşleşir", () => {
+  it("`accept` ham `image/*` DEĞİLDİR — yalnız backend'in kabul ettiği resim uzantıları", () => {
+    renderModal();
+    const input = screen.getByLabelText(TEXT.file) as HTMLInputElement;
+    // config.py `allowed_document_extensions` içindeki resim alt kümesi.
+    expect(input.accept).toBe(".pdf,.jpg,.jpeg,.png,.heic");
+    expect(input.accept).not.toContain("image/*");
+  });
+});
+
 describe("PersonnelDocumentFormModal — karşılıksız öğe ve bağlam", () => {
   it("🔴 'Arşivden Mevcut Belge Seç' (108-117) SİLİNMEZ: devre-dışı + görünür gerekçe", () => {
     renderModal();

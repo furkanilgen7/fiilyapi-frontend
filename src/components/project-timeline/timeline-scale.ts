@@ -222,6 +222,13 @@ export function barGeometry(
 /**
  * Tek bir günün eksendeki konumu — milestone elması (mockup 18) ve bugün
  * çizgisi (mockup 20) için. Pencere dışındaki gün ÇİZİLMEZ (`null`).
+ *
+ * 🔴 KAYIT 216 — KASITLI ASİMETRİ: `barGeometry` pencere dışına taşan barı
+ * `clippedStart`/`clippedEnd` ile İŞARETLEYEREK kırpar (bar görünür kalır).
+ * `pointPct` bunun yerine SESSİZCE `null` döner — nokta öğesinin (elmas/çizgi)
+ * pencere kenarında "kırpılmış" bir hâli mockup'ta yoktur ve tek bir günü
+ * kenara yapıştırmak yanıltıcı olurdu (bar bir ARALIK gösterir, nokta TEK bir
+ * tarihi gösterir). Bu yüzden iki eksen aynı politikayı PAYLAŞMAZ — kasıtlı.
  */
 export function pointPct(win: TimelineWindow, iso: string | null): number | null {
   const point = parseIso(iso);

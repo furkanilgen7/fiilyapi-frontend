@@ -65,4 +65,17 @@ describe("SessionProvider", () => {
     await waitFor(() => expect(screen.queryByText("yukleniyor")).not.toBeInTheDocument());
     expect(pushMock).not.toHaveBeenCalled();
   });
+
+  // M5_1 kayıt #411 — 401/403 dalı `router.push`e güveniyordu ama
+  // `isLoading`i hiç kapatmıyordu; test ortamında `useRouter().push` sayfayı
+  // GERÇEKTEN değiştirmediği için `isLoading` sonsuza dek `true` kalırdı.
+  it.each([401, 403])(
+    "%d'de de 'yukleniyor' durumundan cikar (isLoading kapanir)",
+    async (status) => {
+      vi.spyOn(global, "fetch").mockResolvedValue(new Response("{}", { status }));
+      render(<SessionProvider><Probe /></SessionProvider>);
+      await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/login"));
+      expect(screen.queryByText("yukleniyor")).not.toBeInTheDocument();
+    },
+  );
 });

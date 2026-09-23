@@ -35,6 +35,12 @@ export interface SubcontractorsTableProps {
   rows?: SubcontractorRow[];
   /** Süzgeç uygulanmadan önce hiç firma var mıydı — boş durum metnini ayırır. */
   hasAnyRow: boolean;
+  /**
+   * Para kolonlarının PENDING gerekçesi — çağıran belirler (M5_1 #339):
+   * hakediş ucu 403 verirse "yetki yok", kırpılırsa "liste eksik" gerekçesi
+   * gösterilir; ikisi AYNI metinle karıştırılmaz. Varsayılan: liste eksik.
+   */
+  paymentPendingReason?: string;
 }
 
 export function SubcontractorsTable({
@@ -42,6 +48,7 @@ export function SubcontractorsTable({
   isLoading,
   rows,
   hasAnyRow,
+  paymentPendingReason = PAYMENT_PENDING_REASON,
 }: SubcontractorsTableProps) {
   if (isError) return <p className="tl-message">Taşeron listesi yüklenemedi</p>;
   if (isLoading || !rows) return <p className="tl-message">Yükleniyor…</p>;
@@ -77,7 +84,7 @@ export function SubcontractorsTable({
         </thead>
         <tbody>
           {rows.map((row) => (
-            <SubcontractorTableRow key={row.id} row={row} />
+            <SubcontractorTableRow key={row.id} row={row} paymentPendingReason={paymentPendingReason} />
           ))}
         </tbody>
       </table>
@@ -98,7 +105,13 @@ function contactLine(row: SubcontractorRow): string {
   return parts.length > 0 ? parts.join(" · ") : "—";
 }
 
-function SubcontractorTableRow({ row }: { row: SubcontractorRow }) {
+function SubcontractorTableRow({
+  row,
+  paymentPendingReason,
+}: {
+  row: SubcontractorRow;
+  paymentPendingReason: string;
+}) {
   const router = useRouter();
   const href = row.detailContractId ? detailHref(row.detailContractId) : null;
   const tone = categoryTone(row.category);
@@ -132,10 +145,14 @@ function SubcontractorTableRow({ row }: { row: SubcontractorRow }) {
         {formatCompactCurrency(row.contractTotal)}
       </td>
       <td className="tl-table__td tl-table__td--right tl-table__td--mono">
-        <PendingAwareMoney value={row.paidTotal} format={formatCompactCurrency} />
+        <PendingAwareMoney
+          value={row.paidTotal}
+          format={formatCompactCurrency}
+          reason={paymentPendingReason}
+        />
       </td>
       <td className="tl-table__td tl-table__td--right">
-        <PendingBadge value={row.pendingTotal} />
+        <PendingBadge value={row.pendingTotal} reason={paymentPendingReason} />
       </td>
       {/* 62 · ONAYLI KARAR S4: kolon basılır, yıldız İCAT EDİLMEZ. */}
       <td className="tl-table__td tl-table__td--center">
@@ -174,14 +191,16 @@ function SubcontractorTableRow({ row }: { row: SubcontractorRow }) {
 function PendingAwareMoney({
   value,
   format,
+  reason,
 }: {
   value: PendingMoney;
   format: (value: number) => string;
+  reason: string;
 }) {
   if (value === null) {
     return (
-      <span className="tl-table__muted" title={PAYMENT_PENDING_REASON}>
-        —<span className="sr-only">{PAYMENT_PENDING_REASON}</span>
+      <span className="tl-table__muted" title={reason}>
+        —<span className="sr-only">{reason}</span>
       </span>
     );
   }
@@ -195,11 +214,11 @@ function PendingAwareMoney({
  * **0 ⇒ yeşil, 0'dan büyük ⇒ kehribar**. Kırpılmada rozet basılmaz, "—" düşer.
  * Tutar burada KISALTILMAZ — mockup 61/91/101'de tam yazımdır (₺1.240.000).
  */
-function PendingBadge({ value }: { value: PendingMoney }) {
+function PendingBadge({ value, reason }: { value: PendingMoney; reason: string }) {
   if (value === null) {
     return (
-      <span className="tl-table__muted" title={PAYMENT_PENDING_REASON} data-testid="tl-pending-money">
-        —<span className="sr-only">{PAYMENT_PENDING_REASON}</span>
+      <span className="tl-table__muted" title={reason} data-testid="tl-pending-money">
+        —<span className="sr-only">{reason}</span>
       </span>
     );
   }

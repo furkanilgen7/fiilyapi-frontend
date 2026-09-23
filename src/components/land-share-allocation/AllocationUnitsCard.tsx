@@ -149,6 +149,10 @@ export function AllocationUnitsCard({
               type="button"
               className={`pg-filter${filter === item.key ? " pg-filter--on" : ""}`}
               aria-pressed={filter === item.key}
+              // M5_1 kayıt #140: eskiden `disabled` hiç okunmuyordu — kaydetme
+              // sürerken (`isSaving`) kullanıcı süzgeç değiştirebiliyor, bu da
+              // `resetSelection()`ı tetikleyip seçim/bildirimleri boşaltıyordu.
+              disabled={disabled}
               data-testid={`paylasim-form-suzgec-${item.key}`}
               onClick={() => onChangeFilter(item.key)}
             >
@@ -209,7 +213,7 @@ export function AllocationUnitsCard({
           <Button
             variant="secondary"
             size="sm"
-            disabled={page <= 1}
+            disabled={disabled || page <= 1}
             data-testid="paylasim-form-onceki"
             onClick={() => onChangePage(page - 1)}
           >
@@ -219,7 +223,7 @@ export function AllocationUnitsCard({
           <Button
             variant="secondary"
             size="sm"
-            disabled={page >= pageCount}
+            disabled={disabled || page >= pageCount}
             data-testid="paylasim-form-sonraki"
             onClick={() => onChangePage(page + 1)}
           >

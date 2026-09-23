@@ -114,10 +114,11 @@
   line-height: var(--leading-relaxed);
 }
 
-/* 198: 600 ağırlık; edilgen (hedef ekran yok) — imleç "default" */
+/* 198: 600 ağırlık — ETKİN bağlantı (M5_1 #178: genel BT ekranına gider). */
 .pnf-warning__link {
   font-weight: var(--weight-semibold);
-  cursor: default;
+  color: inherit;
+  text-decoration: underline;
 }
 
 /* ── Sayfa başlığı / kırıntı yolu ───────────────────────────────────────── */
@@ -144,8 +145,6 @@
   margin-top: var(--space-1);
 }
 
-/* Alt eylem şeridindeki SGK kutucuğu edilgendir (mockup 205) */
-.pf-actions--split > .checkbox-label {
-  color: var(--color-text-secondary);
-  cursor: default;
-}
+/* Alt eylem şeridindeki SGK kutucuğu edilgendir (mockup 205) — kural
+   paylaşılan kabuğa taşındı (`src/styles/form-shell.css`, M5_1 kayıt #176),
+   burada tekrar TANIMLANMAZ. */

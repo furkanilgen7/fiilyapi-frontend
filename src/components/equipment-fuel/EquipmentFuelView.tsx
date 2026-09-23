@@ -81,6 +81,9 @@ export function EquipmentFuelView() {
   const normUnitById = new Map(
     (equipmentQuery.data?.items ?? []).map((item) => [item.id, item.norm_unit]),
   );
+  const equipmentNameById = new Map(
+    (equipmentQuery.data?.items ?? []).map((item) => [item.id, item.name]),
+  );
   const userNameById = new Map(
     userOptions.options.map((user) => [user.id, userOptionLabel(user)]),
   );
@@ -95,6 +98,14 @@ export function EquipmentFuelView() {
   function resolveNormUnit(equipmentId: string): EquipmentNormUnit | null | undefined {
     if (equipmentQuery.isLoading) return undefined;
     return normUnitById.get(equipmentId) ?? null;
+  }
+
+  // KAYIT 90 — kardeş çözücülerle AYNI disiplin: sorgu yüklenmedi/hataya
+  // düştüyse nötr `undefined` ("Yükleniyor…"); yüklendi ama id listede yoksa
+  // (silinmiş/tavan aşımı) `null` ("—") — önceden hiçbir ayrım yapılmıyordu
+  // ve hücre kalıcı "Yükleniyor…" basıyordu.
+  function resolveEquipmentName(equipmentId: string): string | null | undefined {
+    return resolveLookup(equipmentId, equipmentQuery, (id) => equipmentNameById.get(id));
   }
 
   function resolveEnteredByName(enteredById: string | null): string | null | undefined {
@@ -175,6 +186,7 @@ export function EquipmentFuelView() {
         isError={fuelLogsQuery.isError}
         resolveSiteLabel={resolveSiteLabel}
         resolveEnteredByName={resolveEnteredByName}
+        resolveEquipmentName={resolveEquipmentName}
       />
 
       {/* Görsel spec (T6) "yüklendi" iddiasını KAYNAK BAŞINA kurar — F-İK dersi. */}

@@ -228,6 +228,9 @@ export function UnitImportView() {
     setValues((prev) => ({ ...prev, projectId, siteId: "" }));
     invalidateValidation();
     setTemplateError(null);
+    // KAYIT 385 — reddedilmiş bir dosyadan sonra proje değiştirilirse eski
+    // dosya hatası ekranda YAPIŞIK kalırdı (`templateError` gibi temizlenmiyordu).
+    setFileError(null);
     const params = new URLSearchParams(searchParams.toString());
     if (projectId) params.set(PROJECT_PARAM, projectId);
     else params.delete(PROJECT_PARAM);

@@ -41,6 +41,16 @@ describe("accounting.css — E8'e bağlı kurallar", () => {
   });
 });
 
+describe("accounting.css — M5_3 #14/#17 erişilebilirlik onarımı", () => {
+  it("dönem gezinme düğmeleri klavye odağında GÖRÜNÜR bir halka alır", () => {
+    expect(css).toMatch(/\.mu-period__nav:focus-visible\s*{[^}]*box-shadow:\s*var\(--focus-ring\)/);
+  });
+
+  it("`prefers-reduced-motion: reduce` sayfa girişi animasyonunu KAPATIR", () => {
+    expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\)\s*{\s*\.mu\s*{[^}]*animation:\s*none/);
+  });
+});
+
 describe("accounting.css — HP'ye (Hesap Planı) bağlı kurallar", () => {
   it("dört SINIF bandının zemin/kenarlık/metin üçlüsü TOKEN'dan gelir", () => {
     const BANDS: Record<string, readonly string[]> = {

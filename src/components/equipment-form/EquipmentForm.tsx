@@ -9,6 +9,7 @@ import { FormActions } from "@/components/form-shell";
 import { Button, Checkbox } from "@/components/ui";
 import { usePersonnel, PERSONNEL_MAX_LIMIT } from "@/lib/api/hooks/usePersonnel";
 import { useSiteOptions } from "@/lib/api/hooks/useSiteOptions";
+import { isLoaded } from "@/lib/api/query-state";
 import { useSuppliers } from "@/lib/api/hooks/useSuppliers";
 import { useEquipmentDetail } from "@/lib/api/hooks/useEquipmentDetail";
 import {
@@ -307,7 +308,7 @@ export function EquipmentForm(props: EquipmentFormProps) {
             dersi. Formun ÜÇ seçicisi ayrı sorgulardan beslenir ve her biri
             yüklenirken altındaki not "Yükleniyor…" basar; tek bayrakla
             beklemek o notu kadraja dondurabilirdi. */}
-        {!siteOptionsState.isLoading && <span hidden data-testid="makine-form-loaded-sites" />}
+        {isLoaded(siteOptionsState) && <span hidden data-testid="makine-form-loaded-sites" />}
         {personnelQuery.data !== undefined && (
           <span hidden data-testid="makine-form-loaded-personnel" />
         )}

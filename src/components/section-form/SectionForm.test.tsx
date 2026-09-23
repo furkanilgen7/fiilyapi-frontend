@@ -332,6 +332,9 @@ describe("SectionForm — 409 kod çakışması", () => {
     expect(screen.getAllByText(MESSAGES.sectionCodeConflict)).toHaveLength(1);
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     expect(document.querySelector(".pf-form-error")).not.toBeInTheDocument();
+    // M5_1 kayıt #267: sunucu kaynaklı 409'da da odak hatalı alana gitmeli —
+    // eskiden yalnız istemci doğrulama yolunda kuruluyordu.
+    expect(codeField).toHaveFocus();
   });
 });
 

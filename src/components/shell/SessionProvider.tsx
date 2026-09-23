@@ -42,6 +42,13 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           // ekranin BOS/hata durumunu gorur.
           if (active) {
             if (isAuthFailureStatus(res.status)) {
+              // M5_1 kayıt #411: 401/403'te de `isLoading` KAPATILMALI —
+              // eskiden yalnız `else` dalı (5xx/429) bunu yapıyordu; bu dal
+              // yalnız `router.push`e güveniyordu. Bugün hiçbir tüketici
+              // `isLoading`i okumasa da (`useModulePermission` bilinmezlik
+              // kuralına düşer) state kalıcı `true` kalmamalı — sonsuza dek
+              // "yükleniyor" iddiası taşımak yanlış bir durumdur.
+              setIsLoading(false);
               router.push(routes.login());
             } else {
               setIsLoading(false);

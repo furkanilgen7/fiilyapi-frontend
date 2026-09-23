@@ -1,4 +1,4 @@
-import { formatCompactCurrency } from "@/lib/format";
+import { formatCompactCurrencyTight } from "@/lib/format";
 import type { PurchasingSummaryResponse } from "@/lib/api/hooks/usePurchasingSummary";
 
 import "./purchasing.css";
@@ -16,11 +16,12 @@ const EMPTY_VALUE = "—";
  * Aktif Siparişler (39) · Bu Ay Toplam (40) · Yolda (41) · Teslim Edildi (42).
  *
  * ⚠️ SAT'ın şeridiyle (`PurchasingKpiStrip`) AYNI uçtan (`GET
- * /purchasing/summary`) beslenir ama BAŞKA DÖRT ALANI okur — tek bileşen
- * yapıp "hangi ekran hangi kartı ister" koşulu koymak iki mockup'ı da
- * bulanıklaştırırdı. Dört alanın dördü de şemada VARDIR
- * (`active_orders` · `orders_this_month_total` · `in_transit_orders` ·
- * `delivered_orders`): pending dalı YOKTUR ve uydurma sayı basılmaz.
+ * /purchasing/summary`) beslenir; DÖRT alanından biri (`orders_this_month_total`)
+ * SAT'ın "Bu Ay Sipariş" kartıyla ORTAKTIR — tek bileşen yapıp "hangi ekran
+ * hangi kartı ister" koşulu koymak iki mockup'ı da bulanıklaştırırdı. Dört
+ * alanın dördü de şemada VARDIR (`active_orders` · `orders_this_month_total` ·
+ * `in_transit_orders` · `delivered_orders`): pending dalı YOKTUR ve uydurma
+ * sayı basılmaz.
  *
  * ⚠️ `MetricPlaceholder` ZARFI YOKTUR (şema açıklaması): `0` GERÇEK bir
  * cevaptır ("hiç aktif sipariş yok"), "veri gelmedi" ile karıştırılmaz.
@@ -40,7 +41,7 @@ export function PurchaseOrdersKpiStrip({ summary }: PurchaseOrdersKpiStripProps)
       <div className="sat-kpi__card">
         <div className="sat-kpi__label">Bu Ay Toplam</div>
         <div className="sat-kpi__value sat-kpi__value--neutral" data-testid="sip-kpi-month">
-          {summary ? formatCompactCurrency(summary.orders_this_month_total) : EMPTY_VALUE}
+          {summary ? formatCompactCurrencyTight(summary.orders_this_month_total) : EMPTY_VALUE}
         </div>
       </div>
 

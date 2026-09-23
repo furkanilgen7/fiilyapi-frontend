@@ -205,6 +205,10 @@ export function LandShareAllocationView() {
     setState((prev) => clearUnitSelection(prev));
     setBulkShareholderId("");
     setAutoNotices([]);
+    // M5_1 kayıt #139: blok/süzgeç/sayfa değişince eski hata banner'ı da
+    // temizlenmeli — eskiden yalnız `handleChangeProject` bunu yapıyordu,
+    // diğer üç çağıran (block/filter/page) bayat hatayı ekranda bırakıyordu.
+    setFormError(null);
   }
 
   function handleChangeProject(nextProjectId: string) {

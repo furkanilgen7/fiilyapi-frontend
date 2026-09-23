@@ -685,6 +685,36 @@ describe("🔴 ATOMİK BAŞARISIZLIK — 'hiçbiri yazılmadı' AÇIKÇA söylen
     // A-2 (sunucuda ARSA) de değişmemiştir.
     expect(screen.getByTestId("paylasim-form-arsa-A-2")).toHaveAttribute("aria-pressed", "true");
   });
+
+  // M5_1 kayıt #139: `resetSelection()` eskiden `formError`ı TEMİZLEMİYORDU —
+  // yalnız `handleChangeProject` bunu ayrıca yapıyordu. Süzgeç/sayfa/blok
+  // değişince bayat hata banner'ı ekranda KALIYORDU.
+  it("bayat 'kaydedilemedi' hatası süzgeç değişince TEMİZLENİR", async () => {
+    mutateAsync.mockRejectedValue(new BackendError(404, { detail: "Kayıt bulunamadı" }));
+    render(<LandShareAllocationView />);
+
+    fireEvent.click(screen.getByTestId("paylasim-form-biz-A-9"));
+    fireEvent.click(screen.getByTestId("paylasim-form-kaydet"));
+    await waitFor(() => expect(screen.getByTestId("paylasim-form-hata")).toBeInTheDocument());
+
+    fireEvent.click(screen.getByTestId("paylasim-form-suzgec-all"));
+    expect(screen.queryByTestId("paylasim-form-hata")).not.toBeInTheDocument();
+  });
+
+  // M5_1 kayıt #140: süzgeç/sayfa düğmeleri `disabled` prop'unu okumuyordu —
+  // kaydetme SÜRERKEN kullanıcı süzgeç/sayfa değiştirip `resetSelection()`ı
+  // tetikleyebiliyordu (seçim/bildirimler boşalır, yeni GET başlar).
+  it("kaydetme SÜRERKEN süzgeç ve sayfa düğmeleri de KAPALIDIR", () => {
+    vi.mocked(useUpdateAllocation).mockReturnValue({
+      mutate: vi.fn(),
+      mutateAsync,
+      isPending: true,
+    } as never);
+    render(<LandShareAllocationView />);
+
+    expect(screen.getByTestId("paylasim-form-suzgec-all")).toBeDisabled();
+    expect(screen.getByTestId("paylasim-form-suzgec-unassigned")).toBeDisabled();
+  });
 });
 
 describe("🔴 Başarılı kayıt — tablo CEVAPTAN çizilir, ikinci GET atılmaz", () => {

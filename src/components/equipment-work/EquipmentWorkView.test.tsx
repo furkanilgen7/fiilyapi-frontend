@@ -79,7 +79,9 @@ function row(overrides: Partial<WorkSummaryRow> = {}): WorkSummaryRow {
     usage_pct: "93.00",
     usage_reason: null,
     breakdown_hours: "0.00",
-    cost: "59520.00",
+    // M5_3 #103 — kuruşlu değer BİLEREK: `formatCurrency` (kuruşsuz) ile
+    // `formatCurrencyPrecise` (2 ondalık) burada GERÇEKTEN ayrışır.
+    cost: "59520.40",
     ...overrides,
   };
 }
@@ -107,7 +109,7 @@ function summary(overrides: Partial<WorkSummaryResponse> = {}): WorkSummaryRespo
     totals: {
       hours: "999.00",
       breakdown_hours: "38.00",
-      cost: "777777.00",
+      cost: "777777.30",
       usage_pct_avg: "57.70",
     },
     weeks: [
@@ -264,6 +266,29 @@ describe("EquipmentWorkView — M3 iskeleti", () => {
     expect(recent).toHaveTextContent("Yükleniyor…");
   });
 
+  /**
+   * M5_3 #107 — eskiden `summaryQuery`/`logsQuery` dışındaki dört kaynak
+   * (`fuelQuery` · `equipmentQuery` · `personnelQuery` · `siteOptions`)
+   * hataya düşünce HİÇBİR görünür uyarı basılmıyordu; adlar/kartlar
+   * gerekçesiz "—"ye düşüyordu.
+   */
+  it("siteOptions.isError iken GÖRÜNÜR bir uyarı basılır (sessiz '—' düşüşü YOK)", () => {
+    vi.mocked(useSiteOptions).mockReturnValue({
+      options: [],
+      isLoading: false,
+      isError: true,
+    });
+    render(<EquipmentWorkView />);
+    expect(screen.getByTestId("makine-cal-auxiliary-error")).toHaveTextContent(
+      "yüklenemedi",
+    );
+  });
+
+  it("fuelQuery/equipmentQuery/personnelQuery hatasız iken uyarı BASILMAZ", () => {
+    render(<EquipmentWorkView />);
+    expect(screen.queryByTestId("makine-cal-auxiliary-error")).not.toBeInTheDocument();
+  });
+
   it("siteOptions.isError iken YÜKLENDİ izi BASILMAZ — görsel kapı yanlış olguyu yeşil geçirmez", () => {
     vi.mocked(useSiteOptions).mockReturnValue({
       options: [],
@@ -332,6 +357,28 @@ describe("§0 — tfoot SUNUCUNUN toplamıdır, mockup'ın sabiti değil", () =>
     const kpi = screen.getByTestId("makine-cal-kpi");
     expect(kpi).toHaveTextContent("999 Saat");
     expect(kpi).toHaveTextContent("₺ 777.777");
+  });
+
+  /**
+   * M5_3 #103 — KPI şeridi `formatCurrency` (0 ondalık) kullanırken tablo
+   * `formatCurrencyPrecise` (2 ondalık) kullanıyordu, aynı `totals.cost`
+   * iki farklı yuvarlamayla basılıyordu (M3:209 mockup'ı da 0 ondalıktır:
+   * `₺ 124.800`). İkisi artık AYNI biçimlendirici.
+   */
+  it("tfoot toplamı KPI ile AYNI biçimdedir — kuruş EKLEMEZ (sunucu .30 gönderir)", () => {
+    render(<EquipmentWorkView />);
+    const totals = screen.getByTestId("makine-cal-summary-totals");
+    expect(totals).toHaveTextContent("₺ 777.777");
+    // `formatCurrencyPrecise` bu tutarı "777.777,3" olarak basardı.
+    expect(totals).not.toHaveTextContent("777.777,3");
+  });
+
+  it("satır maliyeti de kuruşsuz basılır (mockup M3:135 — sunucu .40 gönderir)", () => {
+    render(<EquipmentWorkView />);
+    const rows = screen.getAllByTestId("makine-cal-summary-row");
+    expect(rows[0]).toHaveTextContent("₺ 59.520");
+    // `formatCurrencyPrecise` bu tutarı "59.520,4" olarak basardı.
+    expect(rows[0]).not.toHaveTextContent("59.520,4");
   });
 });
 

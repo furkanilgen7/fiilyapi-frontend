@@ -16,5 +16,13 @@ export const RATING_PENDING_REASON = pendingModuleLabel("subcontractor_rating");
 export const PAYMENT_PENDING_REASON =
   "Hakediş listesi eksik olduğu için tutar hesaplanmadı";
 
+/**
+ * M5_1 kayıt #339: hakediş ucu 403 (yetki eksikliği) verdiğinde ayrı, DOĞRU
+ * bir gerekçe — `PAYMENT_PENDING_REASON` "liste eksik" der, ama sebep burada
+ * "liste eksik" DEĞİL "bu kullanıcının yetkisi yok"tur; ikisi karıştırılmaz.
+ */
+export const PAYMENT_FORBIDDEN_REASON =
+  "Hakediş listesini görüntüleme yetkiniz yok — tutar hesaplanmadı";
+
 /** 63 · firmanın hiç sözleşmesi yoksa "Detay →" hedefi de yoktur. */
 export const NO_CONTRACT_REASON = "Bu firmanın sözleşmesi henüz yok";

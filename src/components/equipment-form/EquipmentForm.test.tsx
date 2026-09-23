@@ -383,4 +383,19 @@ describe("EquipmentForm (edit) · tohumlama", () => {
     await user.click(actionButton("Kaydet"));
     expect(updateMutate.mock.calls[0][0]).toMatchObject({ supplier_id: "sup-1" });
   });
+
+  /**
+   * M5_3 #85 — no 75 ile AYNI kusur sınıfı (form ekranındaki tekrarı):
+   * bayrak yalnız `!isLoading`e bakıyordu, `useSiteOptions` hatada da
+   * `isLoading=false` döndüğü için hata "yüklendi" sanılırdı.
+   */
+  it("siteOptionsState.isError iken YÜKLENDİ izi BASILMAZ", () => {
+    vi.mocked(useSiteOptions).mockReturnValue({
+      options: [],
+      isLoading: false,
+      isError: true,
+    });
+    render(<EquipmentForm mode="edit" equipmentId="eq-9" />);
+    expect(screen.queryByTestId("makine-form-loaded-sites")).not.toBeInTheDocument();
+  });
 });

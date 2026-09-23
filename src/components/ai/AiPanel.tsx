@@ -400,7 +400,7 @@ export function AiPanel() {
                         </div>
                       ) : null}
                       {m.finish_reason && SEBEP_CUMLELERI[m.finish_reason] ? (
-                        <p className="ai-notice ai-notice--warn">
+                        <p className="ai-notice ai-notice--warn" role="status">
                           {SEBEP_CUMLELERI[m.finish_reason]}
                         </p>
                       ) : null}

@@ -54,6 +54,15 @@
 .prj__new-btn:hover {
   background: var(--color-primary-hover);
 }
+/* M5_3 #400 — yazma yetkisi yoksa "+ Yeni Proje" gerekçeli devre dışı basılır. */
+.prj__new-btn--disabled {
+  background: var(--color-surface-muted);
+  color: var(--color-text-subtle);
+  cursor: not-allowed;
+}
+.prj__new-btn--disabled:hover {
+  background: var(--color-surface-muted);
+}
 .prj-message {
   font-size: 14px;
   color: var(--color-text-muted);

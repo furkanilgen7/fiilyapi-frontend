@@ -159,6 +159,9 @@ export function SectionForm(props: SectionFormProps) {
       // Brief §409 kod çakışması: YALNIZ Bölüm Kodu alanının altında hata —
       // genel banner set edilmez (site-form'un 409 deseninden bilinçli sapma,
       // brief burada kazanır).
+      // M5_1 kayıt #267: odak da istemci doğrulama yoluyla AYNI şekilde
+      // taşınmalı — yoksa sunucu kaynaklı 409'da hatalı alana odak gitmiyordu.
+      shouldFocusRef.current = true;
       setErrors((prev) => ({ ...prev, code: MESSAGES.sectionCodeConflict }));
       return;
     }

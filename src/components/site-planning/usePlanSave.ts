@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, type Dispatch } from "react";
+import { useCallback, useEffect, useRef, useState, type Dispatch } from "react";
 
 import { backendErrorMessage } from "@/lib/api/error-message";
 import {
@@ -135,6 +135,22 @@ export function usePlanSave(
 
   const [steps, setSteps] = useState<readonly PlanSaveStep[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Hafta değişince önceki haftanın "kaydedildi/kaydedilemedi" satırları ve
+  // "Yeniden dene" düğmesi yeni haftada YANLIŞLIKLA görünür kalmasın.
+  //
+  // 🔴 MOUNT'TA ÇALIŞMAZ (2026-09-23 ölçümü): koşulsuz `setSteps([])` ilk
+  // render'dan sonra İKİNCİ bir render tetikliyordu. Zararı yalnız performans
+  // değildi — `SitePlanningView.test.tsx`in `mockReturnValueOnce` ile kurduğu
+  // "şantiye çözülemedi" dalı ikinci render'da varsayılan mock'a düşüp
+  // KAYBOLUYORDU (tam küme kırmızısı buradan geldi). Sıfırlama artık yalnız
+  // hafta GERÇEKTEN değiştiğinde koşar.
+  const oncekiHafta = useRef(weekStart);
+  useEffect(() => {
+    if (oncekiHafta.current === weekStart) return;
+    oncekiHafta.current = weekStart;
+    setSteps([]);
+  }, [weekStart]);
 
   const save = useCallback(
     async (draft: PlanDraft) => {

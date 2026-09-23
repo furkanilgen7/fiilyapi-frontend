@@ -155,6 +155,13 @@ describe("GeneralTimesheetView · E5 kabuğu", () => {
     ).toBeInTheDocument();
   });
 
+  it("KAYIT 358: bilgi şeridindeki haftalık normal mesai formatDecimal ile basılır (panelle aynı biçim)", () => {
+    renderView();
+    // weekly_normal_hours="45.0" — formatDecimal ham ondalık noktayı silip
+    // "45" basar; ham metin "45.0" ekranda YOKTUR.
+    expect(screen.getByText(/Haftalık normal mesai 45 saat/)).toBeInTheDocument();
+  });
+
   it("🔴 E5 mockup'ında Excel YOKTUR — uydurulmaz (ŞP'de vardır)", () => {
     renderView();
     expect(screen.queryByRole("button", { name: "Excel" })).not.toBeInTheDocument();

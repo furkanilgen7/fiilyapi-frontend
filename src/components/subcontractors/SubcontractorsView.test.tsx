@@ -8,6 +8,7 @@ import { useSubcontractorProgressPayments } from "@/lib/api/hooks/useSubcontract
 import type { ContractListItem } from "@/lib/api/hooks/useContracts";
 import type { SubcontractorListItem } from "@/lib/api/hooks/useSubcontractors";
 import type { SubcontractorProgressPaymentListItem } from "@/lib/api/hooks/useSubcontractorProgressPayments";
+import { BackendError } from "@/lib/api/unwrap";
 
 vi.mock("@/lib/api/hooks/useSubcontractors", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api/hooks/useSubcontractors")>()),
@@ -244,6 +245,30 @@ describe("SubcontractorsView · TL taşeron firma listesi", () => {
     expect(screen.getAllByTestId("tl-pending-money")[0]).toHaveTextContent("—");
     // Sözleşme türevleri kırpılmadan etkilenmez (uç sayfalanmıyor).
     expect(within(rowOf(/Akın İnşaat/)).getByText("₺ 4,8M")).toBeInTheDocument();
+  });
+
+  // M5_1 kayıt #339: hakediş ucu 403 (yetki eksikliği) verdiğinde eskiden
+  // "liste eksik" gerekçesi ve YALNIZ kırpılma bandı basılıyordu — yetki
+  // hatası "liste eksik" DEĞİLDİR, ayrı bir bant + gerekçe gerekir.
+  it("403: hakediş ucu yetkisiz verince ayrı 'yetki yok' bant ve gerekçe basar", () => {
+    vi.mocked(useSubcontractorProgressPayments).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: new BackendError(403, { detail: "yasak" }),
+    } as never);
+    render(<SubcontractorsView />);
+
+    expect(screen.getByTestId("tl-payment-forbidden-notice")).toHaveTextContent(
+      "Hakediş listesini görüntüleme yetkiniz yok",
+    );
+    // Kırpılma bandı (liste eksik) AYNI anda basılmaz — sebep farklı.
+    expect(screen.queryByTestId("tl-truncation-notice")).not.toBeInTheDocument();
+    const pendingCell = screen.getAllByTestId("tl-pending-money")[0];
+    expect(pendingCell).toHaveAttribute(
+      "title",
+      "Hakediş listesini görüntüleme yetkiniz yok — tutar hesaplanmadı",
+    );
   });
 
   it("arama İSTEMCİDE süzer", () => {

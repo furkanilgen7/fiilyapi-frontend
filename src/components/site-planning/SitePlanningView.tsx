@@ -120,8 +120,11 @@ export function SitePlanningView() {
 
   return (
     <div className="plan">
-      {/* Şantiye sekme barı — sıra `SiteDetailTabs` tek kaynağından. */}
-      <SiteDetailTabs projectKey={projectKey} siteKey={siteKey} activePath={pathname} />
+      {/* Şantiye sekme barı — sıra `SiteDetailTabs` tek kaynağından. `activePath`
+          TAM DİZE karşılaştırır, o yüzden planlama son ekli `pathname` DEĞİL
+          "Günlük Kayıt" sekmesinin href'iyle aynı temel yol geçilir (bkz.
+          SiteDiarySummaryView). */}
+      <SiteDetailTabs projectKey={projectKey} siteKey={siteKey} activePath={`${base}/gunluk-kayit`} />
 
       {/* P80-84 */}
       <DiaryModeSwitch

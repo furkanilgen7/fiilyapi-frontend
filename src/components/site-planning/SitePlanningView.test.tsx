@@ -227,6 +227,14 @@ describe("SitePlanningView — başlık ve mod anahtarı", () => {
     ).toBeInTheDocument();
   });
 
+  it("KAYIT 302: 'Günlük Kayıt' sekmesi aktif görünür (activePath planlama son ekli değil)", () => {
+    mockPlan();
+    render(<SitePlanningView />);
+    const tabs = screen.getByRole("tablist", { name: "Şantiye detay sekmeleri" });
+    const diaryTab = within(tabs).getByRole("tab", { name: "Günlük Kayıt" });
+    expect(diaryTab).toHaveAttribute("aria-selected", "true");
+  });
+
   it("mod anahtarinda Planlama AKTIFtir, digerleri gercek baglantidir (P80-84)", () => {
     mockPlan();
     render(<SitePlanningView />);

@@ -1,4 +1,4 @@
-import { formatCompactCurrency } from "@/lib/format";
+import { formatCompactCurrencyTight } from "@/lib/format";
 import type { PurchasingSummaryResponse } from "@/lib/api/hooks/usePurchasingSummary";
 
 import "./purchasing.css";
@@ -49,7 +49,7 @@ export function PurchasingKpiStrip({ summary }: PurchasingKpiStripProps) {
       <div className="sat-kpi__card">
         <div className="sat-kpi__label">Bu Ay Sipariş</div>
         <div className="sat-kpi__value sat-kpi__value--neutral">
-          {summary ? formatCompactCurrency(summary.orders_this_month_total) : EMPTY_VALUE}
+          {summary ? formatCompactCurrencyTight(summary.orders_this_month_total) : EMPTY_VALUE}
         </div>
       </div>
 

@@ -304,13 +304,21 @@ describe("PersonnelForm (create) · pending yüzeyler", () => {
     render(<PersonnelForm mode="create" />);
     const notices = screen.getByTestId("personnel-form-notices");
     expect(notices).toHaveTextContent(/belge modülünün form eklentisi sonraki dilimde gelir/);
-    expect(notices).toHaveTextContent(/Serbest Meslek/);
-    expect(notices).toHaveTextContent(/Stajyer/);
     expect(notices).toHaveTextContent(/Bölüm/);
     expect(notices).toHaveTextContent(/Taslak Kaydet/);
   });
 
-  it("karsiliksiz iki calisan tipi BASILIR ama secilemez (91)", () => {
+  // M5_1 kayıt #178: "Belge Takibi" bağlantısı ARTIK ETKİN — genel BT
+  // ekranına (/personel/belgeler) gider, edilgen basılmaz.
+  it("belge kartındaki 'Belge Takibi' bağlantısı GERÇEK rotaya gider", () => {
+    render(<PersonnelForm mode="create" />);
+    const link = screen.getByRole("link", { name: "Belge Takibi" });
+    expect(link).toHaveAttribute("href", "/personel/belgeler");
+  });
+
+  // M5_1 kayıt #397: backend `WorkerSource` enum'u `freelance`/`intern`
+  // üyelerini taşıyor (ölçüldü) — dördü de artık SEÇİLEBİLİR.
+  it("mockup'ın dört çalışan tipi de BASILIR ve SEÇİLEBİLİR (91)", () => {
     render(<PersonnelForm mode="create" />);
     const options = within(screen.getByLabelText("Çalışan Tipi")).getAllByRole("option");
     const byLabel = new Map(options.map((option) => [option.textContent, option]));
@@ -323,8 +331,8 @@ describe("PersonnelForm (create) · pending yüzeyler", () => {
     ]);
     expect(byLabel.get("Şirket Kadrosu (4a)")).toBeEnabled();
     expect(byLabel.get("Taşeron İşçisi")).toBeEnabled();
-    expect(byLabel.get("Serbest Meslek")).toBeDisabled();
-    expect(byLabel.get("Stajyer")).toBeDisabled();
+    expect(byLabel.get("Serbest Meslek")).toBeEnabled();
+    expect(byLabel.get("Stajyer")).toBeEnabled();
   });
 
   it("SGK kutucugu devre disi VE isaretsizdir (206)", () => {
@@ -587,10 +595,15 @@ describe("PersonnelForm (edit) · önyükleme + mockup sadakati", () => {
   it("Bölüm düzenleme kipinde de PENDING kalır", () => {
     render(<PersonnelForm mode="edit" personnelId="per-9" />);
     expect(screen.getByLabelText("Bölüm")).toBeDisabled();
+  });
+
+  // M5_1 kayıt #397: düzenleme kipinde de dördü SEÇİLEBİLİR olmalı.
+  it("Çalışan Tipi düzenleme kipinde de dört seçenek SEÇİLEBİLİR", () => {
+    render(<PersonnelForm mode="edit" personnelId="per-9" />);
     const options = within(screen.getByLabelText("Çalışan Tipi")).getAllByRole("option");
     const byLabel = new Map(options.map((option) => [option.textContent, option]));
-    expect(byLabel.get("Serbest Meslek")).toBeDisabled();
-    expect(byLabel.get("Stajyer")).toBeDisabled();
+    expect(byLabel.get("Serbest Meslek")).toBeEnabled();
+    expect(byLabel.get("Stajyer")).toBeEnabled();
   });
 
   it("yükleniyor durumunda formu basmaz", () => {

@@ -19,6 +19,17 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => searchParams,
 }));
 
+// M5_3 #400 — "+ Yeni Sözleşme" izin kapısı testi (ContractDistributionView.test.tsx deseni).
+let permissionLevel: string | undefined = "full";
+vi.mock("@/lib/auth/useModulePermission", () => ({
+  useModulePermission: () => ({
+    level: permissionLevel,
+    canView: true,
+    canWrite: permissionLevel !== "read",
+    canDelete: permissionLevel === "full",
+  }),
+}));
+
 const EMPLOYER_ROW: ContractListItem = {
   id: "p-1",
   title: "Güneşkent Konut A-Blok",
@@ -80,6 +91,7 @@ describe("ContractsView · SZL sekmeli liste", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     searchParams = new URLSearchParams();
+    permissionLevel = "full";
   });
 
   describe("KPI şeridi (mockup 34-38)", () => {
@@ -200,6 +212,24 @@ describe("ContractsView · SZL sekmeli liste", () => {
         "/sozlesmeler/taseron/yeni",
       );
       expect(screen.queryByTestId("szl-new-contract-disabled")).not.toBeInTheDocument();
+    });
+
+    /**
+     * M5_3 #400 — eskiden taşeron sekmesindeki link HİÇBİR izin kontrolüyle
+     * sarılmadan render ediliyordu; kapı yalnız hedef formdaydı. Backend
+     * yazmayı reddeder ama liste ekranında tıklanabilir bir buton yanlış
+     * bir yetki izlenimi verirdi.
+     */
+    it("taşeron sekmesinde yazma yetkisi yoksa LINK DEĞİL, gerekçeli devre-dışı buton basılır", () => {
+      permissionLevel = "read";
+      searchParams = new URLSearchParams("type=subcontractor");
+      mockContracts(subcontractorResponse());
+      render(<ContractsView />);
+
+      expect(screen.queryByRole("link", { name: "+ Yeni Sözleşme" })).not.toBeInTheDocument();
+      const button = screen.getByTestId("szl-new-contract-disabled");
+      expect(button).toBeDisabled();
+      expect(button).toHaveAttribute("title", "Bu modülde yazma yetkiniz yok.");
     });
   });
 

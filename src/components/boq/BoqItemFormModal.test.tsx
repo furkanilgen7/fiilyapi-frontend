@@ -256,7 +256,7 @@ describe("BoqItemFormModal — create kipi (spec §7.1.2)", () => {
   // ayri 409 donduruyor (kod cakismasi / kota dusurme / tahsis asimi); ekran
   // sunucunun cumlesini OLDUGU GIBI basar. Testin ozgun niyeti korundu (kod
   // cakismasinda dogru cumle basilir), fiksturu GERCEK govdeye cevrildi.
-  // Ayrimin kendisi `BoqItemFormModal.conflicts.test.tsx`te caki�lidir.
+  // Ayrimin kendisi `BoqItemFormModal.conflicts.test.tsx`te caki�lidir.
   it("409 → backend'in poz kodu çakışması cümlesi basılır", async () => {
     createItem.mockRejectedValue(
       new BackendError(409, { detail: "Bu poz numarası bu şantiyede zaten kullanılıyor" }),
@@ -373,6 +373,25 @@ describe("BoqItemFormModal — edit kipi (spec §7.1.2)", () => {
       itemId: "aaaaaaaa-0000-0000-0000-000000000001",
       body: { description: "Kazı (El ile)" },
     });
+  });
+
+  it("KAYIT 471: edit kipinde Poz No baştaki/sondaki boşluk TRIM'lenerek gönderilir", async () => {
+    renderEdit();
+    setField("Poz No", " 01.002 ");
+    save();
+    await waitFor(() => expect(updateItem).toHaveBeenCalled());
+    expect(updateItem).toHaveBeenCalledWith({
+      itemId: "aaaaaaaa-0000-0000-0000-000000000001",
+      body: { code: "01.002" },
+    });
+  });
+
+  it("KAYIT 471: yalnız boşluk eklenmiş bir alan (trim sonrası AYNI) DEĞİŞTİ sayılmaz", () => {
+    renderEdit();
+    setField("Poz No", " 01.001 "); // trim sonrası orijinal kodla AYNI
+    save();
+    expect(updateItem).not.toHaveBeenCalled();
+    expect(onClose).toHaveBeenCalled();
   });
 
   it("hiçbir alan değişmediyse istek atılmaz, modal kapanır", () => {

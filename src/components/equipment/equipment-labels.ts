@@ -81,6 +81,16 @@ export const EQUIPMENT_UNASSIGNED_SITE_LABEL = "Depoda (Atanmadı)";
 export const EQUIPMENT_SITE_LOAD_ERROR_LABEL = "Yüklenemedi";
 export const EQUIPMENT_OPERATOR_LOAD_ERROR_LABEL = "Yüklenemedi";
 
+/**
+ * M5_3 #76/#85 — `site_id` DOLU ama şantiye seçenekleri haritasında YOK.
+ * Bu, hata DEĞİLDİR (sorgu başarıyla yüklendi) ve "atanmadı" da DEĞİLDİR
+ * (kayıtta gerçekten bir `site_id` var) — kullanıcının proje erişimi dar
+ * olup şantiye o haritada görünmüyor olabilir (kırpılma). `EQUIPMENT_
+ * UNASSIGNED_SITE_LABEL`i burada ÖDÜNÇ ALMAK "Depoda (Atanmadı)" yalanını
+ * basardı; bu yüzden ayrı, nötr bir etiket.
+ */
+export const EQUIPMENT_SITE_UNKNOWN_LABEL = "Şantiye bilgisi görüntülenemiyor";
+
 /* ---------------------------------------------------------------------------
  * K1 — Alt-navigasyon (§1 birleşimi, BEŞ sekme). Devre-dışı sekmelerin
  * gerekçesi mockup'ın kendisinden DEĞİL, spec K1'den birebir alınır.

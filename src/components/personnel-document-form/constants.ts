@@ -42,7 +42,15 @@ export const PERSONNEL_DOCUMENT_TEXT = {
   fileCard: "📎 Dosya", // 90
   /** Kart başlığı emojiyi taşır; alan etiketi erişilebilir ad olarak sade kalır. */
   file: "Dosya", // 90
-  fileAccept: ".pdf,image/*", // 98
+  // M5_3 #172 — mockup'ın niyeti "PDF veya fotoğraf" (dropHint aynı cümleyi
+  // taşır); ham `image/*` bunu YANLIŞ uygular: gif/webp/bmp/tiff gibi backend
+  // beyaz listesinde (config.py `allowed_document_extensions`) OLMAYAN
+  // resim tipleri seçilebilir olur (seçilince 415/422 ile geri döner), oysa
+  // whitelist'teki docx/xlsx/csv/dwg/zip seçiciden GİZLENİR. `document-form`
+  // kardeşiyle (constants.ts:33) AYNI desen: uzantı bazlı, yalnız "PDF veya
+  // fotoğraf" kapsamı — mockup'ın metnini DEĞİŞTİRMEZ, `accept`i backend'in
+  // GERÇEKTEN kabul ettiği resim uzantılarına indirger.
+  fileAccept: ".pdf,.jpg,.jpeg,.png,.heic", // 98
   twoStepNote:
     "Yüklediğiniz dosya önce genel arşive kaydedilir, ardından bu personel kaydına bağlanır. Dosya zaten arşivde varsa yüklemek yerine seçebilirsiniz.", // 92-95
   dropTitle: "Belgeyi buraya sürükleyin veya tıklayın", // 100

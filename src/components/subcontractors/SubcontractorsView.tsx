@@ -15,6 +15,7 @@ import { isForbidden } from "@/lib/api/unwrap";
 import { SubcontractorFormModal } from "./SubcontractorFormModal";
 import { SubcontractorsSummaryStrip } from "./SubcontractorsSummaryStrip";
 import { SubcontractorsTable } from "./SubcontractorsTable";
+import { PAYMENT_FORBIDDEN_REASON, PAYMENT_PENDING_REASON } from "./pending-reasons";
 import {
   buildSubcontractorDirectory,
   filterSubcontractorRows,
@@ -55,6 +56,13 @@ export function SubcontractorsView() {
     paymentItems.length,
     paymentsQuery.data?.total,
   );
+  // M5_1 kayıt #339: hakediş ucu 403 verdiğinde de para kolonları PENDING'e
+  // düşer (aşağıdaki `isPaymentTruncated`), ama gerekçesi "liste eksik" DEĞİL
+  // "yetki yok"tur — ikisi karışmasın diye AYRI bir bayrak/metin taşınır.
+  const isPaymentForbidden = isForbidden(paymentsQuery.error);
+  const paymentPendingReason = isPaymentForbidden
+    ? PAYMENT_FORBIDDEN_REASON
+    : PAYMENT_PENDING_REASON;
 
   const directory = useMemo(() => {
     const now = new Date();
@@ -139,11 +147,30 @@ export function SubcontractorsView() {
         </p>
       )}
 
+      {/* M5_1 kayıt #339: 403 ayrı, görünür bir bantla anlatılır — "liste
+          eksik" değil "yetki yok" gerçek sebep. */}
+      {isPaymentForbidden && (
+        <p className="tl__notice" data-testid="tl-payment-forbidden-notice">
+          {PAYMENT_FORBIDDEN_REASON}. Ödenen / Bekleyen Hak. ve para KPI&apos;ları
+          bu yüzden gösterilmiyor.
+        </p>
+      )}
+
       {directory.orphanContractCount > 0 && (
         <p className="tl__notice" data-testid="tl-orphan-notice">
           {directory.orphanContractCount} sözleşme listedeki hiçbir firmayla
           eşleşmedi — eşleştirme firma ADINA göre yapılır (liste uçları taşeron
           kimliği taşımaz).
+        </p>
+      )}
+
+      {/* M5_1 kayıt #344: taslak yetim sözleşmeler AYRI bantla anlatılır —
+          eskiden hiçbir sayaca girmiyor, sessizce yutuluyordu. */}
+      {directory.orphanDraftContractCount > 0 && (
+        <p className="tl__notice" data-testid="tl-orphan-draft-notice">
+          {directory.orphanDraftContractCount} TASLAK sözleşme listedeki hiçbir
+          firmayla eşleşmedi — eşleştirme firma ADINA göre yapılır (liste
+          uçları taşeron kimliği taşımaz).
         </p>
       )}
 
@@ -164,6 +191,7 @@ export function SubcontractorsView() {
         isLoading={isLoading}
         rows={isLoading || isError ? undefined : visibleRows}
         hasAnyRow={directory.rows.length > 0}
+        paymentPendingReason={paymentPendingReason}
       />
 
       {isModalOpen && (

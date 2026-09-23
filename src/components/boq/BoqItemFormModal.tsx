@@ -191,9 +191,15 @@ export function BoqItemFormModal({
     if (mode.kind !== "edit") return {};
     const body: BoqItemUpdate = {};
     if (targetGroupId !== mode.groupId) body.group_id = targetGroupId;
-    if (code !== mode.item.code) body.code = code;
-    if (description !== mode.item.description) body.description = description;
-    if (unit !== mode.item.unit) body.unit = unit;
+    // KAYIT 471 — create kipi trim uygular (aşağıda), edit kipi UYGULAMIYORDU:
+    // trim'siz karşılaştırma + gönderim, baştaki/sondaki boşluklu bir kodu
+    // olduğu gibi backend'e taşırdı (backend de trim yapmaz).
+    const trimmedCode = code.trim();
+    const trimmedDescription = description.trim();
+    const trimmedUnit = unit.trim();
+    if (trimmedCode !== mode.item.code) body.code = trimmedCode;
+    if (trimmedDescription !== mode.item.description) body.description = trimmedDescription;
+    if (trimmedUnit !== mode.item.unit) body.unit = trimmedUnit;
     if (quantity !== mode.item.quantity) body.quantity = quantity;
     if (unitPrice !== mode.item.unit_price) body.unit_price = unitPrice;
     return body;

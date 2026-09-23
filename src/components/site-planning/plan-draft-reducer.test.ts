@@ -278,3 +278,13 @@ describe("planDraftReducer — sectionSaved / reset", () => {
     expect(isPlanDraftDirty(next)).toBe(false);
   });
 });
+
+describe("planCellValue — bastaki/sondaki bosluk", () => {
+  it("baştaki ve sondaki boşlukları kırpar (satır etiketiyle aynı disiplin)", () => {
+    expect(planCellValue("  Kalıpçı  ", "blue")).toEqual({ text: "Kalıpçı", tag: "blue" });
+  });
+
+  it("yalnız boşluktan oluşan metni null yapar", () => {
+    expect(planCellValue("   ", "blue")).toBeNull();
+  });
+});

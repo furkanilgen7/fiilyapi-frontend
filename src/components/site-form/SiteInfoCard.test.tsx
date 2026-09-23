@@ -50,6 +50,14 @@ describe("SiteInfoCard", () => {
     expect(select).toHaveValue("Güneşkent Konut");
   });
 
+  // M5_1 kayıt #308: proje sorgusu çözülmeden `projectName=""` iken seçici
+  // eskiden boş `<option>` basardı — tek yüzey yükleme hâlini BELLİ ETMİYORDU.
+  it("proje henüz yüklenmediyse (projectName boş) seçici 'Yükleniyor…' basar", () => {
+    renderCard({ projectName: "" });
+    const select = screen.getByLabelText("Bağlı Proje");
+    expect(select).toHaveTextContent("Yükleniyor…");
+  });
+
   it("Bagli Proje secicisi 'Santiye, girildigi projeye baglidir' title'i tasir", () => {
     renderCard();
     expect(screen.getByLabelText("Bağlı Proje")).toHaveAttribute(

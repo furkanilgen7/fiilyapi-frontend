@@ -95,8 +95,17 @@ export interface SubcontractorDirectory {
   summary: SubcontractorSummary;
   /** 30 · kategori süzgecinin GERÇEK seçenekleri (mockup'ın sabit üçlüsü artefakt). */
   categories: string[];
-  /** Adı hiçbir firmayla eşleşmeyen sözleşme sayısı — görünür not. */
+  /** Adı hiçbir firmayla eşleşmeyen sözleşme sayısı (taslak hariç) — görünür not. */
   orphanContractCount: number;
+  /**
+   * M5_1 kayıt #344: adı hiçbir firmayla eşleşmeyen TASLAK sözleşme sayısı.
+   * Eskiden `!contract.is_draft` dalı yalnız yayınlanmış yetimleri sayardı —
+   * taslak yetimler hiçbir sayaca girmiyor, dolayısıyla hiçbir banta düşmüyordu.
+   * Ayrı sayaçla dışarı verilir; "sessizce yutulmaz" invariantı taslak için de
+   * geçerli olsun diye `orphanContractCount`e KARIŞTIRILMAZ (taslak/yayın
+   * ayrımı çağıran tarafın işine yarayabilir).
+   */
+  orphanDraftContractCount: number;
   /** Adı BİRDEN ÇOK firmaya uyduğu için atfedilemeyen sözleşme sayısı. */
   ambiguousContractCount: number;
   /** Hakediş listesi kırpıldı — para kolonları/KPI'ları PENDING. */
@@ -190,6 +199,7 @@ export function buildSubcontractorDirectory({
   // yalnız sözleşmesi hiç listede olmayan hakediş yedek yola düşer.
   const firmIdByContractId = new Map<string, string | null>();
   let orphanContractCount = 0;
+  let orphanDraftContractCount = 0;
   let ambiguousContractCount = 0;
 
   for (const contract of contracts) {
@@ -202,6 +212,9 @@ export function buildSubcontractorDirectory({
       if (!contract.is_draft) {
         if (firmIdsByName.has(key)) ambiguousContractCount += 1;
         else orphanContractCount += 1;
+      } else if (!firmIdsByName.has(key)) {
+        // M5_1 kayıt #344: taslak yetimler AYRI sayaçta — sessizce yutulmaz.
+        orphanDraftContractCount += 1;
       }
       continue;
     }
@@ -290,6 +303,7 @@ export function buildSubcontractorDirectory({
     },
     categories,
     orphanContractCount,
+    orphanDraftContractCount,
     ambiguousContractCount,
     isPaymentPending: isPaymentTruncated,
   };

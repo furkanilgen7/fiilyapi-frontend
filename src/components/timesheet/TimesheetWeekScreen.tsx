@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 
 import { AccessDenied } from "@/components/settings/AccessDenied";
 import { Button } from "@/components/ui/button/Button";
+import { formatDecimal } from "@/lib/format";
 
 import { AddPersonnelLink } from "./AddPersonnelLink";
 import type { TimesheetIsoWeek } from "./iso-week";
@@ -147,7 +148,7 @@ export function TimesheetWeekScreen({
       {/* E5 76-81 — giriş kuralının kendisi ekranda yazar: birim SAATtir */}
       <p className="ts-info">
         <strong>Giriş haftalık yapılır, birim saattir.</strong> Her güne o gün çalışılan saat
-        yazılır. Haftalık normal mesai {weekData?.weekly_normal_hours ?? "—"} saat; üzeri fazla
+        yazılır. Haftalık normal mesai {formatDecimal(weekData?.weekly_normal_hours, 1)} saat; üzeri fazla
         mesai olarak ayrılır ve bordroda {OVERTIME_SURCHARGE_PERCENT_TEXT} zamlı hesaplanır. Aylık
         bordro, ayın haftalarının toplamından türetilir.
       </p>

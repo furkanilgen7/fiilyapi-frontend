@@ -7,6 +7,8 @@ import { backendErrorMessage } from "@/lib/api/error-message";
 import { formatAmount, formatQuantity } from "@/lib/format";
 import { multiplyDecimalStrings, normalizeDecimalInput, sumDecimalStrings } from "@/lib/decimal";
 import { siteQuotaOf } from "@/lib/boq-quota";
+import { hasAtLeast } from "@/lib/auth/permissions";
+import { useModulePermission } from "@/lib/auth/useModulePermission";
 import { useBoq, type BoqItem } from "@/lib/api/hooks/useBoq";
 import {
   fetchBoqItemAllocations,
@@ -143,6 +145,11 @@ function LiveCard({
   const siteBoq = useBoq(siteId);
   const sectionBoq = useBoq(siteId, sectionId);
   const replace = useReplaceBoqItemAllocations(siteId);
+  // 🔴 M5_1 kayıt #262: `canWrite` (üstten gelir) `sites` modülünden okunur,
+  //    ama `PUT /boq/items/{id}/allocations` backend'de `boq` modülünün
+  //    `full`+ eşiğini ister (router.py `_FULL` bağımlılığı). `sites:full +
+  //    boq:view` kullanıcısı eskiden canAssign=true görüp 403 alıyordu.
+  const boqPermission = useModulePermission("boq");
 
   const [draft, setDraft] = useState<ReadonlyMap<string, string>>(new Map());
   const [isPickerOpen, setPickerOpen] = useState(false);
@@ -173,7 +180,8 @@ function LiveCard({
   //    karışık bir yanıt gelirse de kısmi bir kotaya yazmak kullanıcıyı
   //    göremediği bir toplamla karşı karşıya bırakırdı.
   const hasMaskedQuantity = rows.some(isQuantityMasked);
-  const canAssign = canWrite && !hasMaskedQuantity;
+  const canAssignBoq = hasAtLeast(boqPermission.level, "full");
+  const canAssign = canWrite && canAssignBoq && !hasMaskedQuantity;
 
   /**
    * 🔴 KAYDETME — poz BAŞINA, ve her poz için önce KÜMENİN TAMAMI okunur.

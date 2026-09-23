@@ -120,6 +120,15 @@
   margin-bottom: 14px;
   flex-wrap: wrap;
 }
+/* KAYIT 93 — `Select` sarmalayıcısı (`.select-wrap`) her yerde `width:100%`dir;
+   `flex-wrap` içinde bu, seçiciyi tam genişliğe zorlayıp ay gezinmesini
+   (`.makine-yakit-panel__nav`) alta düşürüyordu. Yalnız BU panelde
+   `flex-basis` ile `width:100%`in üstüne çıkılır — paylaşılan `select.css`e
+   dokunulmaz. */
+.makine-yakit-panel__head .select-wrap {
+  flex: 0 1 220px;
+  min-width: 160px;
+}
 .makine-yakit-panel__nav {
   margin-left: auto; /* 99 */
 }

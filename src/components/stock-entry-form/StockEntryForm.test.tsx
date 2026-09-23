@@ -162,6 +162,39 @@ describe("StockEntryForm — depo ÖN DOLDURMA (rotadan, query parametresi YOK)"
   });
 
   /**
+   * M5_3 #325 — `siteQuery` hâlâ yüklenirken (`siteId === ""`) hiçbir depo
+   * `site_id === ""` eşleşmez ve eskiden `warehouseNotice` bunu "bu
+   * şantiyeye tanımlı depo yok" diye YANLIŞ yorumlardı; kullanıcı gerçekte
+   * depo tanımlıyken geçici bir yalan uyarı görürdü.
+   */
+  it("siteQuery hâlâ yüklenirken YANLIŞ 'tanımlı depo yok' uyarısı BASILMAZ", () => {
+    vi.mocked(useSite).mockReturnValue(stub({ data: undefined, isLoading: true, isError: false }));
+    render(<StockEntryForm />);
+
+    expect(screen.queryByTestId("stok-giris-depo-uyari")).not.toBeInTheDocument();
+  });
+
+  /**
+   * M5_3 #326 — #325 ile AYNI kusur sınıfı: `sectionsQuery`/`boqQuery`
+   * `siteId` gelene kadar `enabled: false`dır, devre dışı sorguda
+   * `isLoading` de `false`e döner. `siteId === ""` iken eskiden
+   * `attributionNote` doğrudan "sectionOptions.length === 0" dalına düşüp
+   * "Bölüm tanımlı değil" notunu olgusal olmadan basardı.
+   */
+  it("siteQuery hâlâ yüklenirken YANLIŞ 'bölüm tanımlı değil' notu BASILMAZ — 'yükleniyor' basar", () => {
+    vi.mocked(useSite).mockReturnValue(stub({ data: undefined, isLoading: true, isError: false }));
+    vi.mocked(useSiteSections).mockReturnValue(
+      stub({ data: undefined, isLoading: false, isError: false }),
+    );
+    vi.mocked(useBoq).mockReturnValue(stub({ data: undefined, isLoading: false, isError: false }));
+    render(<StockEntryForm />);
+
+    const note = screen.getByTestId("stok-giris-atif-note");
+    expect(note).toHaveTextContent("yükleniyor");
+    expect(note).not.toHaveTextContent("tanımlı bölüm yok");
+  });
+
+  /**
    * 🔴 YARIŞ — `useSite` ve `useWarehouses` İKİ AYRI sorgudur ve sıraları
    * garanti DEĞİLDİR. Depo listesi ÖNCE gelirse `siteId` o an henüz `""`dır;
    * tohumlama bekçisi o turda "tohumlandı" diye işaretlenirse şantiye kimliği

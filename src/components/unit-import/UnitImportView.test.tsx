@@ -425,6 +425,17 @@ describe("UnitImportView — EI 91-103 doğrulama sonucu", () => {
     );
   });
 
+  it("KAYIT 385: reddedilmiş dosyadan sonra proje değişince dosya hatası TEMİZLENİR", () => {
+    render(<UnitImportView />);
+    selectProject();
+    selectFile(xlsxFile("uniteler.csv"));
+    expect(screen.getByText(IMPORT_BAD_TYPE_MESSAGE)).toBeInTheDocument();
+
+    fireEvent.change(screen.getByTestId("excel-form-proje"), { target: { value: "" } });
+
+    expect(screen.queryByText(IMPORT_BAD_TYPE_MESSAGE)).not.toBeInTheDocument();
+  });
+
   it("proje değişince doğrulama ATILIR (başka projenin raporu gösterilmez)", async () => {
     render(<UnitImportView />);
     await fillAndValidate();

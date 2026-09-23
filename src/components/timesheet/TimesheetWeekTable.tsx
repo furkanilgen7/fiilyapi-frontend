@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 
 import { Badge } from "@/components/ui/badge/Badge";
+import { Button } from "@/components/ui/button/Button";
 import { Input } from "@/components/ui/input/Input";
 import type { TimesheetCode } from "@/lib/api/hooks/useTimesheet";
 import { cx } from "@/lib/cx";
@@ -306,8 +307,9 @@ function WeekCell({
     <span className="ts-pop-anchor ts-week-cell">
       {meta ? (
         // E5 260/281 — kodlu hücre ROZETTİR; tıklanınca kod yüzeyi açılır.
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="sm"
           aria-label={`${label} puantajı`}
           className={cx(
             "ts-tag",
@@ -318,7 +320,7 @@ function WeekCell({
           onClick={() => setOpenPopover(true)}
         >
           {meta.letter}
-        </button>
+        </Button>
       ) : (
         <>
           {/* E5 238 — saat kutusu; KONTROLLÜ girdi, `useSyncedFieldState`
@@ -352,14 +354,15 @@ function WeekCell({
             }}
           />
           {/* Kod çapası — mockup'ta YOK; olmadan `İzin`/`Görev` yazılamaz. */}
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="sm"
             className="ts-week-cell__code-anchor"
             aria-label={`${label} puantaj kodu`}
             onClick={() => setOpenPopover(true)}
           >
             …
-          </button>
+          </Button>
         </>
       )}
       {error !== null && <span className="ts-week-cell__error">{error}</span>}
