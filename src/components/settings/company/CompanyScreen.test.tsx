@@ -91,8 +91,13 @@ describe("CompanyScreen", () => {
 
     renderScreen();
 
-    const vat = await screen.findByLabelText("KDV Oranı (Varsayılan)");
-    expect(vat).toHaveValue("18.5");
-    expect(screen.getByRole("option", { name: "%18.5 (özel)" })).toBeInTheDocument();
+    // 🔴 DEĞERİ BEKLE, ELEMANI DEĞİL (2026-09-23, CI kırmızısı): `default_vat_rate`
+    // sunucudan gelip `useEffect` ile forma yazılıyor. `findByLabelText` select'i
+    // BULUR BULMAZ geçer — yerelde efekt o arada tamamlanıyordu, CI'ın yavaş
+    // runner'ında tamamlanmadı ve değer boş okundu. Beklemeyi ÖZEL SEÇENEĞE
+    // bağlamak doğru kapıdır: o seçenek ancak form güncellendikten sonra doğar.
+    const ozel = await screen.findByRole("option", { name: "%18.5 (özel)" });
+    expect(ozel).toBeInTheDocument();
+    expect(await screen.findByLabelText("KDV Oranı (Varsayılan)")).toHaveValue("18.5");
   });
 });
