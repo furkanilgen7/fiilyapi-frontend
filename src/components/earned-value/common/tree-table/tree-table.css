@@ -306,3 +306,14 @@
 .tree-table--qurr .tree-table__row--level-2 {
   --tree-indent: 30px; /* Q 333 IT `ind: 30` */
 }
+
+/* ---- Satır sonrası yuva (PLN-F1.6.1 j) -----------------------------------
+   Ek satır ait olduğu satırın PARÇASIDIR: kendi ayırıcı çizgisi ve iç boşluğu
+   yoktur, görsel dil çağıranın içeriğinden gelir (AS Ek M4 kutusu). */
+.tree-table__after-row {
+  border-bottom: 1px solid var(--color-divider);
+  background: var(--color-surface);
+}
+.tree-table__after-cell {
+  padding: 0;
+}

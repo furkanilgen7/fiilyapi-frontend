@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { Fragment, useId, useState, type ReactNode } from "react";
 
 import { Checkbox } from "@/components/ui";
 import { ChevronDownIcon } from "@/components/ui/icons";
@@ -50,6 +50,12 @@ export interface TreeTableColumn<T> {
   /** Başlık ve gövde hücresine eklenir (ör. QURR'un yapışkan kolonları). */
   className?: string;
   render: (node: TreeNode<T>, depth: number) => ReactNode;
+  /**
+   * PLN-F1.6.1 (k) — hücre bazlı yayılım: bu hücre o satırda N kolon kaplar,
+   * örttüğü SONRAKİ kolonlar o satırda basılmaz. Kalan kolon sayısıyla sınırlanır.
+   * Ağaç kolonunda verilirse `treeCellColSpan`dan ÖNCE gelir (aynı sözleşme).
+   */
+  colSpan?: (node: TreeNode<T>, depth: number) => number;
 }
 
 export interface TreeTableHeaderGroup {
@@ -89,6 +95,15 @@ export interface TreeTableProps<T> {
   /** Günlük Rapor 237 — başlık satırında ad hücresi `span 9`: ağaç hücresinin colSpan'ı. */
   treeCellColSpan?: (node: TreeNode<T>, depth: number) => number;
   rowClassName?: (node: TreeNode<T>, depth: number) => string | undefined;
+  /**
+   * PLN-F1.6.1 (j) — satırın HEMEN altına bütün kolonları (seçim dahil) kaplayan
+   * ek bir `<tr>` basar (Adam-Saat Bütçesi Ek Formlar M4 "Penceresi çıkmıyor").
+   * `null` → ek satır yok. Ek satır görünür satır listesinden türediği için üst
+   * düğüm kapanınca KENDİLİĞİNDEN gizlenir. Erişilebilirlik: ek satır ayrı bir
+   * ağaç düğümü DEĞİLDİR (aria-level taşımaz); ait olduğu satır ona
+   * `aria-describedby` ile bağlanır — ekran okuyucu satırı okurken açıklamayı da okur.
+   */
+  renderRowAfter?: (node: TreeNode<T>, depth: number) => ReactNode | null;
 }
 
 const EMPTY: ReadonlySet<string> = new Set();
@@ -159,7 +174,9 @@ export function TreeTable<T>({
   headerGroups,
   treeCellColSpan,
   rowClassName,
+  renderRowAfter,
 }: TreeTableProps<T>) {
+  const afterIdPrefix = useId();
   const [expandedState, setExpanded] = useControllable(expandedProp, onExpandedChange, () =>
     initialExpanded(nodes, defaultExpanded),
   );
@@ -208,6 +225,12 @@ export function TreeTable<T>({
     );
   };
 
+  const spanOf = (column: TreeTableColumn<T>, index: number, row: VisibleRow<T>) => {
+    const fallback = index === treeIndex ? treeCellColSpan?.(row.node, row.depth) : undefined;
+    const wanted = column.colSpan?.(row.node, row.depth) ?? fallback ?? 1;
+    return Math.max(1, Math.min(wanted, columns.length - index));
+  };
+
   const renderCells = (row: VisibleRow<T>) => {
     const cells: ReactNode[] = [];
     let skip = 0;
@@ -216,14 +239,14 @@ export function TreeTable<T>({
         skip -= 1;
         return;
       }
+      const span = spanOf(column, index, row);
+      skip = span - 1;
       if (index === treeIndex) {
-        const span = Math.max(1, Math.min(treeCellColSpan?.(row.node, row.depth) ?? 1, columns.length - index));
-        skip = span - 1;
         cells.push(renderTreeCell(row, column, span));
         return;
       }
       cells.push(
-        <td key={column.key} className={cellClass(column)}>
+        <td key={column.key} colSpan={span > 1 ? span : undefined} className={cellClass(column)}>
           {column.render(row.node, row.depth)}
         </td>,
       );
@@ -271,30 +294,43 @@ export function TreeTable<T>({
             </td>
           </tr>
         ) : (
-          rows.map((row) => (
-            <tr
-              key={row.id}
-              aria-level={row.depth + 1}
-              className={cx(
-                "tree-table__row",
-                `tree-table__row--level-${row.depth}`,
-                row.hasChildren ? "tree-table__row--branch" : "tree-table__row--leaf",
-                rowClassName?.(row.node, row.depth),
-              )}
-            >
-              {selectable && (
-                <td className="tree-table__cell tree-table__select-cell">
-                  <SelectionCheckbox
-                    state={selectionState(row.node, selected)}
-                    label={`${getLabel(row.node)} seç`}
-                    disabled={selectionDisabled}
-                    onToggle={() => setSelected(toggleSelection(selected, row.node))}
-                  />
-                </td>
-              )}
-              {renderCells(row)}
-            </tr>
-          ))
+          rows.map((row, rowIndex) => {
+            const after = renderRowAfter?.(row.node, row.depth) ?? null;
+            const afterId = after === null ? undefined : `${afterIdPrefix}-after-${rowIndex}`;
+            return (
+              <Fragment key={row.id}>
+                <tr
+                  aria-level={row.depth + 1}
+                  aria-describedby={afterId}
+                  className={cx(
+                    "tree-table__row",
+                    `tree-table__row--level-${row.depth}`,
+                    row.hasChildren ? "tree-table__row--branch" : "tree-table__row--leaf",
+                    rowClassName?.(row.node, row.depth),
+                  )}
+                >
+                  {selectable && (
+                    <td className="tree-table__cell tree-table__select-cell">
+                      <SelectionCheckbox
+                        state={selectionState(row.node, selected)}
+                        label={`${getLabel(row.node)} seç`}
+                        disabled={selectionDisabled}
+                        onToggle={() => setSelected(toggleSelection(selected, row.node))}
+                      />
+                    </td>
+                  )}
+                  {renderCells(row)}
+                </tr>
+                {after !== null && (
+                  <tr className="tree-table__after-row">
+                    <td id={afterId} colSpan={totalColumns} className="tree-table__after-cell">
+                      {after}
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
+            );
+          })
         )}
       </tbody>
     </table>
