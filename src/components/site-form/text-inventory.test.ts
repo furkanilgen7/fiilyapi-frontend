@@ -1,6 +1,6 @@
 // @vitest-environment node
 //
-// Metin envanteri kapısı (plan TZ-10, spec §15). Ekranda görünen ve §15
+// Metin envanteri kapısı (plan TZ-10, spec §15 — `text-inventory.fixture.md`). Ekranda görünen ve §15
 // listesinde OLMAYAN hiçbir dize yazılamaz. Bu test, şantiye formunun sabit
 // dizelerini spec §15 bölümünün metniyle karşılaştırır.
 //
@@ -29,14 +29,17 @@ import { PROJECT_TYPE_BANNER_LABELS } from "./project-type-label";
 import { SECTION_MESSAGES } from "./sections-validate";
 import { MESSAGES } from "./validate";
 
-const specPath = fileURLToPath(
-  new URL("../../../docs/superpowers/specs/2026-07-30-santiye-formu-design.md", import.meta.url),
-);
-const spec = readFileSync(specPath, "utf8");
-const inventory = spec.slice(spec.indexOf("## 15. Metin envanteri"), spec.indexOf("## 16."));
+// Spec dosyası 2026-09-23'te silindi (commit 9988481). §10 ve §15 BİREBİR
+// `text-inventory.fixture.md`e sabitlendi; bekçi aynı metne karşı çalışır.
+const fixturePath = fileURLToPath(new URL("./text-inventory.fixture.md", import.meta.url));
+const spec = readFileSync(fixturePath, "utf8");
+const inventory = spec.slice(spec.indexOf("## 15. Metin envanteri"));
 
 /** §10 doğrulama mesajları envanterin #82 satırıyla §10 tablolarına devredilir. */
-const validationSection = spec.slice(spec.indexOf("## 10. Doğrulama"), spec.indexOf("## 11."));
+const validationSection = spec.slice(
+  spec.indexOf("## 10. Doğrulama"),
+  spec.indexOf("## 15. Metin envanteri"),
+);
 
 function expectInInventory(text: string) {
   expect(inventory, `"${text}" spec §15 envanterinde YOK`).toContain(text);
