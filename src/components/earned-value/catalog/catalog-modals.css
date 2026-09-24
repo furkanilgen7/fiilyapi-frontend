@@ -1,0 +1,246 @@
+/*
+ * PLN-F1.5 · Katalog modalları — İş Tipi formu (KAT:234-296), Disiplinler listesi
+ * (M6:147-221), Disiplin formu (M6:227-304), silme onayı (M6:316-335).
+ * Renkler YALNIZ token; disiplin renkleri VERİDİR (satır içi style).
+ */
+
+/* ---------------------------------------------------------------- modallar */
+/* KAT:237 520px · M6:147 760px · M6:317 460px */
+.modal.ev-cat-modal--form { max-width: 520px; }
+.modal.ev-cat-modal--list { max-width: 760px; }
+.modal.ev-cat-modal--confirm { max-width: 460px; }
+
+/* KAT:239 — başlık altı gri açıklama (Modal başlık alt satırı taşımıyor) */
+.ev-cat-modal__intro {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: var(--space-4);
+}
+.ev-cat-modal__subtitle {
+  flex: 1;
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-subtle);
+}
+.ev-cat-modal__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-form-section-gap);
+}
+/* KAT:243 — hata bandı */
+.ev-cat-form-alert {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 10px var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--color-error-card-title);
+  background: var(--color-danger-row-bg);
+  border: 1px solid var(--color-danger-tint-border);
+  border-radius: var(--radius-8);
+}
+.ev-cat-form-alert svg {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+}
+/* KAT:251 — disiplin + birim */
+.ev-cat-form__row {
+  display: grid;
+  grid-template-columns: 1fr 120px;
+  gap: 14px;
+}
+/* KAT:265 — oran kutusu + varsayılan yapan */
+.ev-cat-form__pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+/* M6:250 — kod 120px + ad */
+.ev-cat-form__code-row {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 14px;
+}
+/* KAT:254-256 / M6:272-278 — çip seçimi */
+.ev-cat-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+.ev-cat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  background: var(--color-surface);
+  border: var(--border-width-form) solid var(--color-border);
+  border-radius: var(--radius-8);
+  cursor: pointer;
+}
+.ev-cat-chip[aria-pressed="true"] {
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
+  background: var(--color-nav-active-bg);
+  border-color: var(--color-primary);
+}
+.ev-cat-chip:disabled { cursor: default; }
+.ev-cat-chip--hex { font-family: var(--font-mono); }
+/* KAT:266 — oran kutusu */
+.ev-cat-rate {
+  padding: var(--space-3);
+  background: var(--color-surface-2);
+  border: var(--border-width-form) solid var(--color-border);
+  border-radius: var(--radius-10);
+}
+.ev-cat-rate--error {
+  background: var(--color-danger-row-bg);
+  border-color: var(--color-danger-tint-border);
+}
+.ev-cat-rate__input {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ev-cat-rate__suffix {
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  color: var(--color-text-muted);
+}
+.ev-cat-code .input { font-family: var(--font-mono); font-size: var(--text-sm); }
+/* M6:287 — segment 240px */
+.ev-cat-form__own-narrow { width: 240px; max-width: 100%; }
+
+/* M6:167-208 — disiplin listesi */
+.ev-cat-dlist {
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-8);
+}
+.ev-cat-dlist table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: var(--text-body);
+}
+.ev-cat-dlist col.ev-cat-dlist__col-code { width: 96px; }
+.ev-cat-dlist col.ev-cat-dlist__col-own { width: 104px; }
+.ev-cat-dlist col.ev-cat-dlist__col-used { width: 170px; }
+.ev-cat-dlist col.ev-cat-dlist__col-act { width: 150px; }
+.ev-cat-dlist th {
+  padding: 9px var(--space-2);
+  font-size: var(--text-table-head);
+  font-weight: var(--weight-semibold);
+  line-height: 1.3;
+  letter-spacing: 0.4px;
+  text-align: left;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-border);
+}
+.ev-cat-dlist th:first-child,
+.ev-cat-dlist td:first-child { padding-left: var(--space-3); }
+.ev-cat-dlist th:last-child,
+.ev-cat-dlist td:last-child { padding-right: var(--space-3); text-align: right; }
+.ev-cat-dlist th.ev-cat-num { text-align: right; }
+.ev-cat-dlist td {
+  padding: 9px var(--space-2);
+  vertical-align: middle;
+  border-bottom: 1px solid var(--color-divider);
+}
+.ev-cat-dlist__code {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-mono);
+  font-weight: var(--weight-semibold);
+}
+.ev-cat-dlist__name { font-weight: var(--weight-semibold); }
+.ev-cat-dlist__used {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+}
+.ev-cat-dlist__used-main {
+  font-family: var(--font-mono);
+  font-weight: var(--weight-semibold);
+}
+.ev-cat-dlist__used-main--zero { color: var(--color-text-subtle); }
+.ev-cat-dlist__acts {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+.ev-cat-dlist__btns {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.ev-cat-link {
+  padding: 0;
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.ev-cat-link--edit { font-weight: var(--weight-medium); color: var(--color-primary); }
+.ev-cat-link--delete { color: var(--color-danger); }
+.ev-cat-link--delete:disabled { color: var(--color-border-strong); cursor: default; }
+/* M6:204 — pasif Sil'in gerekçesi ekranda */
+.ev-cat-dlist__reason {
+  font-size: 10.5px;
+  color: var(--color-text-subtle);
+}
+/* M6:213 */
+.ev-cat-dlist__foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin-top: 10px;
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+}
+
+/* M6:319-328 — silme onayı */
+.ev-cat-confirm__text {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-body);
+  line-height: var(--leading-normal);
+  color: var(--color-text-secondary);
+}
+.ev-cat-confirm__grid {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px var(--space-3);
+  margin: 0;
+  padding: 10px var(--space-3);
+  font-size: var(--text-body);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-6);
+}
+.ev-cat-confirm__grid dt { color: var(--color-text-muted); }
+.ev-cat-confirm__grid dd {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-weight: var(--weight-semibold);
+}
+.ev-cat-confirm__error {
+  margin: var(--space-3) 0 0;
+  font-size: var(--text-xs);
+  color: var(--color-error-card-title);
+}
+
+/* M6:164 — liste modalındaki başarı bandı: modal gövdesinin kendi boşluğu yeter */
+.ev-cat-toast--inline {
+  margin: 0;
+}
