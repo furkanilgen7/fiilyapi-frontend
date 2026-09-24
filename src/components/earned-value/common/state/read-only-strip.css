@@ -1,0 +1,61 @@
+/* Salt okunur şeridi — projedesign/ kaynakları:
+     compact: Planlama - Panel.dc.html:440 (= Katalog:393, Bütçe:483)
+     banner : Planlama - Adam-Saat Bütçesi.dc.html:147-150
+   Ortak: 1px #e2e8f0 kenar, #f8fafc zemin, flex + ortalı. */
+
+.ev-readonly-strip {
+  display: flex;
+  align-items: center;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+}
+.ev-readonly-strip__icon {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+.ev-readonly-strip__icon svg {
+  width: 100%;
+  height: 100%;
+}
+.ev-readonly-strip__text strong {
+  font-weight: var(--weight-bold);
+}
+
+/* compact — P:440: 8px 10px, 6px köşe, 8px aralık, 12px #475569, ikon 13px #64748b */
+.ev-readonly-strip--compact {
+  gap: var(--space-2);
+  padding: var(--space-2) 10px;
+  border-radius: var(--radius-6);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}
+.ev-readonly-strip--compact .ev-readonly-strip__icon {
+  width: 13px;
+  height: 13px;
+  color: var(--color-text-muted);
+}
+
+/* banner — B:147: 10px 14px, 8px köşe, 10px aralık, 13px #334155, ikon 14px #475569 */
+.ev-readonly-strip--banner {
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: var(--radius-8);
+  font-size: var(--text-body);
+  color: var(--color-slate-700);
+}
+.ev-readonly-strip--banner .ev-readonly-strip__icon {
+  width: 14px;
+  height: 14px;
+  color: var(--color-text-secondary);
+}
+
+/* Eylem — B:150: margin-left auto, 6px 12px, 1px #cbd5e1, #fff, 6px köşe, 12/600, #1e293b.
+   ui/button secondary zaten #fff + #cbd5e1 kenar + --color-text taşır; ölçüler burada. */
+.btn.ev-readonly-strip__action {
+  margin-left: auto;
+  flex-shrink: 0;
+  padding: 6px var(--space-3);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  border-radius: var(--radius-6);
+}

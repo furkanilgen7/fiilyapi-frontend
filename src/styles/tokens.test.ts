@@ -86,7 +86,11 @@ const tokensCss = readFileSync(
 // kalan-6 no 18: 89 → 91 — `--color-ai-info-tint` (#f8faff) ve
 // `--color-ai-warning-tint` (#fffbf5); ai-panel.css'teki çıplak hex'ler
 // mevcut token'larla karşılanmadı, iki YENİ ton açıldı (DEĞER değişmedi).
-const EXPECTED_HEX_COUNT = 91;
+// PLN-F1.2 (Planlama ortak kit): 91 → 92 — hata kartı başlık/eylem metni
+// #b91c1c (Planlama - Panel.dc.html:427, :429) mevcut kırmızılarla karşılanmadı
+// (--color-danger-strong #dc2626 açık, --color-danger-deep #991b1b koyu).
+// Diğer kit token'ları mevcut tonlara TAKMA AD, yeni hex taşımaz.
+const EXPECTED_HEX_COUNT = 92;
 
 describe("tokens.css", () => {
   it("çekirdek renk token'larını tanımlar (açık tema Slate + Blue)", () => {
@@ -206,6 +210,25 @@ describe("tokens.css", () => {
     // Mevcut token'ı değiştirmek başka ekranları kaydırırdı → yeni token açıldı.
     expect(tokensCss).toMatch(/--tracking-wide:\s*0\.8px\s*;/);
     expect(tokensCss).toMatch(/--tracking-section-head:\s*0\.7px\s*;/);
+  });
+
+  it("Planlama ortak kit (PLN-F1.2) token'ları tanımlı ve mockup değerlerini taşır", () => {
+    // Kaynak: Planlama - Panel.dc.html (P) · Adam-Saat Bütçesi.dc.html (AS).
+    const planningTokens: ReadonlyArray<readonly [string, string]> = [
+      ["--color-error-card-title", "#b91c1c"], // hata kartı başlığı + eylem (P 427, 429)
+      ["--color-error-card-bg", "var(--color-danger-row-bg)"], // #fef2f2 (P 426)
+      ["--color-error-card-border", "var(--color-danger-tint-border)"], // #fecaca (P 426)
+      ["--shadow-segmented-selected", "0 1px 2px rgba(0, 0, 0, 0.08)"], // seçili segment (P 599)
+      ["--color-chart-tooltip-bg", "var(--color-text)"], // #1e293b (P 215)
+      ["--color-chart-tooltip-title", "var(--color-border-strong)"], // #cbd5e1 (P 216)
+      ["--color-chart-tooltip-label", "var(--color-text-subtle)"], // #94a3b8 (P 217)
+      ["--color-chart-tooltip-value", "var(--color-on-brand)"], // #fff (P 217)
+      ["--color-chart-tooltip-negative", "var(--color-danger-border-soft)"], // #fca5a5 (P 220, AS 380)
+      ["--color-chart-tooltip-positive", "var(--color-success-border-soft)"], // #86efac (P 315)
+    ];
+    for (const [token, value] of planningTokens) {
+      expect(tokensCss).toMatch(new RegExp(`${token}:\\s*${value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*;`));
+    }
   });
 
   it("şantiye formu için yeni renk token'ı eklenmedi", () => {

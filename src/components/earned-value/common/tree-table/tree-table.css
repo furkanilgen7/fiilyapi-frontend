@@ -1,0 +1,308 @@
+/*
+ * PLN-F1.2 · Ağaç tablo. Her ölçü mockup satır numarasıyla gerekçelidir;
+ * renkler YALNIZ token'dır. Kısaltmalar:
+ *   P  = Planlama - Panel.dc.html
+ *   AS = Planlama - Adam-Saat Bütçesi.dc.html
+ *   GR = Planlama - Günlük İlerleme Raporu.dc.html
+ *   Q  = Planlama - Haftalık QURR.dc.html
+ *
+ * Girinti seviye başına `--tree-indent` ile verilir (ağaç hücresinin sol
+ * dolgusu); dört mockup dört FARKLI girinti ölçeği çizer, ortak ölçek yoktur.
+ */
+
+.tree-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-sans);
+  font-size: var(--text-body); /* P 367 · 13px */
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+
+/* ---- Başlık -------------------------------------------------------------- */
+
+.tree-table__head-row {
+  background: var(--color-surface-2); /* P 357 · AS 208 · GR 234 */
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tree-table__head {
+  padding: 9px 10px; /* P 358-367 */
+  font-size: var(--text-table-head);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px; /* P 357 · AS 208 */
+  text-align: left;
+  white-space: nowrap;
+}
+
+.tree-table__cell--right {
+  text-align: right;
+}
+
+.tree-table__cell--mono {
+  font-family: var(--font-mono);
+}
+
+/* ---- Gövde --------------------------------------------------------------- */
+
+.tree-table__row {
+  --tree-indent: 16px; /* P 512 varsayılan `ind: 16` */
+  border-bottom: 1px solid var(--color-divider); /* P 368 · AS 222 */
+  background: var(--color-surface);
+}
+
+.tree-table__cell {
+  padding: 8px 10px; /* P 380-386 */
+  vertical-align: middle;
+}
+
+/* th tarayıcı varsayılanı (kalın + orta) mockup'ta YOK */
+.tree-table__tree-cell {
+  font-weight: inherit;
+  text-align: left;
+  padding-left: var(--tree-indent);
+}
+
+.tree-table__tree-inner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2); /* P 370 · 8px */
+  min-width: 0;
+}
+
+.tree-table__label {
+  min-width: 0;
+}
+
+/* P 372 · AS 227 — 18×18, #f1f5f9 zemin, 4px köşe, #475569 */
+.tree-table__toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-muted);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.tree-table__toggle:hover {
+  background: var(--color-border);
+}
+
+.tree-table__toggle:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* Mockup ▾/▸ glifi — glif yerine SVG (symbol-subset-guard), kapalıyken -90° */
+.tree-table__chevron {
+  transition: transform 0.15s;
+}
+
+.tree-table__chevron--collapsed {
+  transform: rotate(-90deg);
+}
+
+.tree-table__select-cell {
+  width: 36px; /* AS 208 `36px` kolon */
+  padding: 0 0 0 14px; /* AS 209, 223 */
+}
+
+.tree-table__select-cell .checkbox {
+  display: block;
+}
+
+/* P 389 · AS 262 boş durum */
+.tree-table__empty {
+  padding: 28px 16px;
+  text-align: center;
+  font-size: var(--text-body);
+  color: var(--color-text-muted);
+}
+
+/* ---- panel · P 512-539 --------------------------------------------------- */
+
+.tree-table--panel .tree-table__head:first-child {
+  padding-left: 16px; /* P 358 */
+}
+
+.tree-table--panel .tree-table__tree-cell {
+  padding-right: 16px; /* P 370 `padding:8px 16px 8px {ind}px` */
+}
+
+.tree-table--panel .tree-table__row--level-0 {
+  font-weight: var(--weight-semibold); /* P 536 fw 600 */
+  border-top: 1px solid var(--color-border); /* P 536 bt */
+}
+
+.tree-table--panel .tree-table__row--level-1 {
+  --tree-indent: 52px; /* P 539 `ind: 52` */
+}
+
+.tree-table--panel .tree-table__row--level-1 .tree-table__label {
+  color: var(--color-text-secondary); /* P 539 nameFg #475569 */
+}
+
+/* ---- budget · AS 205-271, 606-633 ---------------------------------------- */
+
+.tree-table--budget .tree-table__head-row {
+  border-top: 1px solid var(--color-border); /* AS 208 */
+}
+
+.tree-table--budget .tree-table__head {
+  padding: 9px 8px; /* AS 210-218 */
+}
+
+.tree-table--budget .tree-table__head.tree-table__cell--right {
+  padding: 9px 10px; /* AS 212-213, 217 */
+}
+
+.tree-table--budget .tree-table__cell {
+  padding-top: 6px; /* AS 225 */
+  padding-bottom: 6px;
+}
+
+.tree-table--budget .tree-table__tree-inner {
+  gap: 6px; /* AS 225 */
+}
+
+.tree-table--budget .tree-table__row--level-0 {
+  --tree-indent: 8px; /* AS 612 `ind: 8` */
+  font-weight: var(--weight-bold);
+  background: var(--color-surface-2);
+  border-top: 1.5px solid var(--color-border);
+}
+
+.tree-table--budget .tree-table__row--level-1 {
+  --tree-indent: 26px; /* AS 618 `ind: 26` */
+  font-weight: var(--weight-semibold);
+}
+
+.tree-table--budget .tree-table__row--level-2 {
+  --tree-indent: 44px; /* AS 622 `ind: 44` */
+  font-weight: var(--weight-semibold);
+}
+
+.tree-table--budget .tree-table__row--level-3 {
+  --tree-indent: 72px; /* AS 630 `ind: 72` */
+}
+
+.tree-table--budget .tree-table__row--level-3 .tree-table__label {
+  color: var(--color-text-secondary); /* AS 630 nameFg #475569 */
+}
+
+/* ---- progress · GR 231-271, 482-490 -------------------------------------- */
+
+.tree-table--progress .tree-table__head {
+  padding: 8px; /* GR 235-236 */
+  letter-spacing: 0.3px; /* GR 234 */
+  line-height: 1.25;
+}
+
+.tree-table--progress .tree-table__head:first-child {
+  padding-left: 12px; /* GR 235 */
+}
+
+.tree-table--progress .tree-table__row--branch {
+  font-size: 12.5px; /* GR 239 */
+  border-bottom-color: var(--color-border); /* GR 239 */
+}
+
+.tree-table--progress .tree-table__row--branch .tree-table__cell {
+  padding: 6px 8px; /* GR 240-243 */
+}
+
+.tree-table--progress .tree-table__row--level-0 {
+  --tree-indent: 12px; /* GR 485 `ind: 12` */
+  background: var(--color-surface-muted); /* GR 485 L1 #f1f5f9 */
+  border-top: 1px solid var(--color-border-strong);
+  font-weight: var(--weight-bold);
+}
+
+.tree-table--progress .tree-table__row--level-1 {
+  --tree-indent: 26px; /* GR 488 `ind: 26` */
+  background: var(--color-surface-2); /* GR 488 L2 #f8fafc */
+  font-weight: var(--weight-semibold);
+}
+
+.tree-table--progress .tree-table__row--leaf {
+  --tree-indent: 40px; /* GR 248 `padding-left: 40px` */
+}
+
+.tree-table--progress .tree-table__row--leaf .tree-table__cell {
+  padding: 7px 8px; /* GR 248-259 */
+}
+
+.tree-table--progress .tree-table__cell.tree-table__tree-cell {
+  padding-left: var(--tree-indent);
+}
+
+/* ---- qurr · Q 152-202, 330-338 ------------------------------------------- */
+
+/* Q 161-165 — gruplar koyu/orta slate sırayla, beyaz yazı */
+.tree-table__group-head {
+  padding: 7px 10px;
+  font-size: var(--text-table-head);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--color-on-brand);
+  background: var(--color-slate-700);
+}
+
+.tree-table__group-head:nth-child(even) {
+  background: var(--color-text-secondary); /* Q 162 #475569 */
+}
+
+.tree-table__group-head + .tree-table__group-head {
+  border-left: 1px solid var(--color-text-muted); /* Q 162 #64748b */
+}
+
+.tree-table--qurr .tree-table__head-row {
+  border-bottom-color: var(--color-border-strong); /* Q 167 */
+}
+
+.tree-table--qurr .tree-table__head {
+  padding: 7px 10px; /* Q 168-169 */
+  font-size: 10.5px; /* Q 167 */
+}
+
+.tree-table--qurr .tree-table__row {
+  font-size: 12.5px; /* Q 184 */
+}
+
+.tree-table--qurr .tree-table__cell {
+  padding: 6px 8px; /* Q 188 */
+}
+
+.tree-table--qurr .tree-table__cell.tree-table__tree-cell {
+  padding-left: var(--tree-indent);
+}
+
+.tree-table--qurr .tree-table__row--level-0 {
+  --tree-indent: 10px; /* Q 331 HD `ind: 10` */
+  background: var(--color-border); /* Q 331 #e2e8f0 */
+  color: var(--color-text-strong);
+  font-weight: var(--weight-bold);
+  border-top: 1px solid var(--color-text-subtle); /* Q 331 #94a3b8 */
+  border-bottom-color: var(--color-border-strong);
+}
+
+.tree-table--qurr .tree-table__row--level-1 {
+  --tree-indent: 18px; /* Q 332 SB `ind: 18` */
+  background: var(--color-surface-muted);
+  font-weight: var(--weight-semibold);
+  border-bottom-color: var(--color-border);
+}
+
+.tree-table--qurr .tree-table__row--level-2 {
+  --tree-indent: 30px; /* Q 333 IT `ind: 30` */
+}

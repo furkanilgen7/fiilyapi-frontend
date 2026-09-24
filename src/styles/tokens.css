@@ -583,6 +583,20 @@
   --space-treasury-row-gap: 10px; /* satırlar arası boşluk (111) */
   --space-treasury-row-y: 10px; /* satır dikey iç boşluğu (112) */
   --space-treasury-row-x: 12px; /* satır yatay iç boşluğu (112) */
+
+  /* PLN-F1.2 · Planlama (EV) ortak kit — Planlama - Panel.dc.html (P),
+     Adam-Saat Bütçesi.dc.html (AS). Tek yeni ton hata başlığıdır; gerisi
+     mevcut tonlara ANLAMLI takma addır (tüketici CSS ödeme/çip adlarını görmez). */
+  --color-error-card-title: #b91c1c; /* hata kartı başlığı + eylem metni (P 427, 429) */
+  --color-error-card-bg: var(--color-danger-row-bg); /* P 426 */
+  --color-error-card-border: var(--color-danger-tint-border); /* P 426 */
+  --shadow-segmented-selected: 0 1px 2px rgba(0, 0, 0, 0.08); /* seçili segment (P 599) */
+  --color-chart-tooltip-bg: var(--color-text); /* P 215 */
+  --color-chart-tooltip-title: var(--color-border-strong); /* P 216 */
+  --color-chart-tooltip-label: var(--color-text-subtle); /* P 217 */
+  --color-chart-tooltip-value: var(--color-on-brand); /* P 217 */
+  --color-chart-tooltip-negative: var(--color-danger-border-soft); /* P 220, AS 380 */
+  --color-chart-tooltip-positive: var(--color-success-border-soft); /* P 315 */
 }
 
 @keyframes fadeUp {

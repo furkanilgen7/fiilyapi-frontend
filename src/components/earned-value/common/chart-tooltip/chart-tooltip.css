@@ -1,0 +1,65 @@
+/*
+ * PLN-F1.2 · Grafik ipucu. Kaynak: Planlama - Panel.dc.html:215-221 (P),
+ * Adam-Saat Bütçesi.dc.html:351-356 (AS). Renkler yalnız token.
+ *
+ * Dikey ölçü: mockup satır adımı 16px (P 217/218/219 → y 18/36/52... ;
+ * P 282-285 → y 16/32/48), kutu 2 satırda 62, 3 satırda 78 yüksek.
+ * 16px satır yüksekliği + 7px üst/alt dolgu bu iki yüksekliği birebir verir:
+ * 7 + 3×16 + 7 = 62 · 7 + 4×16 + 7 = 78.
+ */
+
+.chart-tooltip {
+  --chart-tooltip-bg: var(--color-chart-tooltip-bg);
+  --chart-tooltip-title: var(--color-chart-tooltip-title);
+  --chart-tooltip-label: var(--color-chart-tooltip-label);
+  --chart-tooltip-value: var(--color-chart-tooltip-value);
+
+  position: absolute;
+  z-index: 10;
+  padding: 7px 10px; /* P 217 `x=10` · yukarıdaki yükseklik hesabı */
+  border-radius: var(--radius-6); /* rx 6 */
+  background: var(--chart-tooltip-bg);
+  font-family: var(--font-sans);
+  font-size: var(--text-small); /* 11px */
+  line-height: 16px; /* mockup satır adımı */
+  white-space: nowrap;
+  pointer-events: none; /* fare olayları grafiğe geçer */
+}
+
+.chart-tooltip__title {
+  font-weight: var(--weight-semibold);
+  color: var(--chart-tooltip-title);
+}
+
+.chart-tooltip__rows {
+  margin: 0;
+}
+
+.chart-tooltip__row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4); /* etiket ↔ sağa hizalı değer */
+}
+
+.chart-tooltip__label {
+  color: var(--chart-tooltip-label);
+}
+
+.chart-tooltip__value {
+  margin: 0;
+  font-family: var(--font-mono);
+  text-align: right;
+  color: var(--chart-tooltip-value);
+}
+
+.chart-tooltip__value--negative {
+  color: var(--color-chart-tooltip-negative); /* P 220 · AS 380 */
+}
+
+.chart-tooltip__value--positive {
+  color: var(--color-chart-tooltip-positive); /* P 315 */
+}
+
+.chart-tooltip__value--strong {
+  font-weight: var(--weight-semibold); /* P 220 */
+}
