@@ -90,7 +90,13 @@ const tokensCss = readFileSync(
 // #b91c1c (Planlama - Panel.dc.html:427, :429) mevcut kırmızılarla karşılanmadı
 // (--color-danger-strong #dc2626 açık, --color-danger-deep #991b1b koyu).
 // Diğer kit token'ları mevcut tonlara TAKMA AD, yeni hex taşımaz.
-const EXPECTED_HEX_COUNT = 92;
+// PLN-F1 (Planlama ekranları AYP · KAT · BÜT): 92 → 97 — BEŞ ton mevcut
+// palette yoktu, ekranlar en yakın tona bağlanmıştı: nötr çip (surface-muted
+// ondan koyu-soğuk), PF sarı bölge / fark alt çizgisi (warning-border-soft
+// ondan koyu), düzenleyici zemini (ai-info-tint ondan mor), açık satır
+// (surface-2 ondan gri), boş oran satırı (danger-row-bg ondan pembe).
+// Üç gölge (sticky-bar · menu · popover) hex taşımaz, sayacı oynatmaz.
+const EXPECTED_HEX_COUNT = 97;
 
 describe("tokens.css", () => {
   it("çekirdek renk token'larını tanımlar (açık tema Slate + Blue)", () => {
@@ -227,6 +233,24 @@ describe("tokens.css", () => {
       ["--color-chart-tooltip-positive", "var(--color-success-border-soft)"], // #86efac (P 315)
     ];
     for (const [token, value] of planningTokens) {
+      expect(tokensCss).toMatch(new RegExp(`${token}:\\s*${value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*;`));
+    }
+  });
+
+  it("Planlama ekranları (PLN-F1 · AYP · KAT · BÜT) token'ları tanımlı ve mockup değerlerini taşır", () => {
+    // Kaynak: Ayarlar - Planlama.dc.html (AYP) · Ayarlar - Planlama (Ek).dc.html (Ek) ·
+    // Planlama - Birim Oran Kataloğu.dc.html (KAT) · Planlama - Adam-Saat Bütçesi.dc.html (BÜT).
+    const screenTokens: ReadonlyArray<readonly [string, string]> = [
+      ["--color-ev-chip-neutral", "#eef2f7"], // nötr çip (Ek 164 · KAT 451 · BÜT 92)
+      ["--color-ev-amber-soft", "#fde68a"], // PF sarı bölge (Ek 193) · fark başlığı alt çizgisi (BÜT 156)
+      ["--color-ev-editor-bg", "#f8fbff"], // paçal metrik düzenleyici (AYP 190)
+      ["--color-ev-row-open-bg", "#fbfdff"], // katalog açık satır (KAT 495)
+      ["--color-ev-row-empty-rate-bg", "#fff8f8"], // oranı boş satır (BÜT 632)
+      ["--shadow-sticky-bar", "0 -4px 16px rgba(15, 23, 42, 0.06)"], // yapışkan Kaydet (Ek 402)
+      ["--shadow-menu", "0 8px 24px rgba(15, 23, 42, 0.12)"], // açılır menü (KAT 112 · BÜT 109)
+      ["--shadow-popover", "0 10px 28px rgba(15, 23, 42, 0.16)"], // popover (KAT 154 · BÜT 245)
+    ];
+    for (const [token, value] of screenTokens) {
       expect(tokensCss).toMatch(new RegExp(`${token}:\\s*${value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*;`));
     }
   });
