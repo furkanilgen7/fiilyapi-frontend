@@ -36,6 +36,12 @@ const URUN_TARIH_ENVANTERI: Record<string, number> = {
   "components/ai/AiPanel.tsx": 5,
   "components/contracts/EmployerContractDetailView.tsx": 1,
   "components/documents/ArchiveDocumentsView.tsx": 1,
+  // PLN-F1.4 — Takvim kartı "şu an 21.09–27.09" hafta ipucu (Ek:117). Görsel spec
+  // (PLN-F1 sonraki alt görev) `page.clock.setFixedTime` ile sabitlemeli.
+  "components/earned-value/settings/PlanningSettingsForm.tsx": 1,
+  // PLN-F1.6 — Bütçe Adım 2 Gantt + Adım 3 S-eğrisi "bugün" çizgisi (BÜT:292, 349)
+  // `localTodayIso()`. Görsel spec `page.clock.setFixedTime` ile sabitlemeli.
+  "components/earned-value/budget/budget-format.ts": 1,
   "components/documents/SiteDocumentsView.tsx": 1,
   "components/equipment-rental/EquipmentRentalInvoiceDetailView.tsx": 1,
   "components/equipment-rental/EquipmentRentalInvoicesView.tsx": 1,

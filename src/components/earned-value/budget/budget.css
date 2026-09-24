@@ -1,0 +1,547 @@
+/*
+ * PLN-F1.6 · Adam-Saat Bütçesi — kabuk, başlık, adımlar, Adım 1 ağaç tablosu.
+ * Kısaltmalar: AS = Planlama - Adam-Saat Bütçesi.dc.html · EK = … (Ek Formlar).dc.html
+ * Renkler YALNIZ token; disiplin renkleri VERİDİR (satır içi `style`).
+ * Ekrana özgü tonlar PLN-F1 token'larıdır (tokens.css):
+ *   --color-ev-chip-neutral (AS 92 "Aktif:" çipi)
+ *   --color-ev-amber-soft (AS 156 fark başlığı alt çizgisi)
+ *   --color-ev-row-empty-rate-bg (AS 632 boş oran satırı · budget-rates.css)
+ *   --shadow-menu (AS 109 açılır liste) · --shadow-popover (AS 245 · budget-rates.css)
+ */
+
+.ev-budget {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4); /* AS 79 gap:16 */
+  font-size: var(--text-body);
+  color: var(--color-text);
+}
+
+.ev-budget-mono {
+  font-family: var(--font-mono);
+}
+.ev-budget-strong {
+  font-weight: var(--weight-semibold);
+}
+.ev-budget-subtle {
+  color: var(--color-text-subtle);
+}
+/* K22: artış kırmızı, azalış yeşil */
+.ev-budget-tone--increase,
+.ev-budget-tone--missing {
+  color: var(--color-danger);
+}
+.ev-budget-tone--decrease {
+  color: var(--color-success);
+}
+.ev-budget-tone--neutral {
+  color: var(--color-text-secondary);
+}
+.ev-budget-tone--ok {
+  color: var(--color-success-deep);
+}
+
+/* ---- Başlık · AS 81-123 --------------------------------------------------- */
+
+.ev-budget-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+.ev-budget-head__main {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1 1 380px;
+}
+.ev-budget-head__title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.ev-budget-head__title {
+  margin: 0;
+  font-size: var(--text-page-title);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.5px;
+}
+.ev-budget-badge {
+  font-size: var(--text-small);
+  font-weight: var(--weight-semibold);
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+}
+.ev-budget-badge--warning {
+  background: var(--color-warning-soft);
+  color: var(--color-warning-body-text);
+  border-color: var(--color-warning-border-soft);
+}
+.ev-budget-badge--success {
+  background: var(--color-success-soft);
+  color: var(--color-success-deep);
+  border-color: var(--color-success-tint-border);
+}
+.ev-budget-badge--neutral {
+  background: var(--color-surface-muted);
+  color: var(--color-text-secondary);
+  border-color: var(--color-border);
+}
+/* AS 92 — "Aktif:" çipi */
+.ev-budget-head__active {
+  font-size: var(--text-small);
+  font-weight: var(--weight-semibold);
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--color-ev-chip-neutral);
+  color: var(--color-text-secondary);
+}
+.ev-budget-head__sources {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+}
+.ev-budget-head__source {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+}
+.ev-budget-head__source-link {
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
+  text-decoration: none;
+}
+.ev-budget-head__side {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.ev-budget-site-picker {
+  max-width: 320px;
+}
+.ev-budget-site-picker__empty {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+/* Revizyon açılır · AS 102-118 */
+.ev-budget-rev {
+  position: relative;
+}
+.ev-budget-rev__button {
+  height: 34px;
+  padding: 0 10px 0 12px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-6);
+  background: var(--color-surface);
+  cursor: pointer;
+}
+.ev-budget-rev__button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.ev-budget-rev__caption {
+  font-size: var(--text-small);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+.ev-budget-rev__value {
+  font-weight: var(--weight-semibold);
+}
+.ev-budget-rev__chevron {
+  color: var(--color-text-subtle);
+}
+.ev-budget-rev__menu {
+  position: absolute;
+  top: 38px;
+  right: 0;
+  z-index: 30;
+  width: 260px;
+}
+
+/* Açılır liste · AS 109-114 · EK 57-58 */
+.ev-budget-dd {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-menu); /* AS 109 · EK 57 */
+  padding: var(--space-1);
+  z-index: 40;
+}
+.ev-budget-dd__option {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-2) 10px;
+  border: none;
+  border-radius: var(--radius-6);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.ev-budget-dd__option:hover,
+.ev-budget-dd__option--selected {
+  background: var(--color-nav-active-bg);
+}
+.ev-budget-dd__option--selected .ev-budget-dd__label,
+.ev-budget-dd__label--action {
+  color: var(--color-primary);
+}
+.ev-budget-dd__label {
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.ev-budget-dd__sub {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+.ev-budget-dd__divider {
+  height: 1px;
+  margin: var(--space-1) 0;
+  background: var(--color-divider);
+}
+.ev-budget-dd__empty {
+  margin: 0;
+  padding: var(--space-2) 10px;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+/* ---- Adımlar · AS 134-144, 646-649 -------------------------------------- */
+
+.ev-budget-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-1);
+  padding: 6px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+.ev-budget-steps__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px var(--space-3);
+  border: none;
+  border-radius: var(--radius-6);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.ev-budget-steps__item--current {
+  background: var(--color-nav-active-bg);
+}
+.ev-budget-steps__item:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.ev-budget-steps__circle {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  border: 1.5px solid var(--color-border-strong);
+}
+.ev-budget-steps__item--current .ev-budget-steps__circle {
+  background: var(--color-primary);
+  color: var(--color-on-brand);
+  border-color: var(--color-primary);
+}
+.ev-budget-steps__item--done .ev-budget-steps__circle {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+  border-color: var(--color-success-tint-border);
+}
+.ev-budget-steps__text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.ev-budget-steps__label {
+  font-weight: var(--weight-semibold);
+}
+.ev-budget-steps__item--current .ev-budget-steps__label {
+  color: var(--color-primary);
+}
+.ev-budget-steps__sub {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+.ev-budget-steps__sub--danger {
+  color: var(--color-danger-strong);
+}
+
+/* Revizyon yok · EK M5 (d) */
+.ev-budget-info {
+  padding: 10px var(--space-3);
+  border: 1px solid var(--color-primary-ring);
+  background: var(--color-nav-active-bg);
+  border-radius: var(--radius-md);
+  line-height: 1.5;
+}
+.ev-budget-info__muted {
+  color: var(--color-text-muted);
+}
+.ev-budget-info__muted strong {
+  color: var(--color-text);
+}
+
+/* ---- Fark paneli · AS 154-175 ------------------------------------------- */
+
+.ev-budget-diff {
+  background: var(--color-surface);
+  border: 1px solid var(--color-warning-border-soft);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.ev-budget-diff__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-warning-tint);
+  border-bottom: 1px solid var(--color-ev-amber-soft); /* AS 156 */
+}
+.ev-budget-diff__title {
+  font-size: 14px;
+  font-weight: var(--weight-semibold);
+}
+.ev-budget-diff__count {
+  font-size: var(--text-xs);
+  color: var(--color-warning-deep-text);
+}
+.ev-budget-diff__total {
+  margin-left: auto;
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}
+.ev-budget-diff__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.ev-budget-diff__table thead th {
+  padding: var(--space-2) 10px;
+  font-size: var(--text-table-head);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  text-align: right;
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-border);
+}
+.ev-budget-diff__table thead th:first-child {
+  text-align: left;
+  padding-left: var(--space-4);
+}
+.ev-budget-diff__table tbody th,
+.ev-budget-diff__table td {
+  padding: var(--space-2) 10px;
+  border-bottom: 1px solid var(--color-divider);
+  text-align: right;
+  font-family: var(--font-mono);
+  font-weight: var(--weight-regular);
+}
+.ev-budget-diff__table tbody th {
+  display: flex;
+  flex-direction: column;
+  padding-left: var(--space-4);
+  text-align: left;
+  font-family: var(--font-sans);
+}
+.ev-budget-diff__name {
+  font-weight: var(--weight-medium);
+}
+.ev-budget-diff__note {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+.ev-budget-diff__old {
+  color: var(--color-text-subtle);
+}
+.ev-budget-diff__changed {
+  font-weight: var(--weight-bold);
+}
+.ev-budget-diff__delta {
+  font-weight: var(--weight-semibold);
+  padding-right: var(--space-4) !important;
+}
+
+/* ---- Kart + Adım 1 araç çubuğu · AS 178-204 ------------------------------ */
+
+.ev-budget-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+.ev-budget-card__title {
+  margin: 0 6px 0 0;
+  font-size: 15px;
+  font-weight: var(--weight-semibold);
+}
+.ev-budget-card__title--bar {
+  padding: 14px var(--space-4);
+  border-bottom: 1px solid var(--color-divider);
+}
+.ev-budget-card__nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+.ev-budget-card__next {
+  margin-left: auto;
+}
+.ev-budget-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-divider);
+}
+.ev-budget-toolbar__sub {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+.ev-budget-toolbar__link {
+  margin-left: auto;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
+  text-decoration: none;
+}
+.ev-budget-bulk-btn {
+  height: 32px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-6);
+  background: var(--color-surface-2);
+  color: var(--color-text-subtle);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+}
+.ev-budget-bulk-btn--active {
+  border-color: var(--color-primary-border-soft);
+  background: var(--color-nav-active-bg);
+  color: var(--color-primary);
+}
+.ev-budget-bulk-btn:disabled {
+  cursor: not-allowed;
+}
+.ev-budget-search {
+  margin-left: auto;
+  min-width: 220px;
+}
+.ev-budget-empty-btn {
+  height: 32px;
+  padding: 0 var(--space-3);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-6);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+}
+.ev-budget-empty-btn--on {
+  border-color: var(--color-danger-tint-border);
+  background: var(--color-danger-row-bg);
+  color: var(--color-danger-strong);
+}
+.ev-budget-empty-btn__box {
+  width: 12px;
+  height: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid currentColor;
+  border-radius: 3px;
+}
+.ev-budget-bulk {
+  margin: 10px var(--space-4) 0;
+  padding: 10px var(--space-3);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  border: 1px solid var(--color-primary-ring);
+  background: var(--color-nav-active-bg);
+  border-radius: var(--radius-md);
+}
+.ev-budget-bulk__names {
+  color: var(--color-text-muted);
+}
+.ev-budget-bulk__form {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ev-budget-bulk__caption {
+  font-size: var(--text-small);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+}
+.ev-budget-bulk__input {
+  width: 84px;
+  text-align: right;
+}
+.ev-budget-bulk__unit {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+.ev-budget-flash-slot:empty {
+  display: none;
+}
+.ev-budget-flash {
+  margin: 10px var(--space-4) 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-6);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  border: 1px solid transparent;
+}
+.ev-budget-flash--success {
+  border-color: var(--color-success-tint-border);
+  background: var(--color-success-tint);
+  color: var(--color-success-deep);
+}
+.ev-budget-flash--danger {
+  border-color: var(--color-danger-tint-border);
+  background: var(--color-danger-row-bg);
+  color: var(--color-error-card-title);
+}
