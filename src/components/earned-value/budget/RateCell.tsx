@@ -15,6 +15,13 @@ import type { LeafDiffMark } from "./diff-rows";
 
 export type SuggestionSource = "catalog" | "history";
 
+/** Seçilen öneri: oran + kaynak + önerinin katalog kalemi (bağ yalnız KATALOG seçiminde kurulur). */
+export interface PickedSuggestion {
+  rate: string;
+  source: SuggestionSource;
+  catalogItemId: string;
+}
+
 interface RateCellProps {
   siteId: string;
   item: ItemOut;
@@ -26,7 +33,7 @@ interface RateCellProps {
   onCloseSuggestion: () => void;
   /** Ham metin — gövdeyi `rateCommit` üretir. */
   onCommit: (raw: string) => void;
-  onUseSuggestion: (rate: string, source: SuggestionSource) => void;
+  onUseSuggestion: (picked: PickedSuggestion) => void;
 }
 
 /**
@@ -89,7 +96,7 @@ interface SuggestionPopoverProps {
   item: ItemOut;
   leaf: LeafOut;
   onClose: () => void;
-  onUse: (rate: string, source: SuggestionSource) => void;
+  onUse: (picked: PickedSuggestion) => void;
 }
 
 /**
@@ -127,7 +134,7 @@ function SuggestionPopover({ siteId, item, leaf, onClose, onUse }: SuggestionPop
           size="sm"
           className="ev-budget-pop__grow"
           disabled={history === null}
-          onClick={() => history && onUse(history.standard_unit_mhr, "history")}
+          onClick={() => history && onUse({ rate: history.standard_unit_mhr, source: "history", catalogItemId: history.catalog_item_id })}
         >
           Gerçekleşeni kullan
         </Button>
@@ -135,7 +142,7 @@ function SuggestionPopover({ siteId, item, leaf, onClose, onUse }: SuggestionPop
           size="sm"
           variant="secondary"
           disabled={catalog === null}
-          onClick={() => catalog && onUse(catalog.standard_unit_mhr, "catalog")}
+          onClick={() => catalog && onUse({ rate: catalog.standard_unit_mhr, source: "catalog", catalogItemId: catalog.catalog_item_id })}
         >
           Katalog
         </Button>

@@ -4,7 +4,8 @@ import {
   formatDateShort,
   formatMhr,
   formatRateInput,
-  leafCode,
+  fillMessage,
+  genitive,
   leafLabel,
   localTodayIso,
   parseRateInput,
@@ -68,10 +69,6 @@ describe("leafLabel — F0-6: 'Tüm şantiye' (dolaylı) = 'Bölümsüz' (doğru
     expect(leafLabel({ section_name: null, is_direct: false })).toBe("Tüm şantiye");
   });
 
-  it("kod kolonu: bölümsüz '· —' (Ek Formlar M4), bölümlü '·'", () => {
-    expect(leafCode({ section_id: null })).toBe("· —");
-    expect(leafCode({ section_id: "s-1" })).toBe("·");
-  });
 });
 
 describe("formatDateShort — mockup `dstr` gg.aa.yy (BÜT:681)", () => {
@@ -87,5 +84,39 @@ describe("formatDateShort — mockup `dstr` gg.aa.yy (BÜT:681)", () => {
 describe("localTodayIso", () => {
   it("yerel takvim günü, sıfır dolgulu", () => {
     expect(localTodayIso(new Date(2026, 8, 4, 23, 30))).toBe("2026-09-04");
+  });
+});
+
+describe("genitive — özel ad tamlayan eki (M4 \"Peyzaj'ın …\")", () => {
+  it.each([
+    ["Peyzaj", "Peyzaj'ın"],
+    ["Elektrik", "Elektrik'in"],
+    ["Kaba İnşaat", "Kaba İnşaat'ın"],
+    ["Duvar & Sıva", "Duvar & Sıva'nın"],
+    ["Mekanik Tesisat", "Mekanik Tesisat'ın"],
+    ["Boru", "Boru'nun"],
+    ["Ölçü", "Ölçü'nün"],
+    ["Köprü Göz", "Köprü Göz'ün"],
+  ])("%s → %s", (name, out) => {
+    expect(genitive(name)).toBe(out);
+  });
+});
+
+describe("fillMessage — Katalogdan öner bildirimi (BÜT:667 + CEO p)", () => {
+  const base = { filled_item_count: 0, ambiguous: [] };
+  it("belirsiz varsa yönlendirme eklenir (sayı yetim kalmaz)", () => {
+    expect(fillMessage({ ...base, filled_leaf_count: 3, ambiguous_count: 1, unmatched_count: 0 })).toBe(
+      "3 boş satır katalogdan dolduruldu · 1 kalemde eşleşme belirsiz · ayrıntı için satırlardaki öneri rozetine bakın",
+    );
+  });
+  it("belirsiz yoksa yönlendirme YOK", () => {
+    expect(fillMessage({ ...base, filled_leaf_count: 2, ambiguous_count: 0, unmatched_count: 1 })).toBe(
+      "2 boş satır katalogdan dolduruldu · 1 kalemde katalog eşleşmesi yok",
+    );
+  });
+  it("hiçbir şey olmadıysa mockup metni", () => {
+    expect(fillMessage({ ...base, filled_leaf_count: 0, ambiguous_count: 0, unmatched_count: 0 })).toBe(
+      "Boş oran yok · mevcut oranlar korunuyor",
+    );
   });
 });

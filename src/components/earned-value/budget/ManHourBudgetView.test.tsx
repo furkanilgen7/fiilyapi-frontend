@@ -6,7 +6,7 @@ import { backendClient } from "@/lib/api/client";
 import { useSite } from "@/lib/api/hooks/useSites";
 
 import { ManHourBudgetView } from "./ManHourBudgetView";
-import { ACTIVE_REV_1, D_KAB, G_IZO, I_BETON, S_CAT, S_TML, budgetView, revision } from "./budget-fixtures";
+import { ACTIVE_REV_1, D_KAB, G_BET, G_IZO, I_BETON, LEAF_IZO, S_CAT, S_TML, budgetView, revision } from "./budget-fixtures";
 import { defaultState, lastBody, mockPermission, renderWithQuery, wireBackend, type BackendState } from "./budget-screen-harness";
 
 // PLN-F1.6 · Adam-Saat Bütçesi ekran akışları (şantiye rotası).
@@ -157,18 +157,65 @@ describe("Adım 1 · Oranlar", () => {
     expect(backendClient.PATCH).not.toHaveBeenCalled();
   });
 
-  it("öneri popover'ı: Katalog → oran + kaynak catalog", async () => {
+  it("öneri popover'ı: Katalog → ÖNCE yaprak oranı (catalog), SONRA L3 katalog bağı", async () => {
     const { user } = setup({}, "draft");
     await user.click(await screen.findByRole("textbox", { name: "Beton döküm · Çatı birim oran" }));
     const pop = await screen.findByRole("dialog", { name: "Beton döküm · Çatı öneri" });
     expect(await within(pop).findByText("1,80 a-s/m³")).toBeInTheDocument();
-    expect(within(pop).getByRole("button", { name: "Gerçekleşeni kullan" })).toBeDisabled();
     await user.click(within(pop).getByRole("button", { name: "Katalog" }));
+    await waitFor(() => expect(vi.mocked(backendClient.PATCH)).toHaveBeenCalledTimes(2));
+    const [first, second] = vi.mocked(backendClient.PATCH).mock.calls;
+    expect(first[0]).toBe("/sites/{site_id}/earned-value/budget/leaves");
+    expect((first[1] as { body: unknown }).body).toEqual({
+      leaves: [{ boq_item_id: I_BETON, section_id: S_CAT, unit_mhr: "1.8", rate_source: "catalog" }],
+    });
+    expect(second[0]).toBe("/sites/{site_id}/earned-value/budget/items/{boq_item_id}");
+    expect(second[1]).toEqual({
+      params: { path: { site_id: SITE_ID, boq_item_id: I_BETON } },
+      body: { catalog_item_id: "c-1" },
+    });
+  });
+
+  it("öneri: GEÇMİŞ seçilince yalnız yaprak yazılır (kaynak history), bağ KURULMAZ", async () => {
+    const suggestions = {
+      catalog: [],
+      history: [{ catalog_item_id: "c-9", discipline_id: "d", match: "exact" as const, name: "x", standard_unit_mhr: "2.05", uom: "m³" }],
+    };
+    const { user } = setup({ suggestions }, "draft");
+    await user.click(await screen.findByRole("textbox", { name: "Beton döküm · Çatı birim oran" }));
+    const pop = await screen.findByRole("dialog", { name: "Beton döküm · Çatı öneri" });
+    await user.click(await within(pop).findByRole("button", { name: "Gerçekleşeni kullan" }));
     await waitFor(() =>
       expect(lastBody("PATCH", "/budget/leaves")).toEqual({
-        leaves: [{ boq_item_id: I_BETON, section_id: S_CAT, unit_mhr: "1.8", rate_source: "catalog" }],
+        leaves: [{ boq_item_id: I_BETON, section_id: S_CAT, unit_mhr: "2.05", rate_source: "history" }],
       }),
     );
+    expect(vi.mocked(backendClient.PATCH).mock.calls.some((c) => String(c[0]).includes("/items/"))).toBe(false);
+  });
+
+  it("öneri: oran yazılamazsa bağ isteği ATILMAZ ve hata görünür", async () => {
+    const { user } = setup({}, "draft");
+    vi.mocked(backendClient.PATCH).mockImplementation((() =>
+      Promise.resolve({ data: undefined, error: { detail: "Taslak kilitli" }, response: new Response(null, { status: 409 }) })) as never);
+    await user.click(await screen.findByRole("textbox", { name: "Beton döküm · Çatı birim oran" }));
+    const pop = await screen.findByRole("dialog", { name: "Beton döküm · Çatı öneri" });
+    await user.click(await within(pop).findByRole("button", { name: "Katalog" }));
+    expect(await screen.findByText("Taslak kilitli")).toBeInTheDocument();
+    expect(vi.mocked(backendClient.PATCH)).toHaveBeenCalledTimes(1);
+  });
+
+  it("öneri: oran yazıldı ama bağ reddedildiyse bunu SÖYLER", async () => {
+    const { user } = setup({}, "draft");
+    vi.mocked(backendClient.PATCH).mockImplementation(((path: string) =>
+      Promise.resolve(
+        path.includes("/items/")
+          ? { data: undefined, error: { detail: "Katalog kalemi bulunamadı" }, response: new Response(null, { status: 422 }) }
+          : { data: state.view, error: undefined, response: new Response() },
+      )) as never);
+    await user.click(await screen.findByRole("textbox", { name: "Beton döküm · Çatı birim oran" }));
+    const pop = await screen.findByRole("dialog", { name: "Beton döküm · Çatı öneri" });
+    await user.click(await within(pop).findByRole("button", { name: "Katalog" }));
+    expect(await screen.findByText("Oran yazıldı, katalog bağı kurulamadı: Katalog kalemi bulunamadı")).toBeInTheDocument();
   });
 
   it("toplu oran: seçili yapraklara tek PATCH + bildirim", async () => {
@@ -191,7 +238,11 @@ describe("Adım 1 · Oranlar", () => {
   it("Katalogdan öner (tümü): dolan + belirsiz sayıları bildirilir", async () => {
     const { user } = setup({}, "draft");
     await user.click(await screen.findByRole("button", { name: "Katalogdan öner (tümü)" }));
-    expect(await screen.findByText("3 boş satır katalogdan dolduruldu · 1 kalemde eşleşme belirsiz")).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        "3 boş satır katalogdan dolduruldu · 1 kalemde eşleşme belirsiz · ayrıntı için satırlardaki öneri rozetine bakın",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("M1: grup → disiplin eşleme PUT'u", async () => {
@@ -207,6 +258,59 @@ describe("Adım 1 · Oranlar", () => {
       }),
     );
     expect(await screen.findByText(/Su yalıtımı → Kaba İnşaat eşlendi/)).toBeInTheDocument();
+  });
+
+  it("M1: eşlenmiş grupta 'Disiplinsiz (eşlemeyi kaldır)' → discipline_id null; eşlenmemişte YOK", async () => {
+    const { user } = setup({}, "draft");
+    await user.click(await screen.findByRole("button", { name: "Su yalıtımı disiplini: Seçilmedi" }));
+    const unmapped = screen.getByRole("dialog", { name: "Su yalıtımı için disiplin seç" });
+    expect(within(unmapped).queryByRole("button", { name: /eşlemeyi kaldır/ })).not.toBeInTheDocument();
+    await user.keyboard("{Escape}");
+    await user.click(screen.getByRole("button", { name: "Betonarme disiplini: Kaba İnşaat" }));
+    const menu = screen.getByRole("dialog", { name: "Betonarme için disiplin seç" });
+    await user.click(within(menu).getByRole("button", { name: "Disiplinsiz (eşlemeyi kaldır)" }));
+    await waitFor(() =>
+      expect(lastBody("PUT", "/budget/group-disciplines")).toEqual({ items: [{ boq_group_id: G_BET, discipline_id: null }] }),
+    );
+  });
+
+  it("M1 yerleşimi: grup satırında seçici 2 kolon (oran+kaynak), engel rozeti 2 kolon (kendi/taş.+doğr./dol.)", async () => {
+    setup({}, "draft");
+    const picker = await screen.findByRole("button", { name: "Su yalıtımı disiplini: Seçilmedi" });
+    expect(picker.closest("td")).toHaveAttribute("colspan", "2");
+    const badge = screen.getByText("Engel · doğrudan bütçeli");
+    expect(badge.closest("td")).toHaveAttribute("colspan", "2");
+    const row = picker.closest("tr") as HTMLElement;
+    expect(row.children).toHaveLength(9);
+  });
+
+  it("kod hücresi: grup ve yaprak için uydurma ayraç yok, EMPTY_CELL", async () => {
+    setup({}, "draft");
+    const leafRow = (await screen.findByRole("textbox", { name: "Beton döküm · Temel birim oran" })).closest("tr") as HTMLElement;
+    expect(within(leafRow).queryByText("·")).not.toBeInTheDocument();
+    expect(leafRow.children[1]).toHaveTextContent("—");
+    const groupRow = screen.getByRole("button", { name: "Betonarme disiplini: Kaba İnşaat" }).closest("tr") as HTMLElement;
+    expect(groupRow.children[1]).toHaveTextContent("—");
+  });
+
+  it("M4: penceresi çıkmayan Bölümsüz yaprağın altında kırmızı alt satır + BOQ bağlantısı", async () => {
+    const base = budgetView();
+    const pey = { ...base.disciplines[1], id: "d:pey", discipline_id: "d-pey", code: "PEY", name: "Peyzaj", color: "#16a34a" };
+    const view = budgetView({
+      disciplines: [base.disciplines[0], pey],
+      freeze_blockers: [{ code: "missing_window", count: 1, node_ids: [LEAF_IZO] }],
+    });
+    setup({ view }, "draft");
+    const input = await screen.findByRole("textbox", { name: "Membran yalıtım · Bölümsüz birim oran" });
+    const row = input.closest("tr") as HTMLElement;
+    const after = row.nextElementSibling as HTMLElement;
+    expect(within(after).getByText("Penceresi çıkmıyor")).toBeInTheDocument();
+    expect(within(after).getByText("Peyzaj'ın hiçbir bölümde penceresi yok; bu satır dağıtılamaz, dondurma engellenir.")).toBeInTheDocument();
+    expect(within(after).getByRole("link", { name: "İş Kalemleri'nde bölüme tahsis et →" })).toHaveAttribute(
+      "href",
+      "/projeler/gunes/santiyeler/a-blok/is-kalemleri",
+    );
+    expect(row).toHaveAttribute("aria-describedby", after.querySelector("td")?.id);
   });
 
   it("M2: iş tipi Kendi/Taşeron seçici PATCH /items", async () => {

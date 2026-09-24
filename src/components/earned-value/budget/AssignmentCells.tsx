@@ -45,7 +45,8 @@ interface GroupDisciplinePickerProps {
   current: DisciplineOption | null;
   options: readonly DisciplineOption[];
   editable: boolean;
-  onPick: (disciplineId: string) => void;
+  /** `null` = eşlemeyi kaldır → grup "Disiplinsiz"e döner (PUT gövdesinde `discipline_id: null`). */
+  onPick: (disciplineId: string | null) => void;
 }
 
 const CONTRACTOR_LABEL = { own: "Kendi", subcon: "Taşeron" } as const;
@@ -72,25 +73,49 @@ export function GroupDisciplinePicker({ groupName, current, options, editable, o
       </button>
       {open && (
         <AnchoredPopover label={`${groupName} için disiplin seç`} onClose={() => setOpen(false)} className="ev-budget-dd ev-budget-disc-menu" escapeOverflow>
-          {options.length === 0 && <p className="ev-budget-dd__empty">Disiplin listesi boş.</p>}
-          {options.map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              className={cx("ev-budget-disc-option", option.id === current?.id && "ev-budget-dd__option--selected")}
-              onClick={() => {
-                setOpen(false);
-                if (option.id !== current?.id) onPick(option.id);
-              }}
-            >
-              <Swatch color={option.color} />
-              <span className="ev-budget-disc-option__name">{option.name}</span>
-              <span className="ev-budget-disc-option__default">{CONTRACTOR_LABEL[option.defaultContractorType]}</span>
-            </button>
-          ))}
+          <DisciplineMenu
+            current={current}
+            options={options}
+            onPick={(id) => {
+              setOpen(false);
+              if (id !== (current?.id ?? null)) onPick(id);
+            }}
+          />
         </AnchoredPopover>
       )}
     </span>
+  );
+}
+
+interface DisciplineMenuProps {
+  current: DisciplineOption | null;
+  options: readonly DisciplineOption[];
+  onPick: (disciplineId: string | null) => void;
+}
+
+/** M1 (a) açılır listesi; eşlenmiş grupta başta "Disiplinsiz (eşlemeyi kaldır)" (CEO l). */
+function DisciplineMenu({ current, options, onPick }: DisciplineMenuProps) {
+  return (
+    <>
+      {options.length === 0 && <p className="ev-budget-dd__empty">Disiplin listesi boş.</p>}
+      {current && (
+        <button type="button" className="ev-budget-disc-option ev-budget-disc-option--unmap" onClick={() => onPick(null)}>
+          <span className="ev-budget-disc-option__name">Disiplinsiz (eşlemeyi kaldır)</span>
+        </button>
+      )}
+      {options.map((option) => (
+        <button
+          key={option.id}
+          type="button"
+          className={cx("ev-budget-disc-option", option.id === current?.id && "ev-budget-dd__option--selected")}
+          onClick={() => onPick(option.id)}
+        >
+          <Swatch color={option.color} />
+          <span className="ev-budget-disc-option__name">{option.name}</span>
+          <span className="ev-budget-disc-option__default">{CONTRACTOR_LABEL[option.defaultContractorType]}</span>
+        </button>
+      ))}
+    </>
   );
 }
 

@@ -1,7 +1,7 @@
 import { normalizeDecimalInput } from "@/lib/decimal";
 import { EMPTY_CELL } from "@/lib/format";
 import { roundHalfUp } from "@/lib/earned-value/decimal-input";
-import type { EvBudgetView } from "@/lib/api/models";
+import type { EvBudgetView, EvFillOut } from "@/lib/api/models";
 
 /**
  * PLN-F1.6 · Adam-Saat Bütçesi ekranına ÖZGÜ sayı/etiket biçimleri. Ortak
@@ -66,14 +66,6 @@ export function leafLabel(leaf: Pick<LeafOut, "section_name" | "is_direct">): st
   return leaf.is_direct ? "Bölümsüz" : "Tüm şantiye";
 }
 
-/**
- * Yaprak kod hücresi. Mockup bölüm KODUNU basar ("· TML", BÜT:629); backend
- * yaprak yanıtı bölüm kodu taşımaz → yalnız nokta. Bölümsüz: "· —" (Ek M4).
- */
-export function leafCode(leaf: Pick<LeafOut, "section_id">): string {
-  return leaf.section_id ? "·" : "· —";
-}
-
 /** ISO → "06.05.26" (BÜT:681 `dstr`). `new Date` KULLANILMAZ (UTC kayması). */
 export function formatDateShort(iso: string | null | undefined): string {
   if (!iso) return EMPTY_CELL;
@@ -86,4 +78,37 @@ export function formatDateShort(iso: string | null | undefined): string {
 export function localTodayIso(now: Date = new Date()): string {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
+const VOWEL_HARMONY: Record<string, string> = { a: "ı", ı: "ı", e: "i", i: "i", o: "u", u: "u", ö: "ü", ü: "ü" };
+
+/**
+ * Özel adın tamlayan eki, kesme işaretiyle: "Peyzaj'ın" · "Elektrik'in" ·
+ * "Duvar & Sıva'nın" (Ek Formlar M4 alt satırı). Son ünlü uyumu; ünlüyle
+ * biten ada kaynaştırma "n".
+ */
+export function genitive(name: string): string {
+  const lower = name.trim().toLocaleLowerCase("tr-TR");
+  const vowels = [...lower].filter((ch) => ch in VOWEL_HARMONY);
+  const last = vowels.at(-1);
+  if (last === undefined) return `${name}'in`;
+  const endsWithVowel = lower.at(-1)! in VOWEL_HARMONY;
+  return `${name.trim()}'${endsWithVowel ? "n" : ""}${VOWEL_HARMONY[last]}n`;
+}
+
+/**
+ * "Katalogdan öner (tümü)" sonuç bildirimi (BÜT:667 + B1-4). Belirsiz eşleşme
+ * varsa kullanıcı nereye bakacağını bilsin diye yönlendirme eklenir (CEO p) —
+ * sayı yetim kalmaz.
+ */
+export function fillMessage(out: EvFillOut): string {
+  if (out.filled_leaf_count === 0 && out.ambiguous_count === 0 && out.unmatched_count === 0) {
+    return "Boş oran yok · mevcut oranlar korunuyor";
+  }
+  const parts = [`${out.filled_leaf_count} boş satır katalogdan dolduruldu`];
+  if (out.ambiguous_count > 0) parts.push(`${out.ambiguous_count} kalemde eşleşme belirsiz`);
+  if (out.unmatched_count > 0) parts.push(`${out.unmatched_count} kalemde katalog eşleşmesi yok`);
+  // Yönlendirme EN SONDA: belirsiz sayısını açıklar, eşleşmesiz sayısının arasına girmez.
+  if (out.ambiguous_count > 0) parts.push("ayrıntı için satırlardaki öneri rozetine bakın");
+  return parts.join(" · ");
 }

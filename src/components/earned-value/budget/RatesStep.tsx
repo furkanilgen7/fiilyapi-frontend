@@ -15,16 +15,18 @@ import {
   type BudgetNode,
   type DisciplineOption,
   type GroupOut,
+  type ItemOut,
   type LeafEntry,
   type LeafOut,
 } from "./budget-tree";
 import type { LeafDiffMark } from "./diff-rows";
 import { BudgetFlash } from "./BudgetFlash";
-import { budgetRowClass, budgetRowLabel, ratesColumns, type RatesColumnsContext } from "./rates-columns";
+import { budgetRowAfter, budgetRowClass, budgetRowLabel, ratesColumns, type RatesColumnsContext } from "./rates-columns";
+import type { BudgetLinks } from "./BudgetHeader";
 import { RatesFooter } from "./RatesFooter";
 import { BulkRateBar, RatesToolbar } from "./RatesToolbar";
 import type { ScreenState } from "./revision-state";
-import type { SuggestionSource } from "./RateCell";
+import type { PickedSuggestion } from "./RateCell";
 import type { BudgetActions } from "./useBudgetScreenHooks";
 
 interface RatesStepProps {
@@ -34,6 +36,7 @@ interface RatesStepProps {
   actions: BudgetActions;
   diffMarks: ReadonlyMap<string, LeafDiffMark> | null;
   disciplineOptions: readonly DisciplineOption[];
+  links: BudgetLinks;
   onNext: () => void;
 }
 
@@ -42,6 +45,13 @@ const NAME_PREVIEW = 3;
 
 function findingIds(view: EvBudgetView, codes: ReadonlySet<string>): Set<string> {
   return new Set(view.freeze_blockers.filter((f) => codes.has(f.code)).flatMap((f) => f.node_ids));
+}
+
+/** Yaprak → pencere engel kodu (M4 alt satırının metni koda göre değişir). */
+function findingCodes(view: EvBudgetView, codes: ReadonlySet<string>): Map<string, string> {
+  return new Map(
+    view.freeze_blockers.filter((f) => codes.has(f.code)).flatMap((f) => f.node_ids.map((id) => [id, f.code] as const)),
+  );
 }
 
 function selectedEntries(selected: ReadonlySet<string>, index: ReadonlyMap<string, LeafEntry>): LeafEntry[] {
@@ -63,7 +73,7 @@ function useCollapsed(nodes: readonly BudgetNode[]) {
 }
 
 /** Tablo bağlamı: süzgeç, açık düğümler, seçim, öneri popover'ı ve hücre eylemleri. */
-function useRatesModel({ siteId, view, state, actions, diffMarks, disciplineOptions }: RatesStepProps) {
+function useRatesModel({ siteId, view, state, actions, diffMarks, disciplineOptions, links }: RatesStepProps) {
   const [filter, setFilter] = useState({ query: "", onlyEmpty: false });
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [openSuggestion, setOpenSuggestion] = useState<string | null>(null);
@@ -79,7 +89,9 @@ function useRatesModel({ siteId, view, state, actions, diffMarks, disciplineOpti
     diffMarks,
     disciplineOptions,
     blockingGroupIds: isDraft ? findingIds(view, new Set(["disciplineless_group"])) : new Set<string>(),
-    windowlessLeafIds: isDraft ? findingIds(view, WINDOW_CODES) : new Set<string>(),
+    windowlessLeafIds: isDraft ? findingCodes(view, WINDOW_CODES) : new Map<string, string>(),
+    boqHref: links.boq,
+    sectionsHref: links.sections,
     openSuggestion,
     setOpenSuggestion,
     ...rateHandlers({ actions, setOpenSuggestion, disciplineOptions }),
@@ -89,8 +101,9 @@ function useRatesModel({ siteId, view, state, actions, diffMarks, disciplineOpti
 
 /** Adım 1 · Oranlar — Adam-Saat Bütçesi.dc.html:177-280 (+ Ek Formlar M1, M2, M4). */
 export function RatesStep(props: RatesStepProps) {
-  const { view, state, actions, onNext } = props;
+  const { view, state, actions } = props;
   const { filter, setFilter, selected, setSelected, nodes, tree, entries, bulk, ctx } = useRatesModel(props);
+  const toggleBulk = () => bulk.setBulk((b) => ({ ...b, open: !b.open }));
   return (
     <section className="ev-budget-card" aria-label="Adım 1 · Oranlar">
       <RatesToolbar
@@ -102,20 +115,11 @@ export function RatesStep(props: RatesStepProps) {
         query={filter.query}
         onlyEmpty={filter.onlyEmpty}
         onSuggestAll={() => void actions.fillFromCatalog()}
-        onToggleBulk={() => bulk.setBulk((b) => ({ ...b, open: !b.open }))}
+        onToggleBulk={toggleBulk}
         onQuery={(query) => setFilter((f) => ({ ...f, query }))}
         onToggleEmpty={() => setFilter((f) => ({ ...f, onlyEmpty: !f.onlyEmpty }))}
       />
-      {bulk.bulk.open && entries.length > 0 && state.editable && (
-        <BulkRateBar
-          count={entries.length}
-          names={previewNames(entries)}
-          value={bulk.bulk.value}
-          onValue={(value) => bulk.setBulk((b) => ({ ...b, value }))}
-          onApply={() => void bulk.applyBulk()}
-          onCancel={() => bulk.setBulk({ open: false, value: "" })}
-        />
-      )}
+      {bulk.bulk.open && entries.length > 0 && state.editable && <OpenBulkBar entries={entries} bulk={bulk} />}
       <BudgetFlash flash={actions.flash} />
       <div className="ev-budget-table-scroll">
         <TreeTable
@@ -132,10 +136,24 @@ export function RatesStep(props: RatesStepProps) {
           selected={selected}
           onSelectedChange={setSelected}
           rowClassName={(node) => budgetRowClass(node, ctx)}
+          renderRowAfter={(node) => budgetRowAfter(node, ctx)}
         />
       </div>
-      <RatesFooter view={view} disciplinelessCount={ctx.blockingGroupIds.size} onNext={onNext} />
+      <RatesFooter view={view} disciplinelessCount={ctx.blockingGroupIds.size} onNext={props.onNext} />
     </section>
+  );
+}
+
+function OpenBulkBar({ entries, bulk }: { entries: readonly LeafEntry[]; bulk: ReturnType<typeof useBulkRate> }) {
+  return (
+    <BulkRateBar
+      count={entries.length}
+      names={previewNames(entries)}
+      value={bulk.bulk.value}
+      onValue={(value) => bulk.setBulk((b) => ({ ...b, value }))}
+      onApply={() => void bulk.applyBulk()}
+      onCancel={() => bulk.setBulk({ open: false, value: "" })}
+    />
   );
 }
 
@@ -172,16 +190,24 @@ function rateHandlers({ actions, setOpenSuggestion, disciplineOptions }: RateHan
       if (commit.kind === "invalid") actions.showFlash(`Geçersiz oran: "${raw.trim()}"`, "danger");
       if (commit.kind === "patch") void actions.saveLeaves([commit.patch]);
     },
-    onUseSuggestion: (leaf: LeafOut, rate: string, source: SuggestionSource) => {
+    /**
+     * CEO m: ÖNCE yaprak oranı (kaynak = seçilen öneri), SONRA — yalnız KATALOG
+     * seçiminde ve bağ farklıysa — L3 `catalog_item_id` bağı (B1-4). Oran
+     * yazılamazsa bağ isteği ATILMAZ. Geçmiş önerisi bağ kurmaz.
+     */
+    onUseSuggestion: async (leaf: LeafOut, item: ItemOut, picked: PickedSuggestion) => {
       setOpenSuggestion(null);
-      void actions.saveLeaves([leafPatchFor(leaf, { unit_mhr: rate, rate_source: source })]);
+      const saved = await actions.saveLeaves([leafPatchFor(leaf, { unit_mhr: picked.rate, rate_source: picked.source })]);
+      if (!saved || picked.source !== "catalog" || item.catalog_item_id === picked.catalogItemId) return;
+      await actions.linkCatalog(item.item_id, picked.catalogItemId);
     },
-    onMapGroup: async (group: GroupOut, disciplineId: string) => {
+    onMapGroup: async (group: GroupOut, disciplineId: string | null) => {
       const next = await actions.mapGroup(group.group_id, disciplineId);
       if (!next) return;
-      const name = disciplineOptions.find((o) => o.id === disciplineId)?.name ?? "";
+      const name = disciplineId === null ? "Disiplinsiz" : (disciplineOptions.find((o) => o.id === disciplineId)?.name ?? "");
       const left = next.disciplines.find((d) => d.discipline_id === null)?.groups.length ?? 0;
-      actions.showFlash(`${group.name} → ${name} eşlendi` + (left > 0 ? ` · Disiplinsiz'de ${left} grup kaldı` : ""));
+      const verb = disciplineId === null ? "eşleme kaldırıldı" : "eşlendi";
+      actions.showFlash(`${group.name} → ${name} ${verb}` + (left > 0 ? ` · Disiplinsiz'de ${left} grup kaldı` : ""));
     },
     onItemPatch: (item: { item_id: string }, patch: Parameters<BudgetActions["patchItem"]>[1]) =>
       void actions.patchItem(item.item_id, patch),

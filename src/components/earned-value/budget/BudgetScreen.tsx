@@ -230,6 +230,7 @@ function StepContent(props: StepContentProps) {
       actions={actions}
       diffMarks={props.diffMarks}
       disciplineOptions={props.options}
+      links={props.links}
       onNext={() => onStep(2)}
     />
   );

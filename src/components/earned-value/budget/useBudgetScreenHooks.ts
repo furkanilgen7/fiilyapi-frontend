@@ -20,8 +20,9 @@ import {
   type EvLeafPatch,
   type EvWindowIn,
 } from "@/lib/api/hooks/useEvBudgetMutations";
-import type { EvFillOut, EvRevisionOut } from "@/lib/api/models";
+import type { EvRevisionOut } from "@/lib/api/models";
 
+import { fillMessage } from "./budget-format";
 import { nextSearch, parseStep, REV_PARAM, STEP_PARAM, type BudgetUrlPatch } from "./budget-url";
 
 /** BÜT:561 `flash` — bildirim 2,6 sn sonra kalkar. */
@@ -68,15 +69,25 @@ export function useBudgetUrlState() {
   };
 }
 
-/** Fill sonucu bildirimi (BÜT:667 + B1-4: belirsiz/eşleşmesiz sayıları). */
-export function fillMessage(out: EvFillOut): string {
-  if (out.filled_leaf_count === 0 && out.ambiguous_count === 0 && out.unmatched_count === 0) {
-    return "Boş oran yok · mevcut oranlar korunuyor";
-  }
-  const parts = [`${out.filled_leaf_count} boş satır katalogdan dolduruldu`];
-  if (out.ambiguous_count > 0) parts.push(`${out.ambiguous_count} kalemde eşleşme belirsiz`);
-  if (out.unmatched_count > 0) parts.push(`${out.unmatched_count} kalemde katalog eşleşmesi yok`);
-  return parts.join(" · ");
+/**
+ * Eylem sarmalayıcı: hata her zaman görünür bildirime döner (sessiz yutma yok),
+ * `errorPrefix` bağlamı söyler; başarıda isteğe bağlı bildirim.
+ */
+function runner(show: (message: string, tone?: FlashTone) => void) {
+  return async function run<T>(
+    task: () => Promise<T>,
+    success?: (value: T) => string,
+    errorPrefix = "",
+  ): Promise<T | null> {
+    try {
+      const value = await task();
+      if (success) show(success(value));
+      return value;
+    } catch (error) {
+      show(`${errorPrefix}${backendErrorMessage(error, SAVE_ERROR)}`, "danger");
+      return null;
+    }
+  };
 }
 
 /**
@@ -95,16 +106,7 @@ export function useBudgetActions(siteId: string) {
   const deleteDraft = useDeleteEvDraft(siteId);
   const freeze = useFreezeEvBudget(siteId);
 
-  async function run<T>(task: () => Promise<T>, success?: (value: T) => string): Promise<T | null> {
-    try {
-      const value = await task();
-      if (success) show(success(value));
-      return value;
-    } catch (error) {
-      show(backendErrorMessage(error, SAVE_ERROR), "danger");
-      return null;
-    }
-  }
+  const run = runner(show);
 
   return {
     flash,
@@ -112,6 +114,13 @@ export function useBudgetActions(siteId: string) {
     saveLeaves: (patches: EvLeafPatch[], success?: string) =>
       run(() => leaves.mutateAsync(patches), success ? () => success : undefined),
     patchItem: (itemId: string, patch: EvItemPatch) => run(() => item.mutateAsync({ itemId, patch })),
+    /** B1-4: katalog önerisi seçilince L3 bağı — oran ZATEN yazıldı, hata bunu söyler. */
+    linkCatalog: (itemId: string, catalogItemId: string) =>
+      run(
+        () => item.mutateAsync({ itemId, patch: { catalog_item_id: catalogItemId } }),
+        undefined,
+        "Oran yazıldı, katalog bağı kurulamadı: ",
+      ),
     mapGroup: (groupId: string, disciplineId: string | null) =>
       run(() => groups.mutateAsync([{ boq_group_id: groupId, discipline_id: disciplineId }])),
     fillFromCatalog: () => run(() => fill.mutateAsync(), fillMessage),
