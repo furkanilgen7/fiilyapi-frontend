@@ -63,6 +63,12 @@ const ALLOWED_ROOTS = new Set([
   // /sites/{site_id}/diary* üzerinden gelir, o da "sites" kökünden geçer).
   // Eksikse bu dört uç YALNIZ CANLIDA 404 alır; jsdom testleri bunu görmez.
   "diary",
+  // PLN-F1.1 — Planlama (EV) ŞİRKET uçları (`/earned-value/disciplines`,
+  // `/earned-value/catalog`) bu kökten geçer. Şantiye uçları
+  // (`/sites/{site_id}/earned-value/...`: ayarlar, bütçe, revizyon, önizleme)
+  // ilk segmenti "sites" olduğu için MEVCUT kökten geçer. Eksikse Katalog ve
+  // Disiplin ekranları YALNIZ CANLIDA 404 alır; jsdom testleri bunu görmez.
+  "earned-value",
   // F-PT T1 — Puantaj ekranlarının personel uçları (`/personnel`,
   // `/personnel/{personnel_id}`) bu kökten geçer: matris satırlarını besleyen
   // liste ve "Personel Ekle" formunun POST'u. Eksikse personel uçları YALNIZ
