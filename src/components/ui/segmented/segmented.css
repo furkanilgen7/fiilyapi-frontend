@@ -1,0 +1,86 @@
+/* Segment kontrolü — kaynak mockup'lar (projedesign/):
+     Planlama - Panel.dc.html:115-119 (4 hafta/3 ay/Tümü), :136-140 (Kendi/Taşeron/Hepsi),
+       durum renkleri :599 `seg()`
+     Planlama - Haftalık QURR.dc.html:97-101 (Ekran/Yazdırma önizlemesi), renkler :356
+     Planlama - Adam-Saat Bütçesi.dc.html:313-319 (dağılım tipi, ikon + metin), renkler :674
+     Ayarlar - Planlama.dc.html:75-77 (hafta başı, 7 eşit düğme), renkler :265
+   Dört yerde de seçili/seçisiz renkleri AYNIDIR; yalnız ölçüler üç kümeye ayrılır:
+   md (Panel, QURR) · sm (Bütçe) · fill (Ayarlar). */
+
+.segmented {
+  display: inline-flex;
+  gap: 2px; /* Panel:115 gap:2px */
+  padding: 3px; /* Panel:115 padding:3px */
+  background: var(--color-surface-muted); /* #f1f5f9 */
+  border-radius: var(--radius-6);
+}
+
+.segmented__item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: var(--radius-sm); /* 4px — Panel:117 */
+  font-family: inherit;
+  font-size: var(--text-xs); /* 12px */
+  font-weight: var(--weight-regular);
+  color: var(--color-text-muted); /* seçisiz #64748b — Panel:599 */
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) ease,
+    color var(--duration-fast) ease;
+}
+
+/* Seçili — Panel:599 bg #fff · fg #2563eb · fw 600 · gölge 0 1px 2px rgba(0,0,0,.08) */
+.segmented__item--selected {
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font-weight: var(--weight-semibold);
+  box-shadow: var(--shadow-segmented-selected);
+}
+
+.segmented__item:hover:not(:disabled):not(.segmented__item--selected) {
+  color: var(--color-text);
+}
+
+.segmented__item:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* Mockup'larda devre dışı hâl seçimi olduğu gibi gösterir (Bütçe:674, Ayarlar:76):
+   renk değişmez, yalnız imleç düşer. Seçenek bazında kapalı ve SEÇİLİ OLMAYAN
+   düğme için mockup çizimi yok; soluk metinle ayrılır. */
+.segmented__item:disabled {
+  cursor: not-allowed;
+}
+.segmented:not(.segmented--disabled) .segmented__item:disabled:not(.segmented__item--selected) {
+  color: var(--color-text-subtle);
+}
+
+/* md — Panel:117, QURR:99: padding 5px 12px */
+.segmented--md .segmented__item {
+  padding: 5px var(--space-3);
+}
+
+/* sm — Bütçe:314-316: kap gap 4px, düğme padding 4px 10px, ikon↔metin 6px */
+.segmented--sm {
+  gap: var(--space-1);
+}
+.segmented--sm .segmented__item {
+  gap: 6px;
+  padding: var(--space-1) 10px;
+}
+
+/* fill — Ayarlar:75-76: kap radius 8px, düğmeler flex:1, padding 6px 0, radius 6px */
+.segmented--fill {
+  display: flex;
+  border-radius: var(--radius-8);
+}
+.segmented--fill .segmented__item {
+  flex: 1;
+  padding: 6px 0;
+  border-radius: var(--radius-6);
+}

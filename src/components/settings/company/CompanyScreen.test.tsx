@@ -30,6 +30,18 @@ function stubFetch(response: () => Response) {
   vi.stubGlobal("fetch", vi.fn(async () => response()));
 }
 
+/**
+ * 🔴 DEĞERİ BEKLE, ELEMANI DEĞİL (PLN-F1.2.2 · CI run 36066567640).
+ * Form sunucu verisinden `useEffect` ile doluyor (`CompanyScreen.tsx:41-59`):
+ * veri gelen İLK render'da alanlar BOŞ değerle DOM'a girer, efekt bir sonraki
+ * adımda doldurur. `findByLabelText` elemanı o boş anda bulabilir — yavaş CI
+ * runner'ında `toHaveValue("20")` boş okudu. Kapı, formun DOLDUĞUNU gösteren
+ * bir değere bağlanır: şirket adı alanı sunucudaki adı taşıyana kadar beklenir.
+ */
+async function waitForFormFilled() {
+  await screen.findByDisplayValue(COMPANY.name);
+}
+
 function renderScreen() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -64,7 +76,8 @@ describe("CompanyScreen", () => {
 
     renderScreen();
 
-    const vat = await screen.findByLabelText("KDV Oranı (Varsayılan)");
+    await waitForFormFilled();
+    const vat = screen.getByLabelText("KDV Oranı (Varsayılan)");
     expect(vat).toHaveValue("20");
 
     await userEvent.selectOptions(vat, "10");
@@ -79,7 +92,10 @@ describe("CompanyScreen", () => {
 
     renderScreen();
 
-    const vat = await screen.findByLabelText("KDV Oranı (Varsayılan)");
+    // Boş değer, form DOLMADAN önce de "" okunur — dolmayı beklemeden bu
+    // iddia null→"20" eşlemesini yakalayamaz (sahte-yeşil). Önce form dolar.
+    await waitForFormFilled();
+    const vat = screen.getByLabelText("KDV Oranı (Varsayılan)");
     expect(vat).toHaveValue("");
     expect(vat).not.toHaveValue("20");
   });

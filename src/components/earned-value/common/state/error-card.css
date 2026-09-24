@@ -1,0 +1,49 @@
+/* Hata kartı — projedesign/Planlama - Panel.dc.html:426-430
+   (aynı çizim: Birim Oran Kataloğu.dc.html:376-379, Adam-Saat Bütçesi.dc.html:492-495) */
+
+/* P:426 — 1px #fecaca kenar, #fef2f2 zemin, 8px köşe, 14px iç boşluk, 8px aralık */
+.ev-error-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: 14px;
+  background: var(--color-error-card-bg);
+  border: 1px solid var(--color-error-card-border);
+  border-radius: var(--radius-8);
+}
+
+/* P:427 — ikon + başlık, 8px aralık */
+.ev-error-card__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.ev-error-card__icon {
+  flex-shrink: 0;
+  color: var(--color-danger); /* #ef4444 */
+}
+/* P:427 — 13/600, #b91c1c */
+.ev-error-card__title {
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  color: var(--color-error-card-title);
+}
+/* P:428 — 12px, #991b1b, satır yüksekliği 1.5 */
+.ev-error-card__description {
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
+  color: var(--color-danger-deep);
+}
+
+/* P:429 — 6px 12px, 1px #fecaca kenar, #fff zemin, #b91c1c metin, 6px köşe, 12/600.
+   ui/button (secondary, sm) üzerine; özgüllük .btn.x ile .btn--sm/.btn--secondary'yi geçer. */
+.btn.ev-error-card__retry {
+  align-self: flex-start;
+  padding: 6px var(--space-3);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--color-error-card-title);
+  background: var(--color-surface);
+  border-color: var(--color-error-card-border);
+  border-radius: var(--radius-6);
+}

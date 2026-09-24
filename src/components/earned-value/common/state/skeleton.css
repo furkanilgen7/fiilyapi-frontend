@@ -1,0 +1,87 @@
+/* Planlama yükleme iskeleti — ölçüler projedesign/ mockup satırlarından:
+     P  = Planlama - Panel.dc.html
+     K  = Planlama - Birim Oran Kataloğu.dc.html
+     B  = Planlama - Adam-Saat Bütçesi.dc.html
+     Q  = Planlama - Haftalık QURR.dc.html
+   Mockup'larda iskelet durağandır; animasyon EKLENMEDİ. */
+
+/* Kap — P:431 kart içi dikey boşluk 10px */
+.ev-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ─── Bloklar (P:433-434) ─────────────────────────────────────────── */
+.ev-skeleton__blocks {
+  display: flex;
+  gap: 6px; /* P:433 */
+}
+.ev-skeleton__blocks > .ev-skeleton__block {
+  flex: 1;
+}
+.ev-skeleton__block {
+  border-radius: var(--radius-6);
+}
+/* P:433 — #f1f5f9 dolu */
+.ev-skeleton__block--fill {
+  background: var(--color-surface-muted);
+}
+/* P:434 — #f8fafc zemin + 1px #f1f5f9 kenar */
+.ev-skeleton__block--outlined {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-surface-muted);
+}
+
+/* ─── Çubuklar ─────────────────────────────────────────────────────── */
+/* Soluk ton #f1f5f9 · koyu ton #e2e8f0 · köşe 4px (P:435, K:384, B:500, Q:116) */
+.ev-skeleton__bar {
+  height: 10px; /* K:384, B:500, Q:116 */
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-sm);
+}
+.ev-skeleton__bar--strong {
+  background: var(--color-border);
+}
+
+/* ─── Çizgiler (P:435) — 9px yükseklik, 6px aralık ───────────────── */
+.ev-skeleton__lines {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ev-skeleton__line {
+  height: 9px;
+}
+
+/* ─── Satırlar (K:383-388, B:499-504, Q:115-117) ─────────────────── */
+.ev-skeleton__rows {
+  display: flex;
+  flex-direction: column;
+}
+.ev-skeleton__row {
+  display: grid;
+  /* B:501-503 — derinlik başına 14px içerlek */
+  padding-left: calc(var(--ev-skeleton-depth, 0) * 14px);
+}
+/* sm — B:499-500: satır 8px, kolon 8px */
+.ev-skeleton__rows--sm {
+  gap: var(--space-2);
+}
+.ev-skeleton__rows--sm .ev-skeleton__row {
+  column-gap: var(--space-2);
+}
+/* md — K:383-384: satır 10px, kolon 10px */
+.ev-skeleton__rows--md {
+  gap: 10px;
+}
+.ev-skeleton__rows--md .ev-skeleton__row {
+  column-gap: 10px;
+}
+/* lg — Q:115-116: satır 10px, kolon 12px */
+.ev-skeleton__rows--lg {
+  gap: 10px;
+}
+.ev-skeleton__rows--lg .ev-skeleton__row {
+  column-gap: var(--space-3);
+}

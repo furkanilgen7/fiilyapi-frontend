@@ -35,6 +35,28 @@ describe("Checkbox", () => {
     render(<Checkbox label="Kabul" size="lg" />);
     expect(screen.getByRole("checkbox")).not.toHaveAttribute("size");
   });
+
+  // PLN-F1.2 — 3 durumlu seçim (Adam-Saat Bütçesi.dc.html:601 `cbFor`: bir kısmı → –).
+  // `indeterminate` bir HTML özniteliği DEĞİL, DOM özelliğidir; prop onu atar.
+  it("indeterminate=true kutuyu kısmi seçili yapar", () => {
+    render(<Checkbox label="Kaba İnşaat seç" indeterminate />);
+    expect(screen.getByRole("checkbox")).toBePartiallyChecked();
+  });
+
+  it("indeterminate false'a dönünce kısmi durum kalkar", () => {
+    const { rerender } = render(<Checkbox label="Kaba İnşaat seç" indeterminate />);
+    rerender(<Checkbox label="Kaba İnşaat seç" indeterminate={false} checked readOnly />);
+    const box = screen.getByRole("checkbox");
+    expect(box).not.toBePartiallyChecked();
+    expect(box).toBeChecked();
+  });
+
+  it("indeterminate prop'u DOM özniteliğine sızmaz ve dış ref korunur", () => {
+    const ref = { current: null as HTMLInputElement | null };
+    render(<Checkbox label="Kabul" indeterminate ref={ref} />);
+    expect(screen.getByRole("checkbox")).not.toHaveAttribute("indeterminate");
+    expect(ref.current).toBe(screen.getByRole("checkbox"));
+  });
 });
 
 describe("Radio", () => {

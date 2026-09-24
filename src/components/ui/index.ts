@@ -11,3 +11,4 @@ export * from "./badge";
 export * from "./alert";
 export * from "./card";
 export * from "./popover";
+export * from "./segmented";
