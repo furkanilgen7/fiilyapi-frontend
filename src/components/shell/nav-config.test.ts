@@ -7,15 +7,33 @@ describe("NAV_GROUPS", () => {
   // grup sayısı 4 → 5. `toHaveLength` SİLİNMEDİ, yeni beklenti TAM BAŞLIK
   // DİZİSİYLE yazıldı: sıra da iddianın parçasıdır (`Saha` eski `Saha & İK`ın
   // yerini alır, `İK` hemen ardına girer).
-  it("5 grup icerir (canon)", () => {
-    expect(NAV_GROUPS).toHaveLength(5);
+  // PLN-F1 · K21 — `Planlama` grubu mockup'taki yerine (Saha & İK ile
+  // Stok & Satınalma arası → kodda İK ile Stok arası) girer: 5 → 6.
+  it("6 grup icerir (canon + PLN-F1 Planlama)", () => {
+    expect(NAV_GROUPS).toHaveLength(6);
     expect(NAV_GROUPS.map((g) => g.heading)).toEqual([
       "Genel",
       "Saha",
       "İK",
+      "Planlama",
       "Stok & Satınalma",
       "Sözleşme & Mali",
     ]);
+  });
+
+  // 🔴 §3.10 F0-10 + PLN-F1.3 §0-B: nav öğesi EKRANIYLA gelir (sahte/işlevsiz
+  // öğe konmaz). F1'de yalnız Bütçe + Katalog; Panel · Günlük Rapor · QURR
+  // F3'te, K21 sırasındaki yerlerine eklenir.
+  it("Planlama grubu F1'de yalniz ekrani olan iki ogeyi K21 sirasinda tasir", () => {
+    const planning = NAV_GROUPS.find((g) => g.heading === "Planlama");
+    expect(planning!.items.map((i) => i.label)).toEqual([
+      "Adam-Saat Bütçesi",
+      "Birim Oran Kataloğu",
+    ]);
+    const tree = buildRouteTree();
+    for (const item of planning!.items) {
+      expect(resolveHrefIn(tree, item.href, false), item.href).toEqual({ kind: "static" });
+    }
   });
 
   // 🔴 Kullanıcının saydığı KAPSAM — grup başlıkları doğru olup öğeler yanlış

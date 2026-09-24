@@ -12,6 +12,8 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, it, expect } from "vitest";
 
+import { SETTINGS_NAV } from "./settings-nav-config";
+
 const filePath = fileURLToPath(new URL("./settings-nav-config.ts", import.meta.url));
 
 describe("settings-nav-config emoji literal kurali", () => {
@@ -21,5 +23,13 @@ describe("settings-nav-config emoji literal kurali", () => {
     expect(line).toBeDefined();
     const escapeSequence = /\\u\{[0-9a-fA-F]+\}|\\u[0-9a-fA-F]{4}/;
     expect(line).not.toMatch(escapeSequence);
+  });
+});
+
+describe("settings-nav-config Planlama (PLN-F1 · K21)", () => {
+  it("GENEL grubunun son ogesi Planlama'dir; YENI cipi yoktur", () => {
+    const genel = SETTINGS_NAV.find((g) => g.heading === "GENEL");
+    const last = genel!.items[genel!.items.length - 1];
+    expect(last).toEqual({ label: "Planlama", href: "/ayarlar/planlama", emoji: "📈" });
   });
 });

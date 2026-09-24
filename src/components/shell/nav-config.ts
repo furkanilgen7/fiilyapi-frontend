@@ -17,6 +17,8 @@ import {
   ListIcon,
   FolderIcon,
   SparkleIcon,
+  CalculatorIcon,
+  BooksIcon,
 } from "@/components/ui/icons";
 import { isActivePath } from "@/lib/shell/isActive";
 import { routes } from "@/lib/routes";
@@ -82,6 +84,18 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     heading: "İK",
     items: [{ label: "Personel", href: routes.personnel.list(), Icon: UserIcon }],
+  },
+  // PLN-F1 · K21 — mockup'ların sol menüsü `Planlama`yı `Saha & İK` ile
+  // `Stok & Satınalma` arasına çizer (Planlama - Panel.dc.html:57-61); kodda
+  // o yer `İK` ile `Stok & Satınalma` arasıdır. 🔴 Öğe EKRANIYLA gelir
+  // (§3.10 F0-10, PLN-F1.3 §0-B): F1'de yalnız Bütçe + Katalog; Panel ·
+  // Günlük Rapor · Haftalık QURR F3'te K21 sırasındaki yerlerine eklenir.
+  {
+    heading: "Planlama",
+    items: [
+      { label: "Adam-Saat Bütçesi", href: routes.planning.budget(), Icon: CalculatorIcon },
+      { label: "Birim Oran Kataloğu", href: routes.planning.catalog(), Icon: BooksIcon },
+    ],
   },
   {
     heading: "Stok & Satınalma",

@@ -92,6 +92,13 @@ const SITE_NODE: TrailNode = {
         },
       },
     },
+    // PLN-F1 · Adam-Saat Bütçesi (EV) — F-PL'nin `gunluk-kayit/planlama`sından
+    // AYRI modül; mockup kırıntısı `… › A-Blok Şantiyesi › Adam-Saat Bütçesi`
+    // (Planlama - Adam-Saat Bütçesi.dc.html:84-87).
+    "adam-saat-butcesi": {
+      label: "Adam-Saat Bütçesi",
+      href: (k) => routes.projects.sites.evBudget({ projectId: k.projectId, siteId: k.siteId }),
+    },
     // Yapısal: `/projeler/<p>/santiyeler/<s>/bolumler` diye bir sayfa YOK.
     bolumler: {
       children: {
@@ -150,6 +157,7 @@ export const ROUTE_TRAIL_ROOT: TrailNode = {
           href: () => routes.settings.approvalRoles(),
         },
         "bordro-oranlari": { label: "Bordro Oranları", href: () => routes.settings.payrollRates() },
+        planlama: { label: "Planlama", href: () => routes.settings.planning() },
         entegrasyonlar: { label: "Entegrasyonlar", href: () => routes.settings.integrations() },
         yedekleme: { label: "Yedekleme", href: () => routes.settings.backup() },
         "denetim-gunlugu": { label: "Denetim Günlüğü", href: () => routes.settings.auditLog() },
@@ -316,6 +324,21 @@ export const ROUTE_TRAIL_ROOT: TrailNode = {
     // şantiye altındaki ikizinin kırıntısı `PROJECT_NODE` dalındadır ve orada
     // ŞANTİYENİN altında yaşar — bu kök düğüm onun yerini ALMAZ.
     "gunluk-kayit": { label: "Günlük Kayıt", href: () => routes.siteDiary() },
+
+    // PLN-F1 · kabuk nav'ının `Planlama` grubu. `/planlama` diye bir sayfa
+    // YOK → yapısal düğüm (href'siz, `bolumler` deseni); etiketi Katalog
+    // kırıntısının ilk parçasıdır (Birim Oran Kataloğu.dc.html:80
+    // `FİİL Yapı › Planlama › Birim Oran Kataloğu`).
+    planlama: {
+      label: "Planlama",
+      children: {
+        "adam-saat-butcesi": { label: "Adam-Saat Bütçesi", href: () => routes.planning.budget() },
+        "birim-oran-katalogu": {
+          label: "Birim Oran Kataloğu",
+          href: () => routes.planning.catalog(),
+        },
+      },
+    },
 
     // F-RAPOR · `/raporlar` bu dilimde GERÇEK bir `page.tsx` oldu. Düğüm
     // ZORUNLUDUR: "her `page.tsx` ağaçta" bekçisi (`trail.test.ts`) yeni

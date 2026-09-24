@@ -16,6 +16,8 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
       { label: "Şirket Bilgileri", href: routes.settings.company(), emoji: "🏢" },
       { label: "Bildirimler", href: routes.settings.notifications(), emoji: "🔔" },
       { label: "Görünüm", href: routes.settings.appearance(), emoji: "🎨" },
+      // PLN-F1 · Ayarlar - Planlama.dc.html:28 — GENEL'in sonu; `YENİ` çipi YOK (K21).
+      { label: "Planlama", href: routes.settings.planning(), emoji: "📈" },
     ],
   },
   {
