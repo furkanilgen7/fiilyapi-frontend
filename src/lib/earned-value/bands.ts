@@ -42,8 +42,13 @@ export interface PfBandSettings {
   weekly: PfThresholds;
 }
 
+/**
+ * Günlük varsayılan §3.7 S6 lafzıdır (§3.10 F0-1): 0,95–1,05 yeşil, üstü
+ * "şüpheli yüksek" — varsayılanda SARI YOK. Ayarda `greenFrom` yükseltilirse
+ * sarı bölge doğar. Haftalık/kümülatif §3.6'daki gibi 0,95 / 1,00.
+ */
 export const DEFAULT_PF_BANDS: PfBandSettings = {
-  daily: { redBelow: "0.95", greenFrom: "1.00", highAbove: "1.05" },
+  daily: { redBelow: "0.95", greenFrom: "0.95", highAbove: "1.05" },
   weekly: { redBelow: "0.95", greenFrom: "1.00" },
 };
 

@@ -59,9 +59,18 @@ describe("pfBand — K18: bant GÖSTERİLEN (2 ondalık, ROUND_HALF_UP) değere 
     expect(pfBand("1.055", DEFAULT_PF_BANDS, "daily")).toBe("high");
   });
 
-  it("günlük alt bantlar haftalıkla aynı kuralı izler", () => {
+  it("günlük varsayılan: 0,95–1,05 YEŞİL, sarı bölge yok (§3.10 F0-1 = §3.7 S6)", () => {
     expect(pfBand("0.9449", DEFAULT_PF_BANDS, "daily")).toBe("red");
-    expect(pfBand("0.9450", DEFAULT_PF_BANDS, "daily")).toBe("amber");
+    expect(pfBand("0.9450", DEFAULT_PF_BANDS, "daily")).toBe("green");
+    expect(pfBand("0.97", DEFAULT_PF_BANDS, "daily")).toBe("green");
+  });
+
+  it("günlük yeşil eşiği yükseltilirse sarı doğar (F0-1)", () => {
+    const bands: PfBandSettings = {
+      ...DEFAULT_PF_BANDS,
+      daily: { redBelow: "0.95", greenFrom: "1.00", highAbove: "1.05" },
+    };
+    expect(pfBand("0.97", bands, "daily")).toBe("amber");
   });
 
   it.each([null, undefined])("veri yok (%s) → none", (value) => {
@@ -73,9 +82,9 @@ describe("pfBand — K18: bant GÖSTERİLEN (2 ondalık, ROUND_HALF_UP) değere 
     expect(pfBand(Number.NaN, DEFAULT_PF_BANDS, "weekly")).toBe("none");
   });
 
-  it("varsayılanlar spec §3.6 + §3.7 S6: 0,95 · 1,00 · 1,05", () => {
+  it("varsayılanlar: günlük 0,95 · 0,95 · 1,05 (F0-1) · haftalık 0,95 · 1,00 (§3.6)", () => {
     expect(DEFAULT_PF_BANDS).toEqual({
-      daily: { redBelow: "0.95", greenFrom: "1.00", highAbove: "1.05" },
+      daily: { redBelow: "0.95", greenFrom: "0.95", highAbove: "1.05" },
       weekly: { redBelow: "0.95", greenFrom: "1.00" },
     });
   });
