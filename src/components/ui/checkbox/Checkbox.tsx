@@ -1,3 +1,5 @@
+"use client";
+
 import { forwardRef, useImperativeHandle, useLayoutEffect, useRef } from "react";
 import { cx } from "@/lib/cx";
 import "./checkbox.css";
