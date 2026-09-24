@@ -33,3 +33,22 @@ export type AuditListResponse = components["schemas"]["AuditListResponse"];
 export type AuditLogQuery = NonNullable<paths["/audit-log"]["get"]["parameters"]["query"]>;
 /** Excel dışa aktarımının sorgu parametreleri (limit/offset YOK). */
 export type AuditExportQuery = NonNullable<paths["/audit-log/export.xlsx"]["get"]["parameters"]["query"]>;
+
+// PLN-F1 · Planlama / Kazanılmış Değer (backend `earned_value`, B1 sözleşmesi).
+type EvSchema = components["schemas"];
+export type EvDisciplineRead = EvSchema["DisciplineRead"];
+export type EvDisciplineCreate = EvSchema["DisciplineCreate"];
+export type EvDisciplineUpdate = EvSchema["DisciplineUpdate"];
+export type EvCatalogItemRead = EvSchema["CatalogItemRead"];
+export type EvCatalogItemCreate = EvSchema["CatalogItemCreate"];
+export type EvCatalogItemUpdate = EvSchema["CatalogItemUpdate"];
+export type EvSettingsRead = EvSchema["SettingsRead"];
+export type EvSettingsSave = EvSchema["SettingsSave"];
+export type EvBudgetView = EvSchema["BudgetView"];
+export type EvRevisionOut = EvSchema["RevisionOut"];
+export type EvRevisionDiffOut = EvSchema["RevisionDiffOut"];
+export type EvScheduleOut = EvSchema["ScheduleOut"];
+export type EvPreviewOut = EvSchema["PreviewOut"];
+export type EvSuggestionsOut = EvSchema["SuggestionsOut"];
+export type EvFillOut = EvSchema["FillOut"];
+
