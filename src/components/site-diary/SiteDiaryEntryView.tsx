@@ -486,7 +486,8 @@ export function DiaryEntryScreen({
               </Button>
             </>
           )}
-          {isSubmitted && canReopen && (
+          {/* Kilitli gün yeniden açılamaz: backend geçişi kilit portuna sorar (409); İ:143-149. */}
+          {isSubmitted && canReopen && !isLocked && (
             <Button variant="secondary" disabled={isSaving} onClick={handleReopen}>
               Yeniden Aç
             </Button>

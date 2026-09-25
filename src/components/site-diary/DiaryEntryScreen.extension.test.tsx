@@ -299,6 +299,19 @@ describe("DiaryEntryScreen · uzantı yuvaları (§2.7)", () => {
     expect(screen.getByRole("button", { name: "Taslak Kaydet" })).toBeDisabled();
   });
 
+  it("lock: gönderilmiş ve KİLİTLİ günde 'Yeniden Aç' basılmaz (backend geçişi 409 verir; İ:143-149 düğme yok)", () => {
+    mockSession({ site_diary: "admin", progress_payments: "view" });
+    mockEntry(entryDetail({ status: "submitted", submitted_at: "2026-09-24T17:00:00Z" }));
+    const locked: DiaryExtension = { lock: { isLocked: true, banner: <span>kilitli</span> } };
+    const { unmount } = renderScreen(<SiteDiaryEntryView extension={locked} />);
+    expect(screen.queryByRole("button", { name: "Yeniden Aç" })).not.toBeInTheDocument();
+    unmount();
+
+    // Kontrol: kilitsiz gönderilmiş günde yetkili yeniden açabilir.
+    renderScreen(<SiteDiaryEntryView extension={{ lock: { isLocked: false, banner: null } }} />);
+    expect(screen.getByRole("button", { name: "Yeniden Aç" })).toBeInTheDocument();
+  });
+
   it("submitGate: canSubmit=false → Gönder pasif ve gerekçeler EKRANDA (title değil)", () => {
     const extension: DiaryExtension = {
       submitGate: { canSubmit: false, reasons: ["1 aşım satırında gerekçe yok", "12 a-s dağıtılmamış"] },
