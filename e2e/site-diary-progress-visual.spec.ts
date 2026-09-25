@@ -182,6 +182,13 @@ test("gunluk ilerleme is kodu secici gorsel", async ({ page }) => {
   await expect(picker.getByRole("checkbox")).toHaveCount(2);
   await expect(picker).toContainText("5 iş kodu seçili");
 
+  // ⚠️ BİLİNEN ALT PİKSEL KARARSIZLIĞI (DET-1.4 ölçümü, 2026-09-25): aynı commit'te
+  // (991e77b) iki baseline turu (36157871684 · 36159036716) bu karede FARKLI çıktı
+  // — Saat Dağıtımı ızgarasının yapışkan (`position: sticky`) kişi sütununda satır
+  // sınırları dönüşümlü 1 px kayıyor. KAYNAK: satır yüksekliği 45,5 px (ad 12,5px/18,75
+  // + meslek 10,5px/15,75 satır aralığı) → satır üstleri ,297/,797 yarım piksellerde;
+  // bileşik katman (sticky) yarım pikselde her rasterde aynı yuvarlanmıyor. Maske YOK
+  // (bilerek); kalıcı çözüm satırları tam piksele oturtmak — ayrı iş (yeni baseline turu).
   await prepareFrame(page);
   await expect(page.locator(".ev-diary-alloc")).toHaveScreenshot("gunluk-ilerleme-is-kodu-popover.png");
 });
@@ -292,6 +299,13 @@ test("gunluk ilerleme formen gorunumu gorsel", async ({ page }) => {
   await expect(page.getByRole("region", { name: "Gönder kontrolü" })).toContainText("Gönderim mühendiste");
   await expectNoTabletBars(page);
 
+  // ⚠️ BİLİNEN ALT PİKSEL KARARSIZLIĞI (DET-1.4 ölçümü, 2026-09-25): aynı commit'te
+  // (991e77b) iki baseline turu (36157871684 · 36159036716) bu karede (ızgara çizgilerinde birkaç piksel) FARKLI çıktı
+  // — Saat Dağıtımı ızgarasının yapışkan (`position: sticky`) kişi sütununda satır
+  // sınırları dönüşümlü 1 px kayıyor. KAYNAK: satır yüksekliği 45,5 px (ad 12,5px/18,75
+  // + meslek 10,5px/15,75 satır aralığı) → satır üstleri ,297/,797 yarım piksellerde;
+  // bileşik katman (sticky) yarım pikselde her rasterde aynı yuvarlanmıyor. Maske YOK
+  // (bilerek); kalıcı çözüm satırları tam piksele oturtmak — ayrı iş (yeni baseline turu).
   await prepareFrame(page);
   await expect(page).toHaveScreenshot("gunluk-ilerleme-formen.png", { fullPage: true });
 });
