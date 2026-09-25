@@ -1,0 +1,36 @@
+/* PLN-F3.4 · StatusMark — GİR:188,326 pill rozeti. */
+.ev-status-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ev-status-mark__glyph {
+  flex-shrink: 0;
+}
+
+.ev-status-mark--ahead {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.ev-status-mark--late {
+  background: var(--color-danger-soft);
+  color: var(--color-danger-strong);
+}
+
+.ev-status-mark--normal {
+  background: var(--color-surface-muted);
+  color: var(--color-text-secondary);
+}
+
+.ev-status-mark--none {
+  background: transparent;
+  color: var(--color-text-subtle);
+  font-weight: 400;
+}

@@ -37,6 +37,19 @@ describe("pfBand — K18: bant GÖSTERİLEN (2 ondalık, ROUND_HALF_UP) değere 
     expect(pfBand("1.80", DEFAULT_PF_BANDS, "weekly")).toBe("green");
   });
 
+  /**
+   * 🔴 LİDER DENETİMİ BEKÇİSİ (P5, 2026-09-26, CEO yan yana ölçümü) — Panel
+   * "Bu hafta PF" kolonunda 1,06/1,07/1,21 MAVİ ("high") görünüyordu; ÖLÇÜM
+   * fikstür kusuru olduğunu gösterdi (backend K18/K19'da `highAbove: null`,
+   * "high" ÜRETEMEZ — bu fonksiyonun KENDİSİ zaten doğru, `kind==="daily"`
+   * DIŞINDA "high" hiç dönmez). MUTANT: bu çağrının `"weekly"`si `"daily"`
+   * yapılırsa (fikstür/kolon `pfBand(v,bands,"daily")` ile YANLIŞ boyarsa)
+   * bu test KIRMIZI olur — DEFAULT_PF_BANDS.daily.highAbove="1.05" < 1.21.
+   */
+  it("BEKÇİ: 1,21 haftalık PF'de YEŞİL kalır (mavi/'high' DEĞİL)", () => {
+    expect(pfBand("1.21", DEFAULT_PF_BANDS, "weekly")).toBe("green");
+  });
+
   it("kümülatif PF haftalık bantları kullanır (K19)", () => {
     const bands: PfBandSettings = {
       daily: { redBelow: "0.95", greenFrom: "1.00", highAbove: "1.05" },
@@ -63,6 +76,15 @@ describe("pfBand — K18: bant GÖSTERİLEN (2 ondalık, ROUND_HALF_UP) değere 
     expect(pfBand("0.9449", DEFAULT_PF_BANDS, "daily")).toBe("red");
     expect(pfBand("0.9450", DEFAULT_PF_BANDS, "daily")).toBe("green");
     expect(pfBand("0.97", DEFAULT_PF_BANDS, "daily")).toBe("green");
+  });
+
+  it("highAbove null (rapor pf_bands'i taşımıyor) → 'high' HİÇ üretilmez, çok yüksek değer de yeşil kalır (PLN-F3.1-ek)", () => {
+    const bands: PfBandSettings = {
+      daily: { redBelow: "0.95", greenFrom: "0.95", highAbove: null },
+      weekly: { redBelow: "0.95", greenFrom: "1.00" },
+    };
+    expect(pfBand("1.20", bands, "daily")).toBe("green");
+    expect(pfBand("5.00", bands, "daily")).toBe("green");
   });
 
   it("günlük yeşil eşiği yükseltilirse sarı doğar (F0-1)", () => {

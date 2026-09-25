@@ -1,0 +1,98 @@
+/* PLN-F3.3 · Uyarılar kartı — Panel:225-257. */
+.ev-panel-warnings {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.ev-panel-warnings__head {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border-subtle, #f1f5f9);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.ev-panel-warnings__title {
+  font-size: var(--text-md);
+  font-weight: 600;
+}
+.ev-panel-warnings__count {
+  background: var(--color-danger, #ef4444);
+  color: #fff;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 10px;
+}
+.ev-panel-warnings__empty {
+  padding: var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+.ev-panel-warnings__list {
+  display: flex;
+  flex-direction: column;
+}
+.ev-panel-warnings__row {
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--color-border-subtle, #f1f5f9);
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+  color: inherit;
+  /* 🔴 LİDER DENETİMİ KUSURU: `<a>`nın tarayıcı VARSAYILAN alt çizgisi
+     mockup'ta YOK — satırın TAMAMI tıklanır, düz metin gibi görünür. */
+  text-decoration: none;
+}
+.ev-panel-warnings__row:last-child {
+  border-bottom: none;
+}
+.ev-panel-warnings__row--link:hover {
+  background: var(--color-surface-hover, #f8fafc);
+}
+/* 🔴 LİDER DENETİMİ KUSURU: SAAT (Dağıtılmamış saat) satırı mockup'ta amber
+   zeminle VURGULU — yalnız rozet DEĞİL, satırın TAMAMI. */
+.ev-panel-warnings__row--warning,
+.ev-panel-warnings__row--warning.ev-panel-warnings__row--link:hover {
+  background: var(--color-warning-surface, #fef3c7);
+}
+.ev-panel-warnings__badge {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-top: 1px;
+}
+.ev-panel-warnings__badge--danger {
+  background: var(--color-danger-surface, #fee2e2);
+  color: var(--color-danger-text, #dc2626);
+}
+.ev-panel-warnings__badge--warning {
+  background: var(--color-warning-surface, #fef3c7);
+  color: var(--color-warning-text, #b45309);
+}
+.ev-panel-warnings__badge--neutral {
+  background: var(--color-surface-muted, #f1f5f9);
+  color: var(--color-text-muted, #475569);
+}
+.ev-panel-warnings__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ev-panel-warnings__message {
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+.ev-panel-warnings__detail {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+.ev-panel-warnings__chevron {
+  color: var(--color-text-muted);
+}

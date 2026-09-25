@@ -4,6 +4,7 @@ import {
   formatAmount,
   formatDateDots,
   formatDateLong,
+  formatDateTimeDots,
   formatDays,
   parseDateDots,
   formatCompactCurrency,
@@ -346,5 +347,32 @@ describe("formatWindKmh — m/s → 'X km/sa' (İ:707 · K22)", () => {
     expect(formatWindKmh(null)).toBe(EMPTY_CELL);
     expect(formatWindKmh(undefined)).toBe(EMPTY_CELL);
     expect(formatWindKmh("abc")).toBe(EMPTY_CELL);
+  });
+});
+
+// PLN-F3.0-borç-2 · GİR zaman damgası biçimi (GİR:97/133/280); `audit-format.ts
+// formatAuditTime`in AYNI çözücü tekniğiyle "gg.aa.yyyy ss:dd" basar.
+describe("formatDateTimeDots", () => {
+  it("mockup biçimini üretir ve UTC'yi TR saatine (+3) çevirir", () => {
+    expect(formatDateTimeDots("2026-09-25T06:12:00Z")).toBe("25.09.2026 09:12");
+  });
+
+  it("gün sınırını TR saatine göre atlar — gece yarısı '00:xx' yazar (24:xx DEĞİL)", () => {
+    expect(formatDateTimeDots("2026-09-25T21:05:00Z")).toBe("26.09.2026 00:05");
+  });
+
+  it("ofsetli zaman damgasını da TR saatine çevirir", () => {
+    expect(formatDateTimeDots("2026-09-25T09:12:00+03:00")).toBe("25.09.2026 09:12");
+  });
+
+  it("ofsetsiz zaman damgasını UTC kabul eder (backend UTC saklar)", () => {
+    expect(formatDateTimeDots("2026-09-25T06:12:00")).toBe("25.09.2026 09:12");
+  });
+
+  it("null / undefined / boş / geçersiz → boş hücre", () => {
+    expect(formatDateTimeDots(null)).toBe(EMPTY_CELL);
+    expect(formatDateTimeDots(undefined)).toBe(EMPTY_CELL);
+    expect(formatDateTimeDots("")).toBe(EMPTY_CELL);
+    expect(formatDateTimeDots("gecersiz")).toBe(EMPTY_CELL);
   });
 });

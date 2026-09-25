@@ -78,11 +78,13 @@ export interface TimesheetWeekScreenProps {
   /** Boş ızgara mesajı — yükleme/hata gerekçesi çağıranın bildiğidir. */
   emptyMessage: (isLoading: boolean, isError: boolean) => string;
   /**
-   * PLN-F2.4 · Kilit bandı + salt okunur popover'ın "Günlük kaydına git →"
-   * hedefi (şantiye günlük rotası, tarihsiz — F3'te `?tarih=` gelecek).
-   * Şantiye çözülmediyse `null`: bağlantı basılmaz.
+   * PLN-F3.0 · Kilit bandı + salt okunur popover'ın "Günlük kaydına git →"
+   * hedefi — o KİLİDİN GÜNÜNE `?tarih=` ile bağlanır (şantiye günlük
+   * rotası). Fonksiyondur: banttaki tek bağlantı ilk kilitli günü alır,
+   * popover KENDİ hücresinin gününü verir (`TimesheetWeekTable` her hücre
+   * için ayrı çağırır). Şantiye çözülmediyse `null`: bağlantı basılmaz.
    */
-  diaryHref: string | null;
+  diaryHref: ((day: string) => string) | null;
 }
 
 export function TimesheetWeekScreen({

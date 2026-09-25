@@ -94,6 +94,59 @@ export const SECTION_TAB_PARAM = "sekme";
  */
 export type SectionTabKey = "is-kalemleri" | "puantaj" | "stok" | "hakedisler" | "gunluk-kayit";
 
+/**
+ * PLN-F3.0 · `?tarih=` — Günlük Kayıt'ın açık GÜNÜNÜN sorgu anahtarı.
+ *
+ * `donus`/`sekme` deseninde TEK tanımdır: üreten (`routes.projects.sites.diary`
+ * / `routes.siteDiary`) ile okuyan (`SiteDiaryEntryView` — `DiaryEntryScreen`)
+ * aynı sabiti paylaşır. `YYYY-MM-DD` taşır; verilmezse (ya da geçersizse)
+ * ekran BUGÜNE düşer.
+ */
+export const DIARY_DATE_PARAM = "tarih";
+
+/** Günlük Kayıt'ın şantiye altı ikizi — gün opsiyoneldir (`?tarih=`). */
+export interface SiteDiaryParams extends SiteParams {
+  date?: string;
+}
+
+/** Günlük Kayıt'ın KÖK ikizi — şantiye ve gün ikisi de URL'de opsiyoneldir. */
+export interface GeneralDiaryParams {
+  site?: RouteId;
+  date?: string;
+}
+
+/**
+ * PLN-F3.6a · Planlama raporları (Panel/GİR/QURR — F3-SOZLESME.md §2).
+ * `?hafta=` — Haftalık QURR'un açık haftasının sorgu anahtarı; `EVB_WEEK_PARAM`
+ * ile ekran (`WeeklyQurrScreen`, B) AYNI sabiti paylaşır.
+ */
+export const EVB_WEEK_PARAM = "hafta";
+
+/** Günlük İlerleme Raporu'nun şantiye altı ikizi — gün opsiyoneldir (`?tarih=`, `DIARY_DATE_PARAM` ile AYNI anahtar). */
+export interface SiteEvDailyReportParams extends SiteParams {
+  date?: string;
+}
+
+/** Haftalık QURR'un şantiye altı ikizi — hafta opsiyoneldir (`?hafta=`). */
+export interface SiteEvWeeklyReportParams extends SiteParams {
+  week?: number;
+}
+
+/** Planlama kök ikizleri (Bütçe/Panel) — şantiye opsiyoneldir (`?site=`). */
+export interface GeneralPlanningParams {
+  site?: RouteId;
+}
+
+/** GİR kök ikizi — şantiye VE gün opsiyoneldir. */
+export interface GeneralEvDailyReportRootParams extends GeneralPlanningParams {
+  date?: string;
+}
+
+/** QURR kök ikizi — şantiye VE hafta opsiyoneldir. */
+export interface GeneralEvWeeklyReportRootParams extends GeneralPlanningParams {
+  week?: number;
+}
+
 /** Tek bir yol segmentini güvenle kodlar (slug'da Türkçe karakter olabilir). */
 function seg(value: RouteId): string {
   return encodeURIComponent(value);
@@ -232,7 +285,7 @@ export const routes = {
       stockEntry: (p: SiteParams) => `${siteBase(p)}/stok/giris`,
       timesheet: ({ section, isoYear, isoWeek, ...p }: SiteTimesheetParams) =>
         `${siteBase(p)}/puantaj${qs({ section, iso_year: isoYear, iso_week: isoWeek })}`,
-      diary: (p: SiteParams) => `${siteBase(p)}/gunluk-kayit`,
+      diary: ({ date, ...p }: SiteDiaryParams) => `${siteBase(p)}/gunluk-kayit${qs({ [DIARY_DATE_PARAM]: date })}`,
       diarySummary: (p: SiteParams) => `${siteBase(p)}/gunluk-kayit/ozet`,
       diaryPlanning: (p: SiteParams) => `${siteBase(p)}/gunluk-kayit/planlama`,
       /**
@@ -240,6 +293,18 @@ export const routes = {
        * AYRI bir modüldür (backend `earned_value`); ad `ev*` ile ayrılır.
        */
       evBudget: (p: SiteParams) => `${siteBase(p)}/adam-saat-butcesi`,
+      /**
+       * PLN-F3.6a · Planlama Paneli (S21 K21 "İlerleme Raporları" parçası
+       * YOK — üç rapor kırıntıda GRUPLANMAZ). Kendi filtrelerini
+       * (`?tarih&aralik&disiplin&yuklenici`) KENDİSİ okur/yazar (`PanelScreen`).
+       */
+      evPanel: (p: SiteParams) => `${siteBase(p)}/planlama-paneli`,
+      /** Günlük İlerleme Raporu (GİR); `date` verilmezse `?tarih=` EKLENMEZ. */
+      evDailyReport: ({ date, ...p }: SiteEvDailyReportParams) =>
+        `${siteBase(p)}/gunluk-ilerleme-raporu${qs({ [DIARY_DATE_PARAM]: date })}`,
+      /** Haftalık QURR; `week` verilmezse `?hafta=` EKLENMEZ (backend bugünün haftası). */
+      evWeeklyReport: ({ week, ...p }: SiteEvWeeklyReportParams) =>
+        `${siteBase(p)}/haftalik-qurr${qs({ [EVB_WEEK_PARAM]: week })}`,
 
       sections: {
         new: (p: SiteParams) => `${siteBase(p)}/${SECTIONS_SEGMENT}/yeni`,
@@ -379,7 +444,8 @@ export const routes = {
    * emsalinde olduğu gibi seçici `usePathname()` üzerine yazar, yani kök yol
    * elle kurulmaz (URL-1).
    */
-  siteDiary: () => "/gunluk-kayit",
+  siteDiary: (params: GeneralDiaryParams = {}) =>
+    `/gunluk-kayit${qs({ site: params.site, [DIARY_DATE_PARAM]: params.date })}`,
 
   /**
    * PLN-F1 · kabuk nav'ının "Planlama" grubu (K21). `budget` şantiye kapsamlı
@@ -387,8 +453,21 @@ export const routes = {
    * taşınır, seçici `usePathname()` üzerine yazar. `catalog` şirket genelidir.
    */
   planning: {
-    budget: () => "/planlama/adam-saat-butcesi",
+    /**
+     * PLN-F3.6a-ek (lider denetimi) · `site` OPSİYONELDİR — kök ikiz KENDİSİ
+     * `useEvSiteParam` ile çözer, ama BAŞKA bir kök ikizden (ör. QURR → GİR)
+     * gelen bağlantı seçili şantiyeyi TAŞIMALIDIR, yoksa hedef ekran
+     * `?site=`SİZ açılır ve İLK seçeneğe döner — kullanıcı başka bir şantiye
+     * görür. Verilmezse eski çıplak yolla BİREBİR (`routes.siteDiary` deseni).
+     */
+    budget: (params: GeneralPlanningParams = {}) => `/planlama/adam-saat-butcesi${qs({ site: params.site })}`,
     catalog: () => "/planlama/birim-oran-katalogu",
+    /** Panel/GİR/QURR'un KÖK İKİZLERİ (`budget` deseni). */
+    panel: (params: GeneralPlanningParams = {}) => `/planlama/panel${qs({ site: params.site })}`,
+    dailyReport: (params: GeneralEvDailyReportRootParams = {}) =>
+      `/planlama/gunluk-rapor${qs({ site: params.site, [DIARY_DATE_PARAM]: params.date })}`,
+    weeklyReport: (params: GeneralEvWeeklyReportRootParams = {}) =>
+      `/planlama/haftalik-qurr${qs({ site: params.site, [EVB_WEEK_PARAM]: params.week })}`,
   },
 
   purchasing: {

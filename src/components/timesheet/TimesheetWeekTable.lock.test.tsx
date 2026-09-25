@@ -64,7 +64,8 @@ const FULL: TimesheetDayLock[] = DATES.map((day) => ({
   day,
   reportDate: null,
 }));
-const DIARY_HREF = "/projeler/p-1/santiyeler/s-1/gunluk-kayit";
+// PLN-F3.0 · diaryHref üreticidir (gün → yol) — popover KENDİ hücresinin gününü verir.
+const diaryHref = (day: string) => `/projeler/p-1/santiyeler/s-1/gunluk-kayit?tarih=${day}`;
 
 function renderTable(dayLocks: readonly TimesheetDayLock[], canWrite = true) {
   return render(
@@ -81,7 +82,7 @@ function renderTable(dayLocks: readonly TimesheetDayLock[], canWrite = true) {
       onCommitHours={vi.fn()}
       onCommitCode={vi.fn()}
       dayLocks={dayLocks}
-      diaryHref={DIARY_HREF}
+      diaryHref={diaryHref}
     />,
   );
 }
@@ -217,9 +218,10 @@ describe("TimesheetWeekTable · M3 salt okunur popover (§3.14 P1)", () => {
     expect(
       within(dialog).getByText("Bu gün kilitli · rapor onayı"),
     ).toBeInTheDocument();
+    // PLN-F3.0 · açılan hücre 22 Eyl (2026-09-22) → popover O GÜNE bağlanır.
     expect(
       within(dialog).getByRole("link", { name: /Günlük kaydına git/ }),
-    ).toHaveAttribute("href", DIARY_HREF);
+    ).toHaveAttribute("href", diaryHref("2026-09-22"));
     expect(within(dialog).queryByRole("button", { name: "İzin" })).toBeNull();
     expect(within(dialog).queryByText("Saate dön")).toBeNull();
   });

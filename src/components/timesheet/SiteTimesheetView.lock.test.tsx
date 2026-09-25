@@ -246,11 +246,12 @@ describe("SiteTimesheetView · M2 kilit bandı", () => {
     expect(band).toHaveTextContent(
       'Pzt 21 – Çar 23 Eyl rapor onayıyla kilitli. Bu günlerin hücreleri salt okunur · değişiklik için günlük kaydında "Kilidi aç (yetkili)".',
     );
+    // PLN-F3.0 · bant TEK bağlantı taşır — İLK kilitli güne (`WEEK_DAYS[0]`) gider.
     expect(
       within(band).getByRole("link", { name: /Günlük kaydına git/ }),
     ).toHaveAttribute(
       "href",
-      routes.projects.sites.diary({ projectId: "p-1", siteId: "s-1" }),
+      routes.projects.sites.diary({ projectId: "p-1", siteId: "s-1", date: "2026-09-21" }),
     );
   });
 

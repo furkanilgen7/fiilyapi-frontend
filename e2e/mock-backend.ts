@@ -11,6 +11,18 @@ import type { components } from "@/lib/api/schema";
 // Playwright globalSetup'i tsconfig `paths` eslemesini cozer (emsal:
 // `e2e/bordro.spec.ts` -> `@/lib/api/hooks/usePayroll`).
 import { SITE_CONTRACT_DEFAULTS } from "@/lib/api/hooks/site-fixtures";
+// PLN-F3.6b · rapor uçlarının (Panel/GİR/QURR) SAHTE gövdeleri EKRAN
+// fikstürlerinden GELİR — mockup'la BİREBİR ölçülmüş, gerçekçi sayılar zaten
+// oradadır; ikizin kendi paralel veri seti İCAT EDİLMEZ (K-MKD2'nin tersi:
+// burada risk İKİ kaynağın AYRIŞMASIdır, ekran fikstürünü aynen dönerek
+// önlenir).
+import { panelReportFixture } from "@/components/earned-value/reports/panel/panel-fixtures";
+import {
+  DAILY_REPORT_FIXTURE_APPROVED,
+  DAILY_REPORT_FIXTURE_DRAFT,
+  DAILY_REPORT_FIXTURE_NOT_GENERATED,
+} from "@/components/earned-value/reports/daily/daily-fixtures";
+import { QURR_FIXTURE_EMPTY, QURR_FIXTURE_READY } from "@/components/earned-value/reports/qurr/qurr-fixtures";
 
 /* ══════════════ SÖZLEŞME SORGU KISITLARI (F-BORDRO T1) ══════════════════════
  * 🔴 SAHTE-YEŞİLİN YEDİNCİ HÂLİ. Sahte backend `limit`i DOĞRULAMIYOR,
@@ -8396,6 +8408,26 @@ export function startMockBackend(port: number): { server: Server; close: () => P
     // gövde/parametre doğrulamasından önce döner.
     const queryViolation = queryConstraintViolation(path, parsed.searchParams);
     if (queryViolation !== null) return send(422, queryViolation);
+
+    // ================================================================
+    // PLN-F3.6b · QURR Excel indirme — İKİLİ gövde (`timesheetExportMatch`
+    // ile AYNI desen), `handleEarnedValue`in JSON-yalnız `EvRequest.send`ine
+    // SIĞMAZ, bu yüzden EV dağıtımından ÖNCE, raw `res` ile burada durur.
+    // İçerik gerçek bir XLSX DEĞİLDİR — sınanan sözleşme içerik tipi,
+    // `content-disposition` ve BFF'in ikili gövdeyi bozmadan geçirmesidir.
+    // ================================================================
+    const weeklyXlsxMatch = /^\/sites\/([^/]+)\/earned-value\/reports\/weekly\.xlsx$/.exec(path);
+    if (weeklyXlsxMatch !== null) {
+      if (method !== "GET") return send(405, { detail: "Method Not Allowed" });
+      const weekParam = parsed.searchParams.get("week");
+      const week = weekParam === null ? "guncel" : weekParam;
+      res.writeHead(200, {
+        "content-type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "content-disposition": `attachment; filename="QURR-H${week}.xlsx"`,
+      });
+      res.end(Buffer.from([0x50, 0x4b, 0x03, 0x04]));
+      return;
+    }
 
     // ================================================================
     // PLN-F1.7a · PLANLAMA (EARNED VALUE) — 25 operasyon, dosya sonundaki
@@ -19119,6 +19151,12 @@ const EV_MSG = {
   freezeBlocked: "Baseline dondurulamaz: engeller giderilmeli",
   settingsCompleted: "Tamamlanmış şantiyenin planlama ayarları salt okunurdur",
   budgetCompleted: "Tamamlanmış şantiyenin bütçesi salt okunurdur",
+  // PLN-F3.6b · metinler `lib/earned-value/report-errors.ts`teki
+  // `NO_BASELINE_TEXT`/`NO_WEEK_TEXT` ile BİREBİR aynıdır (frontend backend
+  // metnine göre sınıflandırır, durum koduna DEĞİL — ikiz sapmışsa GİR/QURR
+  // hata dalı yanlış sınıfa düşer).
+  weeklyNoBaseline: "Şantiyede aktif (dondurulmuş) baseline yok",
+  weeklyNoWeek: "Hafta proje takviminde yok",
 } as const;
 
 /* ─────────────────────────────── gövde kapıları ─────────────────────────── */
@@ -20726,12 +20764,186 @@ function handleEarnedValue(state: EvState, req: EvRequest): boolean {
   if (rest === "code-tree" || rest.startsWith("days/")) return evDayRoute(state, req, record, rest);
   if (rest === "settings") return evSettingsRoute(state, req, record);
   if (rest === "budget" || rest.startsWith("budget/")) return evBudgetRoute(state, req, record, rest);
+  if (rest === "panel" || rest.startsWith("reports/")) return evReportsRoute(state, req, record, rest);
   return false;
 }
 
 function evMethodNotAllowed(req: EvRequest): true {
   req.send(405, { detail: "Method Not Allowed" });
   return true;
+}
+
+/* ---- PLN-F3.6b · raporlar (Panel · GİR · QURR) ---- */
+
+/**
+ * 🔴 26.09/27.09 · LİDER TALEBİ (C'nin onay modalı karesi + benim onay akışı
+ * e2e'm) — üç ekran fikstürünün (24/22/25.09) HİÇBİRİNDE onay düğmesi etkin
+ * DEĞİL: `DAILY_REPORT_FIXTURE_DRAFT.draft_diary_dates` dolu (S10 gereği
+ * düğme pasif). İKİ AYRI gün şart (`fullyParallel` altında paylaşılan
+ * `evDailyApprovals` durumunu birbirine karıştırmasınlar):
+ *   · 26.09 — C'nin onay MODALI karesi; `missing_diary_dates: ["2026-09-21"]`
+ *     taşır (mockup'ın modal uyarısı), bu gün HİÇBİR e2e'de POST edilmeyecek.
+ *   · 27.09 — BENİM onay AKIŞI e2e'm; POST sonrası "approved" döner.
+ * `day_no`/`week_no`/`week_start`/`week_end` GİR'in KENDİ trailing-pencere
+ * kuralıyla (rapor GÜNÜNDE biten geriye dönük 7 gün — `daily-fixtures.ts`
+ * `WEATHER`in 18-24.09 penceresiyle AYNI kural) 27.09'a taşındı: "21.09–
+ * 27.09". 🔴 `week_no` GİR/Panel arasında PAYLAŞILAN bir alan DEĞİLDİR — GİR
+ * kendi hafta no'sunu BASE'ten (21) DEVRALIR, panel fikstüründeki
+ * (`panel-fixtures.ts`) H21 "18–24.09" penceresiyle KARIŞTIRILMAMALI (iki
+ * ayrı rapor türünün iki ayrı hafta kavramı).
+ */
+const EV_DAILY_APPROVABLE_WEEK = { week_no: 21, week_start: "2026-09-21", week_end: "2026-09-27" } as const;
+
+/**
+ * 🔴 GİR onay hâli TEK KAYNAK: ekran fikstürünün KENDİ `report_date`si.
+ * `DAILY_REPORT_FIXTURE_DRAFT.report_date` (24.09), `_APPROVED` (22.09),
+ * `_NOT_GENERATED` (25.09) mockup'la BİREBİR ölçülmüş üç ayrı gündür — ikiz
+ * bu takvime yeni bir tarih İCAT ETMEZ, sorgudaki `date` bu üçünden birine
+ * denk gelmezse (ör. gezginle başka bir güne gidilirse) taslağa DÜŞER.
+ * `POST …/approve` bu haritayı MUTASYONA UĞRATIR (`evDailyApprovals`) — bir
+ * gün onaylanınca sonraki GET o günü "approved" görür (GİR onay akışı e2e'si).
+ */
+const EV_DAILY_SCENARIO: Record<string, EvSchemas["DailyReport"]> = {
+  [DAILY_REPORT_FIXTURE_DRAFT.report_date]: DAILY_REPORT_FIXTURE_DRAFT,
+  [DAILY_REPORT_FIXTURE_APPROVED.report_date]: DAILY_REPORT_FIXTURE_APPROVED,
+  [DAILY_REPORT_FIXTURE_NOT_GENERATED.report_date]: DAILY_REPORT_FIXTURE_NOT_GENERATED,
+  "2026-09-26": {
+    ...DAILY_REPORT_FIXTURE_DRAFT,
+    report_date: "2026-09-26",
+    day_no: 144,
+    ...EV_DAILY_APPROVABLE_WEEK,
+    draft_diary_dates: [],
+    missing_diary_dates: ["2026-09-21"],
+  },
+  "2026-09-27": {
+    ...DAILY_REPORT_FIXTURE_DRAFT,
+    report_date: "2026-09-27",
+    day_no: 145,
+    ...EV_DAILY_APPROVABLE_WEEK,
+    draft_diary_dates: [],
+    missing_diary_dates: [],
+  },
+};
+
+/** `POST …/approve` mutasyonlarının izlendiği kayıt — anahtar `${siteId}:${day}`. */
+const evDailyApprovals = new Map<string, EvSchemas["DailyReport"]>();
+
+function evDailyReportKey(siteId: string, day: string): string {
+  return `${siteId}:${day}`;
+}
+
+/** QURR haftaları — `week` sorgusuna göre üç sahte hâl (409/404/200). Gerçek
+ * hafta numarası mockup'la hizalıdır (24.09.2026 → H21, `panel-fixtures.ts`
+ * ile AYNI takvim). */
+const EV_QURR_NO_BASELINE_WEEK = 1;
+const EV_QURR_NO_WEEK = 999;
+const EV_QURR_EMPTY_WEEK = 5;
+
+/** Panel'in disiplin köküyle FİLTRELENMİŞ satır alt kümesi (S8 ile AYNI mantık: kök + soyundan gelenler). */
+function evPanelFilterRows(
+  rows: EvSchemas["PanelReport"]["rows"],
+  disciplineId: string | null,
+): EvSchemas["PanelReport"]["rows"] {
+  if (disciplineId === null) return rows;
+  const keep = new Set<string>([disciplineId]);
+  // İki geçiş: `parent_id` zincirini disiplin kökünden aşağı doğru toplar (item → leaf).
+  let grew = true;
+  while (grew) {
+    grew = false;
+    for (const row of rows) {
+      if (row.node_id === null || row.parent_id === null) continue;
+      if (keep.has(row.parent_id) && !keep.has(row.node_id)) {
+        keep.add(row.node_id);
+        grew = true;
+      }
+    }
+  }
+  return rows.filter((row) => row.scope === "overall" || (row.node_id !== null && keep.has(row.node_id)));
+}
+
+function evPanelScenario(query: URLSearchParams): EvSchemas["PanelReport"] {
+  const scenario = query.get("scenario");
+  const disciplineId = query.get("discipline_id");
+  const base = panelReportFixture(
+    scenario === "no-baseline"
+      ? { has_baseline: false }
+      : scenario === "no-field-data"
+        ? { has_baseline: true, has_field_data: false }
+        : {},
+  );
+  return { ...base, rows: evPanelFilterRows(base.rows, disciplineId) };
+}
+
+/** `GET .../panel` · `GET .../reports/daily` · `POST .../reports/daily/{day}/approve` · `GET .../reports/weekly`. */
+function evReportsRoute(state: EvState, req: EvRequest, site: { id: string; status: string }, rest: string): boolean {
+  const { method, query } = req;
+  if (rest === "panel") {
+    if (method !== "GET") return evMethodNotAllowed(req);
+    if (query.get("scenario") === "error") {
+      req.send(500, { detail: "Panel hesaplaması başarısız" });
+      return true;
+    }
+    req.send(200, evPanelScenario(query));
+    return true;
+  }
+  if (rest === "reports/daily") {
+    if (method !== "GET") return evMethodNotAllowed(req);
+    if (query.get("scenario") === "error") {
+      req.send(500, { detail: "Günlük ilerleme raporu hesaplanamadı" });
+      return true;
+    }
+    const date = query.get("date") ?? DAILY_REPORT_FIXTURE_DRAFT.report_date;
+    const overridden = evDailyApprovals.get(evDailyReportKey(site.id, date));
+    req.send(200, overridden ?? EV_DAILY_SCENARIO[date] ?? { ...DAILY_REPORT_FIXTURE_DRAFT, report_date: date });
+    return true;
+  }
+  const approve = /^reports\/daily\/([^/]+)\/approve$/.exec(rest);
+  if (approve !== null) {
+    if (method !== "POST") return evMethodNotAllowed(req);
+    const day = approve[1];
+    const current = evDailyApprovals.get(evDailyReportKey(site.id, day)) ?? EV_DAILY_SCENARIO[day] ?? DAILY_REPORT_FIXTURE_DRAFT;
+    if (current.status === "approved") {
+      req.send(409, { detail: "Bu gün zaten onaylı" });
+      return true;
+    }
+    const approved: EvSchemas["DailyReport"] = {
+      ...current,
+      report_date: day,
+      status: "approved",
+      approved_at: EV_NOW,
+      approved_by: EV_APPROVER,
+      version: (current.version ?? 0) + 1,
+      draft_diary_dates: [],
+    };
+    evDailyApprovals.set(evDailyReportKey(site.id, day), approved);
+    const result: EvSchemas["ApprovalResult"] = { report: approved, missing_diary_dates: current.missing_diary_dates };
+    req.send(200, result);
+    return true;
+  }
+  if (rest === "reports/weekly") {
+    if (method !== "GET") return evMethodNotAllowed(req);
+    const rawWeek = query.get("week");
+    const week = rawWeek === null ? null : Number(rawWeek);
+    if (query.get("scenario") === "error") {
+      req.send(500, { detail: "Haftalık QURR hesaplanamadı" });
+      return true;
+    }
+    if (week === EV_QURR_NO_BASELINE_WEEK) {
+      req.send(409, { detail: EV_MSG.weeklyNoBaseline });
+      return true;
+    }
+    if (week === EV_QURR_NO_WEEK) {
+      req.send(404, { detail: EV_MSG.weeklyNoWeek });
+      return true;
+    }
+    if (week === EV_QURR_EMPTY_WEEK) {
+      req.send(200, QURR_FIXTURE_EMPTY);
+      return true;
+    }
+    req.send(200, week === null ? QURR_FIXTURE_READY : { ...QURR_FIXTURE_READY, week_no: week });
+    return true;
+  }
+  return false;
 }
 
 /* ---- şirket: disiplin + katalog ---- */

@@ -1,0 +1,159 @@
+/* PLN-F3.5 · QURR yazdırma önizlemesi içeriği (Q:204-237 — PrintSheet ÇERÇEVESİ
+   C'nindir, bu dosya yalnız İÇERİĞİ biçimlendirir). */
+.qurr-print-wrap {
+  background: var(--color-surface-2);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  overflow-x: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.qurr-print-wrap__label {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  font-weight: var(--weight-semibold);
+}
+
+.qurr-print__head {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--color-text-strong);
+}
+
+.qurr-print__head-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+}
+
+.qurr-print__eyebrow {
+  font-size: 9px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.qurr-print__title {
+  font-size: 15px;
+  font-weight: var(--weight-bold);
+}
+
+.qurr-print__meta {
+  font-size: 10px;
+  color: var(--color-text-secondary);
+}
+
+.qurr-print__kpi {
+  border: 1px solid var(--color-text-subtle);
+  padding: 3px 8px;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.qurr-print__kpi--pacal {
+  background: var(--color-surface-2);
+  /* Onaylı sapma (kullanıcı, 2026-09-25): etiket = composite.name (kullanıcı
+     verisi, uzun olabilir) — dar kutuda İKİ SATIRA kırılması serbest. */
+  max-width: 170px;
+}
+
+.qurr-print__kpi-label {
+  font-size: 8px;
+  font-weight: var(--weight-bold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  white-space: normal;
+  line-height: 1.3;
+}
+
+.qurr-print__kpi-value {
+  font-size: 12px;
+  font-weight: var(--weight-bold);
+  font-family: var(--font-mono);
+}
+
+.qurr-print__kpi-num {
+  padding: 0 2px;
+}
+
+.qurr-print__table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid var(--color-text-muted);
+  font-size: 8px;
+  font-family: var(--font-mono);
+  table-layout: fixed;
+}
+
+.qurr-print__table thead tr {
+  background: var(--color-slate-700);
+  color: var(--color-on-brand);
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+  font-family: var(--font-sans);
+  font-size: 7.5px;
+}
+
+.qurr-print__table th,
+.qurr-print__table td {
+  padding: 3px 5px;
+  text-align: right;
+  border-left: 1px solid var(--color-border);
+}
+
+.qurr-print__code-col {
+  width: 52px;
+  text-align: left !important;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.qurr-print__name-col {
+  width: 104px;
+  text-align: left !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-right: 1px solid var(--color-text-subtle);
+  font-family: var(--font-sans);
+}
+
+.qurr-print__col-code {
+  font-family: var(--font-mono);
+}
+
+.qurr-print__row--level-0 {
+  background: var(--color-border);
+  font-weight: var(--weight-bold);
+  border-top: 1px solid var(--color-text-subtle);
+}
+
+.qurr-print__row--level-1 {
+  background: var(--color-surface-muted);
+  font-weight: var(--weight-semibold);
+}
+
+.qurr-print__row--direct-total,
+.qurr-print__row--all-total {
+  background: var(--color-slate-700);
+  color: var(--color-on-brand);
+  font-weight: var(--weight-bold);
+}
+
+.qurr-print__row--all-total {
+  background: var(--color-text-strong);
+}
+
+.qurr-print__formula-legend {
+  font-size: 8px;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}

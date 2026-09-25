@@ -9,10 +9,10 @@ import { useEvCodeTree, useEvDay } from "@/lib/api/hooks/useEvDay";
 import { useSaveDayAllocation } from "@/lib/api/hooks/useEvDayMutations";
 import { useEvSettings } from "@/lib/api/hooks/useEvSettings";
 import { useSite } from "@/lib/api/hooks/useSites";
-import type { EvAllocationSave, EvCodeNode, EvDayView, EvSettingsRead } from "@/lib/api/models";
+import type { EvAllocationSave, EvCodeNode, EvDayView } from "@/lib/api/models";
 import { BackendError } from "@/lib/api/unwrap";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
-import { DEFAULT_PF_BANDS, type PfBandSettings } from "@/lib/earned-value";
+import { bandsFromSettings, type PfBandSettings } from "@/lib/earned-value";
 import { routes } from "@/lib/routes";
 
 import { buildAllocationBody, stripValues } from "./allocation-model";
@@ -66,7 +66,7 @@ export function useDiaryProgressExtension(ctx: DiaryExtensionContext | null): Di
     day,
     view: dayQuery.data,
     codeTree,
-    bands: bandsFrom(settings.data),
+    bands: bandsFromSettings(settings.data),
     draftApi,
     saveAllocation: saveAllocation.mutateAsync,
     itemFacts: buildItemFacts(budget.data),
@@ -174,16 +174,6 @@ function lineColumnsFor(input: BuildInput) {
     budgetHref: input.budgetHref,
     revisionNumber: input.view.revision_number,
   });
-}
-
-/** Şantiyenin PF eşikleri (Ayarlar > Planlama); gelmediyse varsayılan bantlar. */
-function bandsFrom(settings: EvSettingsRead | undefined): PfBandSettings {
-  if (settings === undefined) return DEFAULT_PF_BANDS;
-  const { daily, weekly } = settings.pf_bands;
-  return {
-    daily: { redBelow: daily.red_below, greenFrom: daily.green_from, highAbove: daily.high_above },
-    weekly: { redBelow: weekly.red_below, greenFrom: weekly.green_from },
-  };
 }
 
 /** K24 — ortak hâl kartı; sessiz boş blok yok. */

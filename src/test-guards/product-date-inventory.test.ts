@@ -42,6 +42,13 @@ const URUN_TARIH_ENVANTERI: Record<string, number> = {
   // PLN-F1.6 — Bütçe Adım 2 Gantt + Adım 3 S-eğrisi "bugün" çizgisi (BÜT:292, 349)
   // `localTodayIso()`. Görsel spec `page.clock.setFixedTime` ile sabitlemeli.
   "components/earned-value/budget/budget-format.ts": 1,
+  // PLN-F3.4 · GİR `?tarih=` yoksa İstanbul bugünü (`todayIso`); görsel spec
+  // F3.6b'de `page.clock.setFixedTime` ile sabitlenecek.
+  "components/earned-value/reports/daily/daily-url-state.ts": 1,
+  // PLN-F3.3 · Panel `?tarih=` yoksa İstanbul bugünü (`todayIso` — GİR'in
+  // `daily-url-state.ts`teki AYNI yardımcısı, KOPYALANMADI); görsel spec
+  // F3.6b'de `page.clock.setFixedTime` ile sabitlenecek.
+  "components/earned-value/reports/panel/panel-url-state.ts": 1,
   "components/documents/SiteDocumentsView.tsx": 1,
   "components/equipment-rental/EquipmentRentalInvoiceDetailView.tsx": 1,
   "components/equipment-rental/EquipmentRentalInvoicesView.tsx": 1,
@@ -61,8 +68,18 @@ const URUN_TARIH_ENVANTERI: Record<string, number> = {
   "components/section-detail/remainingDays.ts": 1,
   "components/settings/payroll-rates/PayrollRatesScreen.tsx": 1,
   "components/settings/roles/RolesScreen.tsx": 1,
-  "components/site-diary/SiteDiaryEntryView.tsx": 2,
+  // PLN-F3.0 (2026-09-25) — `?tarih=` ilk değeri artık `derive.ts
+  // parseDiaryDateParam`in "bugün" yedeğinden gelir (TAŞINDI, YENİ maruziyet
+  // DEĞİL): `activeDate`in eski `useState(() => isoDate(new Date()))`
+  // başlatıcısı buraya geçti, form seedi (`emptyDiaryForm(isoDate(new Date()))`)
+  // hâlâ burada — kayıt 2→1 düştü, `derive.ts` 0→1 çıktı (aşağıda). İkisi de
+  // `e2e/site-diary-visual.spec.ts` (saat çakılı) ve `site-diary-progress-
+  // helpers.ts`teki `loginAtScenarioDay` (saat çakılı) ile ÖRTÜLÜDÜR.
+  "components/site-diary/SiteDiaryEntryView.tsx": 1,
   "components/site-diary/SiteDiarySummaryView.tsx": 1,
+  // PLN-F3.0 — bkz. yukarıdaki `SiteDiaryEntryView.tsx` notu: `parseDiaryDateParam`
+  // `?tarih=` yoksa/geçersizse BUGÜNE düşer. Aynı örtü.
+  "components/site-diary/derive.ts": 1,
   "components/site-planning/week.ts": 2,
   "components/stock-entry-form/StockEntryForm.tsx": 1,
   "components/subcontractors/SubcontractorsView.tsx": 1,

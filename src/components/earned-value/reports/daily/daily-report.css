@@ -1,0 +1,751 @@
+/* PLN-F3.4 · Günlük İlerleme Raporu ekranı (GİR:1-297). */
+.ev-daily-report {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* F3.6b lider denetimi madde 13 — sayfa H1'i gezginin ÜSTÜNDE (QURR emsali). */
+.ev-daily-page-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: -0.3px;
+}
+
+.ev-daily-toolbar {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.ev-daily-toolbar__badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 9px;
+  border-radius: 4px;
+  background: var(--color-surface-muted);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+}
+
+.ev-daily-toolbar__badge--success {
+  background: var(--color-success-soft);
+  color: var(--color-success-deep);
+  border-color: var(--color-success-strong);
+}
+
+.ev-daily-toolbar__badge--warning {
+  background: var(--color-warning-soft);
+  color: var(--color-warning-strong);
+  border-color: var(--color-warning);
+}
+
+.ev-daily-toolbar__actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.ev-daily-toolbar__gate-reason {
+  flex-basis: 100%;
+  font-size: 12px;
+  color: var(--color-warning-strong);
+}
+
+.ev-daily-missing-band {
+  padding: 10px 14px;
+  border: 1px solid var(--color-warning);
+  background: var(--color-warning-soft);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--color-warning-strong);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ev-daily-missing-band__link {
+  margin-left: auto;
+  font-weight: 700;
+  color: var(--color-warning-strong);
+}
+
+.ev-daily-missing-band__icon {
+  flex-shrink: 0;
+}
+
+.ev-daily-toolbar__refresh-icon {
+  margin-right: 5px;
+}
+
+.ev-daily-toolbar__lock-icon {
+  margin-right: 5px;
+}
+
+.ev-daily-empty {
+  background: var(--color-surface);
+  border: 1px dashed var(--color-warning);
+  border-radius: 8px;
+  padding: 40px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.ev-daily-empty__title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.ev-daily-empty__text {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  max-width: 460px;
+  line-height: 1.5;
+}
+
+.ev-daily-empty__link {
+  margin-top: 4px;
+  padding: 8px 14px;
+  background: var(--color-primary);
+  color: #fff;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ev-daily-archive-summary {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.ev-daily-archive-summary__title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-right: auto;
+}
+
+.ev-daily-archive-summary__title > span:first-child {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.ev-daily-archive-summary__sub {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.ev-daily-archive-summary__metrics {
+  display: flex;
+  gap: 18px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.ev-daily-archive-summary__metrics b {
+  display: block;
+  font-size: 17px;
+  color: var(--color-text);
+  font-family: var(--font-mono);
+}
+
+.ev-daily-report__sheet {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  padding: 18px 20px;
+  gap: 14px;
+}
+
+.ev-daily-head {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--color-text);
+}
+
+.ev-daily-head__title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 300px;
+}
+
+.ev-daily-head__eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-subtle);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.ev-daily-head__name {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+
+.ev-daily-head__meta {
+  display: flex;
+  gap: 14px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  flex-wrap: wrap;
+}
+
+.ev-daily-head__meta b {
+  color: var(--color-text);
+  font-family: var(--font-mono);
+}
+
+.ev-daily-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.ev-daily-kpi {
+  overflow-x: auto;
+}
+
+/*
+ * GİR:172 `grid-template-columns: minmax(200px,1.8fr) repeat(9,minmax(76px,1fr)) 100px`
+ * min-width 1080px (GİR:171) BİREBİR taşınır: `<table>` native ızgara
+ * üretmediği için `table-layout:fixed` + `nth-child` genişliği ile aynı
+ * dağılım kurulur (1080px'te 1.8fr → 200px min'e, 9×1fr → 87px'e, son sabit
+ * 100px'e oturur — hesap: (1080-100)/10.8fr≈90.7px; 1.8fr=163px<200min →
+ * 200px ayrılır, kalan 780px 9 eşit sütuna bölünür ≈87px).
+ */
+.ev-daily-kpi table {
+  width: 100%;
+  min-width: 1080px;
+  table-layout: fixed;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.ev-daily-kpi__table th:nth-child(1),
+.ev-daily-kpi__table td:nth-child(1) {
+  width: 200px;
+}
+
+.ev-daily-kpi__table th:nth-child(n + 2):nth-child(-n + 10),
+.ev-daily-kpi__table td:nth-child(n + 2):nth-child(-n + 10) {
+  width: 87px;
+}
+
+.ev-daily-kpi__table th:nth-child(11),
+.ev-daily-kpi__table td:nth-child(11) {
+  width: 100px;
+}
+
+.ev-daily-kpi th {
+  padding: 8px;
+  background: var(--color-surface-muted);
+  border-bottom: 1px solid var(--color-border);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  text-align: right;
+}
+
+.ev-daily-kpi th:first-child {
+  text-align: left;
+}
+
+.ev-daily-kpi td {
+  padding: 7px 8px;
+  text-align: right;
+  border-bottom: 1px solid var(--color-surface-muted);
+  font-family: var(--font-mono);
+}
+
+.ev-daily-kpi__table th:first-child {
+  padding: 8px 12px;
+}
+
+.ev-daily-kpi__name {
+  text-align: left !important;
+  font-family: inherit !important;
+  padding: 7px 12px !important;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ev-daily-kpi__chip {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.ev-daily-kpi__caption {
+  font-size: 11px;
+  color: var(--color-text-subtle);
+  margin-bottom: 8px;
+}
+
+/* GİR:462-465 — Genel (fw700, zemin) · Genel–Kendi/Taşeron (fw600, 24px içerlek, zemin) · disiplinler normal. */
+.ev-daily-kpi__row--overall {
+  font-weight: 700;
+  background: var(--color-surface-muted);
+  border-top: 1.5px solid var(--color-border-strong);
+}
+
+.ev-daily-kpi__row--sub {
+  font-weight: 600;
+  background: var(--color-surface-muted);
+}
+
+.ev-daily-kpi__row--sub .ev-daily-kpi__name {
+  padding-left: 24px !important;
+}
+
+/* GİR:456 `devFg` — sapma tolerans dışı kırmızı/yeşil (K27 `status` üzerinden). */
+.ev-daily-kpi__variance--late {
+  color: var(--color-danger-strong);
+}
+
+.ev-daily-kpi__variance--ahead {
+  color: var(--color-success);
+}
+
+.ev-daily-trend {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  align-items: stretch;
+}
+
+.ev-daily-trend__table {
+  flex: 3 1 480px;
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.ev-daily-trend__table th,
+.ev-daily-trend__table td {
+  padding: 6px 8px;
+  text-align: right;
+  border-bottom: 1px solid var(--color-surface-muted);
+  font-family: var(--font-mono);
+}
+
+.ev-daily-trend__table th:first-child,
+.ev-daily-trend__table td:first-child {
+  text-align: left;
+  font-family: inherit;
+  color: var(--color-text-secondary);
+}
+
+.ev-daily-trend__future {
+  opacity: 0.4;
+}
+
+.ev-daily-trend__draft-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-warning);
+  margin-right: 4px;
+}
+
+.ev-daily-trend__day-label {
+  display: block;
+}
+
+.ev-daily-trend__day-tag {
+  display: block;
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--color-text-subtle);
+  text-transform: none;
+}
+
+.ev-daily-trend__delta--neg {
+  color: var(--color-danger-strong);
+}
+
+.ev-daily-trend__delta--pos {
+  color: var(--color-success);
+}
+
+.ev-daily-trend__chart-wrap {
+  flex: 2 1 300px;
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Lider denetimi (7. tur, madde 2) — `ChartTooltip`nin KENDİ konumlandırma
+   bağlamı: yalnız SVG'yi sarar, lejandı İÇERMEZ (kök sebep: eskiden ortak
+   `chart-wrap` bağlamdı, ipucu lejandın YÜKSEKLİĞİNİ hesaba katmadan
+   üste sıfırlanıyordu). */
+.ev-daily-trend__svg-wrap {
+  position: relative;
+}
+
+.ev-daily-trend__legend {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+
+.ev-daily-trend__legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.ev-daily-trend__legend-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-warning);
+  display: inline-block;
+}
+
+.ev-daily-trend__chart {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.ev-daily-trend__report-line {
+  stroke: var(--color-text);
+  stroke-dasharray: 3 3;
+}
+
+.ev-daily-trend__line--planned {
+  stroke: var(--color-text-subtle);
+  stroke-width: 2;
+  stroke-dasharray: 5 4;
+}
+
+.ev-daily-trend__line--actual {
+  stroke: var(--color-primary);
+  stroke-width: 2.2;
+}
+
+.ev-daily-trend__point {
+  fill: #fff;
+  stroke: var(--color-primary);
+  stroke-width: 1.4;
+}
+
+.ev-daily-trend__point--draft {
+  fill: var(--color-warning);
+  stroke: var(--color-primary);
+  stroke-width: 1.4;
+}
+
+.ev-daily-qty {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-x: auto;
+}
+
+/*
+ * GİR:234 `grid-template-columns: minmax(170px,1.6fr) 50px repeat(9,
+ * minmax(76px,1fr)) 140px`, min-width 1160px (GİR:233) BİREBİR: native
+ * `<table>`e (`TreeTable variant="progress"`) `table-layout:fixed` +
+ * `nth-child` genişliğiyle taşınır (hesap: sabit 50+140=190px, kalan
+ * 970px'te 1.6fr min 170px'e sabitlenir, kalan 800px 9 eşit sütuna
+ * bölünür ≈89px).
+ */
+.ev-daily-qty__table {
+  min-width: 1160px;
+  table-layout: fixed;
+}
+
+.ev-daily-qty__table th:nth-child(1),
+.ev-daily-qty__table td:nth-child(1) {
+  width: 170px;
+}
+
+.ev-daily-qty__table th:nth-child(2),
+.ev-daily-qty__table td:nth-child(2) {
+  width: 50px;
+}
+
+.ev-daily-qty__table th:nth-child(n + 3):nth-child(-n + 11),
+.ev-daily-qty__table td:nth-child(n + 3):nth-child(-n + 11) {
+  width: 89px;
+}
+
+.ev-daily-qty__table th:nth-child(12),
+.ev-daily-qty__table td:nth-child(12) {
+  width: 140px;
+}
+
+/*
+ * GİR:234 başlık satırı `line-height:1.25` taşır ve `white-space` BELİRTMEZ
+ * (varsayılan `normal`) — uzun etiketler ("Gerçek oran gün", "Günlük
+ * miktar") dar sütunda İKİ/ÜÇ satıra KIRILIR, TEK satırda TAŞMAZ. Ortak
+ * `TreeTable`in `.tree-table__head{white-space:nowrap}` kuralı (P:357
+ * emsali, tek satır tablolar için) bu ekranda YANLIŞ: dar sabit genişlikle
+ * (nth-child kuralları yukarıda) birleşince başlık metni komşu hücreye
+ * TAŞIP görsel olarak birleşiyordu (F3.6b lider denetimi). Seçici
+ * `th.tree-table__head` (0,2,1) ortak kuralı (0,2,0) YENER — `TreeTable`e
+ * DOKUNULMADI, yalnız bu ekranın kendi sınıfıyla kapsam daraltıldı.
+ */
+.ev-daily-qty__table th.tree-table__head {
+  white-space: normal;
+  line-height: 1.25;
+}
+
+.ev-qty-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+/* Lider denetimi (6. tur, madde 2/4) — GİR:240 mockup grid min genişlikleri
+   (`minmax(170px,1.6fr) 50px ... 140px`); `<table>` auto-layout bunları
+   GARANTİ ETMEZ, `min-width` alt sınır olarak zorlar (taşarsa yatay kaydırma
+   — lider kararı: "kolonları sıkıştırma"). */
+.ev-qty-col-name {
+  min-width: 210px;
+}
+
+.ev-qty-col-uom {
+  min-width: 50px;
+}
+
+.ev-qty-col-progress {
+  min-width: 140px;
+}
+
+.ev-qty-progress-text {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.ev-qty-chip {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.ev-qty-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 110px;
+}
+
+.ev-qty-progress__track {
+  flex: 1 1 auto;
+  min-width: 40px;
+  height: 5px;
+  background: var(--color-surface-muted);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.ev-qty-progress__bar {
+  /* Lider denetimi (7. tur, madde 1) — KÖK SEBEP: `<span>` VARSAYILAN `inline`,
+     inline (yer değiştirmeyen) elemanlarda `width` YOK SAYILIR (CSS spec) —
+     `style="width:NN%"` sessizce göz ardı ediliyordu, dolgu HER ZAMAN 0px
+     genişlikte render oluyordu (DOM ölçümü: `barInlineWidth` doğruydu,
+     `getBoundingClientRect().width` HER ZAMAN 0). `display:block` çözer. */
+  display: block;
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: 3px;
+}
+
+.ev-qty-progress__value {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  width: 46px;
+  flex-shrink: 0;
+  text-align: right;
+}
+
+/* GİR:489 — gerçek oran planlının ÜSTÜNDEYSE kırmızı yazı. */
+.ev-qty-rate--over {
+  color: var(--color-danger-strong);
+}
+
+/*
+ * GİR:242 `q.pf` başlık/yaprak hücrelerinde ARKA PLAN TAMAMI boyalı —
+ * `TreeTable` bu kolonun `<td>`sini kendisi üretir (`PfBandCell` `as="td"`
+ * OLAMAZ, çift `<td>` üretirdi); bunun yerine hücrenin kendi dolgusu
+ * SIFIRLANIR, `PfBandCell` (span) hücreyi TAMAMEN doldurur.
+ */
+.ev-qty-pf-cell {
+  padding: 0 !important;
+}
+
+.ev-qty-pf-cell .pf-band-cell {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 7px 8px;
+  box-sizing: border-box;
+}
+
+/* Lider denetimi (6. tur, madde 1) — "Toplam doğrudan" artık `TreeTable`nin
+   kendi satırı (GİR:263-268 grid'iyle HİZALI): `rowClassName` bu satırı işaretler. */
+.ev-daily-qty__total-row {
+  border-top: 1.5px solid var(--color-border-strong);
+  background: var(--color-surface-muted);
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.ev-qty-name--total {
+  font-weight: 700;
+}
+
+.ev-daily-footer {
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ev-daily-footer__chips {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.ev-daily-footer__chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.ev-daily-footer__chip-icon {
+  flex-shrink: 0;
+}
+
+.ev-daily-footer__chip--ok {
+  background: var(--color-success-soft);
+  border: 1px solid var(--color-success-strong);
+  color: var(--color-success-deep);
+  font-weight: 600;
+}
+
+.ev-daily-footer__chip--warn {
+  background: var(--color-warning-soft);
+  border: 1px solid var(--color-warning);
+  color: var(--color-warning-strong);
+}
+
+.ev-daily-footer__chip--danger {
+  background: var(--color-danger-soft);
+  border: 1px solid var(--color-danger);
+  color: var(--color-danger-strong);
+}
+
+.ev-daily-footer__meta {
+  display: flex;
+  gap: 18px;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  flex-wrap: wrap;
+}
+
+.ev-daily-footer__mono {
+  font-family: var(--font-mono);
+}
+
+.ev-daily-footer__pf-table {
+  border: 1px solid var(--color-danger);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.ev-daily-footer__pf-title {
+  padding: 7px 12px;
+  background: var(--color-danger-soft);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-danger-strong);
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+.ev-daily-footer__pf-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.ev-daily-footer__pf-table th,
+.ev-daily-footer__pf-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--color-surface-muted);
+  text-align: left;
+}
+
+.ev-daily-footer__links {
+  display: flex;
+  gap: 18px;
+}
+
+.ev-daily-footer__diary-link,
+.ev-daily-footer__weekly-link {
+  align-self: flex-start;
+  font-weight: 700;
+  color: var(--color-primary);
+}

@@ -1,0 +1,28 @@
+/* PLN-F3.4 · Onay modalı (GİR:389-403). */
+.ev-daily-approve-modal__text {
+  padding: 18px 20px 4px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: 1.55;
+}
+
+.ev-daily-approve-modal__warning {
+  margin: 0 20px 8px;
+  padding: 9px 12px;
+  border: 1px solid var(--color-warning);
+  background: var(--color-warning-soft);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--color-warning-strong);
+  line-height: 1.5;
+}
+
+.ev-daily-approve-modal__error {
+  margin: 0 20px 12px;
+  padding: 9px 12px;
+  border: 1px solid var(--color-danger);
+  background: var(--color-danger-soft);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--color-danger-strong);
+}

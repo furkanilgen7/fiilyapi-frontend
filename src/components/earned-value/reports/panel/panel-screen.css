@@ -1,0 +1,242 @@
+/* PLN-F3.3 · Planlama Paneli düzeni — Panel:79-448. */
+.ev-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.ev-panel__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.ev-panel__title {
+  font-size: var(--text-xl);
+  font-weight: 600;
+  margin: 0;
+}
+.ev-panel__subtitle {
+  margin: var(--space-1) 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+.ev-panel__pending {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+/*
+ * LİDER TALEBİ (2026-09-26, S32 turu) — mockup Panel.dc.html:353-355 İKİ
+ * satırlı: 1. satır gezgin+aralık+disiplin, 2. satır Kendi/Taşeron/Hepsi
+ * (sol) + Baseline çipi (sağ). `.ev-panel__toolbar` artık SÜTUN kabı,
+ * `.ev-panel__toolbar-row` her biri kendi satırının flex sırasıdır.
+ */
+.ev-panel__toolbar {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  box-shadow: var(--shadow-xs, 0 1px 2px rgba(0, 0, 0, 0.04));
+}
+.ev-panel__toolbar-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+/*
+ * 🔴 LİDER DENETİMİ KUSURU: `Select`in `select-wrap`i `width:100%` taşır
+ * (form alanı varsayılanı) — flex toolbar'da bu satırı TEK BAŞINA doldurup
+ * Kendi/Taşeron + Baseline çipini alt satıra İTİYORDU. Mockup TEK SATIR
+ * kompakt bir açılır liste gösterir; sarmalayıcı SABİT genişlik verir.
+ *
+ * 🔴 LİDER DENETİMİ KUSURU (4. tur, mockup Panel:116 ölçümü) — SABİT
+ * `width:200px` "DİSİPLİN" öneki EKLENİNCE dar kaldı ("Tüm disiplinle" diye
+ * KIRPILDI). ÖLÇÜM: mockup'ın kendi kutusu (`Panel:116`) kenarlıktan
+ * kenarlığa ~196px (`nameFg` sınır pikselleri tarandı); YALNIZ tek bir HTML
+ * `<select>` metnini (mockup'ın özel `<button>`+açılır liste desenine karşı
+ * asıl elde MEVCUT olan native `<select>`) aynı dar kutuda barındırmak,
+ * primitive'in KENDİ chevron boşluğuyla (`--space-8`=32px, mockup'ın 14px
+ * inline SVG'sinden GENİŞ) birlikte KIRPMAYA devam etti — `width:auto`
+ * DENENDİ, native `<select>` metne göre GÜVENİLİR biçimde büyümedi
+ * (tarayıcı motoru `<select>`i mockup'ın `<div>`i gibi ele almaz). Bu
+ * yüzden SABİT ama GENİŞ (230px) bir kutu — ölçülen 196px'in ÜSTÜNDE,
+ * primitive'in kendi chevron boşluğunu da kapsayacak GÜVENLİ pay; toolbar
+ * satırında bolca boş alan var (mockup'ın ŞANTİYE seçicisi bizde YOK),
+ * TEK SATIR bozulmaz.
+ */
+.ev-panel__toolbar-select {
+  width: 230px;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 10px 0 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+.ev-panel__toolbar-select-label {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+.ev-panel__toolbar-select .select-wrap {
+  width: auto;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.ev-panel__toolbar-select .select {
+  width: 100%;
+  border: none;
+  padding: 0;
+  padding-right: var(--space-8);
+  background: transparent;
+}
+.ev-panel__toolbar-select .select:focus {
+  box-shadow: none;
+}
+.ev-panel__baseline-chip {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  background: var(--color-surface-muted, #f8fafc);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+}
+.ev-panel__baseline-chip-date {
+  font-family: var(--font-mono);
+}
+
+.ev-panel__row {
+  display: flex;
+  gap: var(--space-4);
+  align-items: stretch;
+  flex-wrap: wrap;
+}
+.ev-panel__row > :first-child {
+  flex: 3 1 640px;
+  min-width: 0;
+}
+.ev-panel__row > :last-child {
+  flex: 1 1 300px;
+  min-width: 0;
+}
+
+.ev-panel__charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: var(--space-4);
+}
+
+.ev-panel__table-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-xs, 0 1px 2px rgba(0, 0, 0, 0.04));
+  overflow: hidden;
+}
+.ev-panel__table-head {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border-subtle, #f1f5f9);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.ev-panel__table-title {
+  font-size: var(--text-md);
+  font-weight: 600;
+}
+.ev-panel__table-note {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+.ev-panel__table-link {
+  margin-left: auto;
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+/*
+ * 🔴 PLN-F3.6b LİDER DENETİMİ KUSURU (yan yana ölçümde bulundu): bu üç sınıf
+ * `panel-columns.tsx`te KULLANILIYORDU ama HİÇ TANIMLANMAMIŞTI — disiplin
+ * adı ile Kendi/Taşeron çipi ve iş tipi adı ile birimi ARADA BOŞLUK OLMADAN
+ * bitişik basılıyordu ("Kaba İnşaatKendi", "Kalıpm²"). Mockup'ta (Panel:
+ * 350-396) ikisi de ayrı, küçük rozet/gri metin olarak ayrık durur.
+ */
+.ev-panel-table__name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ev-panel-table__chip {
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--color-text-muted);
+  background: var(--color-surface-muted, #f8fafc);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 1px 6px;
+}
+.ev-panel-table__unit {
+  font-size: var(--text-xs);
+  color: var(--color-text-subtle, #94a3b8);
+}
+/*
+ * LİDER TALEBİ (2026-09-26, S32 turu) — mockup Panel:542 `bt: '1.5px dashed
+ * #cbd5e1'`: `non_direct` satırının ÜST kenarlığı KESİKLİ, diğer satırların
+ * `tree-table--panel .tree-table__row--level-0` düz (`1px solid`) kuralı
+ * DEĞİL. İki sınıf birlikte (`.tree-table__row--level-0.ev-panel-table__
+ * row--non-direct`) özgüllükle üzerine yazar — import SIRASINA BAĞIMLI
+ * DEĞİL. Renk `--color-dashed-border` (→ `--color-border-strong` `#cbd5e1`)
+ * — mockup'ın HAM hex'iyle AYNI token.
+ */
+.tree-table--panel .tree-table__row--level-0.ev-panel-table__row--non-direct {
+  border-top: 1.5px dashed var(--color-dashed-border);
+}
+/*
+ * S32 (KULLANICI, 2026-09-26) — `non_direct` satırı: Panel:542 `nameFg:
+ * '#64748b'` (mockup soluk gri, diğer satırların `#1e293b` KOYU rengi DEĞİL).
+ */
+.ev-panel-table__name--muted {
+  color: var(--color-text-muted, #64748b);
+}
+
+/*
+ * 🔴 LİDER DENETİMİ KUSURU: Küm. PF / Bu hafta PF hücreleri mockup'ta TAM
+ * ZEMİN bantlı (`<td>`nin TAMAMI boyalı), üretimde yalnız içindeki küçük
+ * METİN çipi renkliydi. `PfBandCell` `as="span"` ile `TreeTable`in KENDİ
+ * `<td>`si İÇİNE basılıyor (iç içe `<td>` GEÇERSİZ HTML olurdu) — bu yüzden
+ * span, `tree-table.css`teki hücre dolgusuyla (`8px 10px`) AYNI negatif
+ * kenar boşluğuyla `<td>`yi TAMAMEN kaplar. Yalnız `panel` varyantına
+ * KAPSANIR (diğer tabloların hücre dolgusu farklı olabilir).
+ */
+.tree-table--panel td .pf-band-cell {
+  display: block;
+  margin: -8px -10px;
+  padding: 8px 10px;
+}
+
+/* 🔴 LİDER DENETİMİ KUSURU: "Planlı %" mockup'ta GRİ, "Sapma" NEGATİFTE
+   kırmızı / POZİTİFTE yeşil — ikisi de düz metin rengindeydi. */
+.ev-panel-table__planned {
+  color: var(--color-text-muted);
+}
+.ev-panel-table__dev--negative {
+  color: var(--color-danger-strong);
+}
+.ev-panel-table__dev--positive {
+  color: var(--color-success-deep);
+}

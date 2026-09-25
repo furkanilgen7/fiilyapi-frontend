@@ -1,6 +1,6 @@
 import { afterEach, describe, it, expect } from "vitest";
 
-import { formatDiaryDayLabel, isoPeriod, shiftPeriod } from "./derive";
+import { formatDiaryDayLabel, isoDate, isoPeriod, isValidIsoDate, parseDiaryDateParam, shiftPeriod } from "./derive";
 
 // F-SD T4 · ay gezinmesi (HÖ90/92). `Date` aritmetiği kullanılmadığı için
 // yıl taşmaları elle doğrulanır.
@@ -22,6 +22,40 @@ describe("shiftPeriod", () => {
 
   it("`isoPeriod` çıktısıyla birlikte çalışır", () => {
     expect(shiftPeriod(isoPeriod("2026-01-15"), -1)).toEqual({ year: 2025, month: 12 });
+  });
+});
+
+// PLN-F3.0 · `?tarih=` doğrulama/okuma.
+describe("isValidIsoDate", () => {
+  it("gerçek takvim günleri → true", () => {
+    expect(isValidIsoDate("2026-09-24")).toBe(true);
+    expect(isValidIsoDate("2024-02-29")).toBe(true); // artık yıl
+  });
+
+  it("biçim doğru ama takvimde YOK → false (Date sessiz taşmayı yakalar)", () => {
+    expect(isValidIsoDate("2026-02-30")).toBe(false);
+    expect(isValidIsoDate("2026-13-01")).toBe(false);
+    expect(isValidIsoDate("2023-02-29")).toBe(false); // artık yıl DEĞİL
+  });
+
+  it("biçim yanlış → false", () => {
+    expect(isValidIsoDate("24-09-2026")).toBe(false);
+    expect(isValidIsoDate("2026-9-24")).toBe(false);
+    expect(isValidIsoDate("")).toBe(false);
+    expect(isValidIsoDate("abc")).toBe(false);
+  });
+});
+
+describe("parseDiaryDateParam", () => {
+  it("geçerli ISO → aynen", () => {
+    expect(parseDiaryDateParam("2026-09-24")).toBe("2026-09-24");
+  });
+
+  it("null / geçersiz / takvimde yok → BUGÜN", () => {
+    const today = isoDate(new Date());
+    expect(parseDiaryDateParam(null)).toBe(today);
+    expect(parseDiaryDateParam("2026-02-30")).toBe(today);
+    expect(parseDiaryDateParam("değil bir tarih")).toBe(today);
   });
 });
 

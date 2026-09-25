@@ -1,0 +1,37 @@
+/* PLN-F3.5 · Bant renkli PF hücresi (Q:189-191 `pfc()`). Renk tokenleri
+   `PfBadge`in `ev-diary-pf--*` ailesiyle AYNI (bkz. earned-value/diary) —
+   yalnız kullanım biçimi farklı: rozet değil, hücrenin TAMAMI boyanır. */
+.pf-band-cell {
+  font-family: var(--font-mono);
+}
+
+td.pf-band-cell {
+  padding: 6px 8px;
+  text-align: right;
+}
+
+.pf-band-cell--red {
+  background: var(--color-danger-soft);
+  color: var(--color-danger-strong);
+}
+
+.pf-band-cell--amber {
+  background: var(--color-warning-soft);
+  color: var(--color-warning-body-text);
+}
+
+.pf-band-cell--green {
+  background: var(--color-success-soft);
+  color: var(--color-success-deep);
+}
+
+/* K19 — günlük PF > üst eşik: bilgi (mavi) tonu, "şüpheli yüksek". */
+.pf-band-cell--high {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-hover);
+}
+
+.pf-band-cell--none {
+  background: transparent;
+  color: var(--color-text-subtle);
+}

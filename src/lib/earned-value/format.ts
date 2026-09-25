@@ -31,6 +31,20 @@ function formatFixed(rounded: string, digits: number): string {
   }).format(Number(rounded));
 }
 
+/**
+ * LİDER TALEBİ (ORTAK, 2026-09-26) — sabit basamaklı ondalık biçimleyici,
+ * `formatPf`in AYNI `roundHalfUp` + `formatFixed` deseni genel `digits`
+ * parametresiyle: "2.0" (digits=1) → "2,0" · "520" (digits=1) → "520,0".
+ * `Number()` YOK (yalnız `formatFixed` içindeki `Intl.NumberFormat.format`
+ * ÇAĞRISI — o da zaten ROUND_HALF_UP'tan geçmiş bir STRING alır, yeniden
+ * yuvarlamaz). B'nin `qurr formatFixedQuantity`si ve C'nin tolerans
+ * etiketi BURADAN çağıracak (kopya YOK).
+ */
+export function formatFixedDecimal(value: EvNumber, digits: number): string {
+  const rounded = roundHalfUp(value, digits);
+  return rounded === null ? EMPTY_CELL : formatFixed(rounded, digits);
+}
+
 /** PF: sabit 2 ondalık — "0,97" · "1,00". */
 export function formatPf(value: EvNumber): string {
   const rounded = roundHalfUp(value, PF_DIGITS);
@@ -44,10 +58,15 @@ export function formatPercent01(value: EvNumber, digits: number = PERCENT_DEFAUL
 }
 
 /** 0–1 sapma → işaretli puan "−2,6" · "+1,6"; yuvarlanınca sıfırsa "0,0". */
-export function formatVariancePoints(value: EvNumber): string {
-  const rounded = roundHalfUp(toPoints(value), VARIANCE_DIGITS);
+/**
+ * `digits` VARSAYILANI `VARIANCE_DIGITS` (1) — geriye uyumlu, mevcut
+ * çağıranlar (Panel/QURR) davranışı DEĞİŞMEZ. PLN-F3.6b lider talebi: GİR
+ * trend "Fark (puan)" satırı 2 hane istiyor (`formatVariancePoints(v, 2)`).
+ */
+export function formatVariancePoints(value: EvNumber, digits: number = VARIANCE_DIGITS): string {
+  const rounded = roundHalfUp(toPoints(value), digits);
   if (rounded === null) return EMPTY_CELL;
-  const magnitude = formatFixed(rounded.replace(/^-/, ""), VARIANCE_DIGITS);
+  const magnitude = formatFixed(rounded.replace(/^-/, ""), digits);
   if (Number(rounded) === 0) return magnitude;
   return `${rounded.startsWith("-") ? MINUS_SIGN : "+"}${magnitude}`;
 }

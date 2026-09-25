@@ -1,0 +1,296 @@
+/* PLN-F3.4 · GİR yazdırma önizlemesi (GİR:299-386). */
+.ev-daily-print {
+  background: var(--color-border-strong);
+  border-radius: 8px;
+  padding: 24px;
+  overflow-x: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+}
+
+.ev-print-head {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--color-text);
+}
+
+.ev-print-head__title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.ev-print-head__eyebrow {
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.ev-print-head__name {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.ev-print-head__meta {
+  font-size: 10.5px;
+  color: var(--color-text-secondary);
+}
+
+.ev-print-section-title {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  margin: 6px 0;
+}
+
+.ev-print-kpi {
+  width: 100%;
+  border: 1px solid var(--color-border-strong);
+  border-collapse: collapse;
+  font-size: 10px;
+  font-family: var(--font-mono);
+}
+
+.ev-print-kpi th,
+.ev-print-kpi td {
+  padding: 4px 6px;
+  text-align: right;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.ev-print-kpi th:first-child,
+.ev-print-kpi td:first-child {
+  text-align: left;
+  font-family: var(--font-sans, inherit);
+}
+
+.ev-print-kpi__overall {
+  font-weight: 700;
+  background: var(--color-surface-muted);
+}
+
+.ev-print-qty__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px;
+  background: var(--color-surface-muted);
+  border-bottom: 1px solid var(--color-border-strong);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.ev-print-qty__head-chip {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.ev-print-qty__head-meta {
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+/*
+ * GİR:352,360 `grid-template-columns: 1.6fr 40px repeat(9,minmax(0,1fr)) 1.1fr`
+ * — 12 kolon BİREBİR (F3.6b lider denetimi: önceki 7 kolonluk "sade" hâl
+ * SAPMAYDI, tam kolon setine çıkarıldı).
+ */
+.ev-print-qty__row,
+.ev-print-qty__head-row {
+  display: grid;
+  grid-template-columns: 1.6fr 40px repeat(9, minmax(0, 1fr)) 1.1fr;
+  gap: 4px;
+}
+
+.ev-print-qty__row {
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 10px;
+  font-family: var(--font-mono);
+}
+
+/* GİR:361 — yaprak satırı adı 22px içerlekli (satırın KENDİSİ değil, ilk hücre). */
+.ev-print-qty__row > span:first-child {
+  padding-left: 14px;
+  font-family: var(--font-sans, inherit);
+}
+
+.ev-print-qty__row > span:nth-child(2) {
+  font-family: var(--font-sans, inherit);
+  color: var(--color-text-secondary);
+}
+
+.ev-print-qty__row > span:nth-child(n + 3):nth-child(-n + 11) {
+  text-align: right;
+}
+
+.ev-print-qty__strong {
+  font-weight: 700;
+}
+
+.ev-print-qty__progress {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ev-print-qty__progress-track {
+  flex: 1;
+  height: 4px;
+  background: var(--color-border);
+}
+
+.ev-print-qty__progress-bar {
+  /* Lider denetimi (7. tur, madde 1, "ekran ≡ baskı") — AYNI kök sebep:
+     `<span>` inline, `width` yok sayılıyordu. Bkz. `daily-report.css`
+     `.ev-qty-progress__bar`. */
+  display: block;
+  height: 100%;
+  background: var(--color-primary);
+}
+
+/* GİR:352-353 — miktar tablosu başlık satırı (yazdırmada ÖNCEDEN hiç basılmıyordu). */
+.ev-print-qty__head-row {
+  padding: 5px 8px;
+  background: var(--color-surface-muted);
+  border-bottom: 1px solid var(--color-border-strong);
+  font-size: 8.5px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  line-height: 1.2;
+}
+
+.ev-print-qty__head-row > span:nth-child(n + 3):nth-child(-n + 11) {
+  text-align: right;
+}
+
+/* GİR:331-347 — "2 · 7 günlük trend" (sayfa 1, opsiyonel DEĞİL). */
+.ev-print-trend {
+  display: flex;
+  gap: 12px;
+}
+
+.ev-print-trend__table {
+  flex: 3;
+  border: 1px solid var(--color-border-strong);
+  display: grid;
+  grid-template-columns: 90px repeat(7, minmax(0, 1fr));
+  font-size: 10px;
+  font-family: var(--font-mono);
+}
+
+.ev-print-trend__head {
+  padding: 4px 8px;
+  background: var(--color-surface-muted);
+  border-bottom: 1px solid var(--color-border-strong);
+  font-family: var(--font-sans, inherit);
+  font-weight: 700;
+  font-size: 8.5px;
+  text-transform: uppercase;
+}
+
+.ev-print-trend__head--day {
+  padding: 4px 6px;
+  text-align: right;
+  font-size: 9px;
+}
+
+.ev-print-trend__row-label {
+  padding: 4px 8px;
+  font-family: var(--font-sans, inherit);
+}
+
+.ev-print-trend__row-label--border {
+  border-top: 1px solid var(--color-border);
+}
+
+.ev-print-trend__cell {
+  padding: 4px 6px;
+  text-align: right;
+}
+
+.ev-print-trend__cell--border {
+  border-top: 1px solid var(--color-border);
+}
+
+.ev-print-trend__cell--strong {
+  font-weight: 700;
+}
+
+.ev-print-trend__chart {
+  flex: 2;
+  border: 1px solid var(--color-border-strong);
+  padding: 4px;
+}
+
+.ev-print-trend__chart svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.ev-print-trend__line--planned {
+  stroke: var(--color-text-subtle);
+  stroke-width: 2;
+  stroke-dasharray: 5 4;
+}
+
+.ev-print-trend__line--actual {
+  stroke: var(--color-primary);
+  stroke-width: 2.2;
+}
+
+/* GİR:371-379 — mutabakat + PF bant dışı, yalnız SON sayfa. */
+.ev-print-reconciliation {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 10px;
+}
+
+.ev-print-reconciliation__ok {
+  font-weight: 700;
+  color: var(--color-success-deep);
+}
+
+.ev-print-reconciliation__warn {
+  color: var(--color-warning-strong);
+}
+
+.ev-print-reconciliation__pf {
+  border: 1px solid var(--color-border-strong);
+}
+
+.ev-print-reconciliation__pf-title {
+  padding: 4px 8px;
+  background: var(--color-surface-muted);
+  font-size: 8.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--color-border-strong);
+}
+
+.ev-print-reconciliation__pf table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.ev-print-reconciliation__pf th,
+.ev-print-reconciliation__pf td {
+  padding: 3px 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 9px;
+}

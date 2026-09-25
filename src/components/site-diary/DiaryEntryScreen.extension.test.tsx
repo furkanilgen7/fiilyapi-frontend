@@ -35,9 +35,13 @@ import type { MeResponse } from "@/lib/auth/types";
 // PLN-F2.2 · çekirdek günlük ekranının UZANTI YUVALARI (§2.7) ve genişlemesi
 // (G1–G10, K16). Planlama kodu import EDİLMEZ — uzantı burada elle kurulur.
 
+// PLN-F3.0 · `?tarih=` — bu dosya uzantı yuvalarını test eder, URL yazımı
+// AYRI dalda (`SiteDiaryEntryView.test.tsx`) doğrulanır.
 vi.mock("next/navigation", () => ({
   useParams: () => ({ projectId: "p-1", siteId: "s-1" }),
   usePathname: () => "/projeler/p-1/santiyeler/s-1/gunluk-kayit",
+  useRouter: () => ({ replace: vi.fn() }),
+  useSearchParams: () => new URLSearchParams(),
 }));
 vi.mock("@/components/shell/SessionProvider", () => ({ useSession: vi.fn() }));
 vi.mock("@/lib/api/hooks/useSiteDiary", () => ({ useSiteDiaryEntries: vi.fn(), useSiteDiaryEntry: vi.fn() }));

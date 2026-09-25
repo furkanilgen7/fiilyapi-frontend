@@ -1,4 +1,5 @@
 import type { AuditAction, AuditActorRead } from "@/lib/api/models";
+import { parseUtcOrOffsetTimestamp } from "@/lib/format";
 
 // Rozet metinleri mockup'taki tablodan alınmıştır (Yedekleme dahil).
 export const AUDIT_ACTION_LABEL: Record<AuditAction, string> = {
@@ -45,20 +46,17 @@ const trParts = new Intl.DateTimeFormat("tr-TR", {
   hourCycle: "h23",
 });
 
-const HAS_OFFSET = /(Z|[+-]\d{2}:?\d{2})$/i;
-
 /**
- * Zaman damgasını Date'e çevirir. Ofset taşımayan (naive) değerler UTC kabul edilir —
- * backend UTC saklar, dolayısıyla ofsetsiz bir değeri tarayıcının yerel saati saymak
- * kullanıcının bulunduğu zaman dilimine göre kayan bir sonuç üretirdi.
+ * PLN-F3.0-borç-2 · zaman damgası çözücü artık TEK kaynaktan (`lib/format.ts
+ * parseUtcOrOffsetTimestamp`) — bu dosyanın kendi kopyası (`HAS_OFFSET` +
+ * `parseOccurredAt`) ölçüldü: `earned-value/reports/kit/report-date-format.ts`
+ * (B) ve `earned-value/reports/daily/daily-datetime.ts` (C) BAYT BAYT AYNI
+ * regex + `Z` ekleme mantığını taşıyordu. Davranış DEĞİŞMEDİ, yalnız kaynağı.
  */
-function parseOccurredAt(occurredAt: string): Date {
-  return new Date(HAS_OFFSET.test(occurredAt) ? occurredAt : `${occurredAt}Z`);
-}
 
 /** Mockup zaman biçimi: `17.07 09:14` (Europe/Istanbul). */
 export function formatAuditTime(occurredAt: string): string {
-  const date = parseOccurredAt(occurredAt);
+  const date = parseUtcOrOffsetTimestamp(occurredAt);
   if (Number.isNaN(date.getTime())) return EMPTY_CELL;
   const parts = Object.fromEntries(trParts.formatToParts(date).map((part) => [part.type, part.value]));
   return `${parts.day}.${parts.month} ${parts.hour}:${parts.minute}`;
