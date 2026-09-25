@@ -439,13 +439,13 @@ const NUMERIC: readonly NumericGuard[] = [
     constName: "DIARY_TEMPERATURE_MIN",
     file: "src/components/site-diary/diary-labels.ts",
     bound: "minimum",
-    field: ["SiteDiaryEntryCreate", "temperature_c"],
+    field: ["SiteDiaryEntryCreate", "temp_max_c"],
   },
   {
     constName: "DIARY_TEMPERATURE_MAX",
     file: "src/components/site-diary/diary-labels.ts",
     bound: "maximum",
-    field: ["SiteDiaryEntryCreate", "temperature_c"],
+    field: ["SiteDiaryEntryCreate", "temp_max_c"],
   },
   {
     constName: "INVOICE_RATE_MIN",

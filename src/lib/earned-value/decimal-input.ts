@@ -14,25 +14,14 @@ import {
   isZeroDecimalString,
   multiplyDecimalStrings,
   subtractDecimalStrings,
+  toDecimalString,
+  type DecimalLike,
 } from "@/lib/decimal";
 
-export type EvNumber = string | number | null | undefined;
+export type EvNumber = DecimalLike;
 
-const DECIMAL_PATTERN = /^[-+]?(\d+\.?\d*|\.\d+)$/;
-/** Üstel gösterimli number'lar (1e-7) için yedek kesir hassasiyeti. */
-const EXPONENT_FALLBACK_DIGITS = 12;
-
-/** Geçerli bir ondalık string ya da `null` (veri yok / anlamsız girdi). */
-export function toDecimalString(value: EvNumber): string | null {
-  if (value === null || value === undefined) return null;
-  if (typeof value === "number") {
-    if (!Number.isFinite(value)) return null;
-    const text = String(value);
-    return text.includes("e") ? value.toFixed(EXPONENT_FALLBACK_DIGITS) : text;
-  }
-  const trimmed = value.trim();
-  return DECIMAL_PATTERN.test(trimmed) ? trimmed : null;
-}
+/** Geçerli bir ondalık string ya da `null` — genel `lib/decimal`dan (PLN-F2.1). */
+export { toDecimalString };
 
 /** ROUND_HALF_UP ile `scale` basamağa yuvarlar: "0.9450" @2 → "0.95". */
 export function roundHalfUp(value: EvNumber, scale: number): string | null {

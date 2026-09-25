@@ -1,8 +1,15 @@
+import { LockIcon } from "@/components/ui/icons";
 import { formatDecimal } from "@/lib/format";
 
 export interface TimesheetLegendProps {
   /** Renk eşiği — "Tam gün" örneği bu sayıdan basılır (E5 203). */
   normalDayHours: string;
+  /**
+   * PLN-F2.4 · Haftada kilitli gün var mı — varsa son öğe "Kilitli gün (salt
+   * okunur)" basılır (mockup `Şantiye - Puantaj (Kilitli Gün)` legend). Kilitsiz
+   * haftada şerit E5 ile birebir kalır (mockup (d)).
+   */
+  hasLockedDays?: boolean;
 }
 
 /**
@@ -17,7 +24,7 @@ export interface TimesheetLegendProps {
  * `normal_day_hours` üzerinden TÜRETİLİR — 7,5 saatlik bir şirkette mockup'ın
  * "9"unu basmak yanlış bilgi olurdu (tarih artefaktı istisnasının aynısı).
  */
-export function TimesheetLegend({ normalDayHours }: TimesheetLegendProps) {
+export function TimesheetLegend({ normalDayHours, hasLockedDays = false }: TimesheetLegendProps) {
   const normal = Number(normalDayHours);
   const short = Number.isFinite(normal) ? Math.max(1, Math.round(normal * 0.55)) : 5;
   const overtime = Number.isFinite(normal) ? Math.round(normal + 3) : 12;
@@ -47,6 +54,16 @@ export function TimesheetLegend({ normalDayHours }: TimesheetLegendProps) {
       <LegendItem className="ts-hours ts-hours--off" sample="—">
         Çalışılmadı
       </LegendItem>
+      {/* Kilitli Gün legend son öğesi — 12px kilit + örnek kutu `.lk` */}
+      {hasLockedDays && (
+        <span className="ts-legend__item">
+          <LockIcon width={12} height={12} className="ts-legend__lock-icon" />
+          <span className="ts-legend__swatch ts-lk" aria-hidden="true">
+            {formatDecimal(normalDayHours, 1)}
+          </span>
+          <span className="ts-legend__label">Kilitli gün (salt okunur)</span>
+        </span>
+      )}
     </div>
   );
 }

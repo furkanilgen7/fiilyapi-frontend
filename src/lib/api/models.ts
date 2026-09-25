@@ -52,3 +52,25 @@ export type EvPreviewOut = EvSchema["PreviewOut"];
 export type EvSuggestionsOut = EvSchema["SuggestionsOut"];
 export type EvFillOut = EvSchema["FillOut"];
 
+
+// PLN-F2.1 · Saha — günün saat dağıtımı + Gönder kontrolü + gün kilidi
+// (backend B2 `earned_value/day_router`, sözleşme main 474f1fa).
+export type EvDayView = EvSchema["DayView"];
+export type EvDayRow = EvSchema["RowOut"];
+export type EvDayCode = EvSchema["CodeOut"];
+export type EvDayCell = EvSchema["CellOut"];
+export type EvDayTotals = EvSchema["TotalsOut"];
+export type EvDayLock = EvSchema["LockOut"];
+export type EvDayUnlockInfo = EvSchema["UnlockOut"];
+export type EvDayProgress = EvSchema["ProgressOut"];
+export type EvLeafProgress = EvSchema["LeafProgressOut"];
+export type EvSubmitCheck = EvSchema["SubmitCheckOut"];
+export type EvAllocationSave = EvSchema["AllocationSave"];
+export type EvAllocationCode = EvSchema["CodeIn"];
+export type EvAllocationCell = EvSchema["CellIn"];
+export type EvAllocationRowRef = EvSchema["RowRef"];
+export type EvPreviousAllocation = EvSchema["PreviousAllocationOut"];
+export type EvRowPattern = EvSchema["RowPatternOut"];
+export type EvShare = EvSchema["ShareOut"];
+export type EvUnlockBody = EvSchema["UnlockBody"];
+export type EvCodeNode = EvSchema["CodeNodeOut"];

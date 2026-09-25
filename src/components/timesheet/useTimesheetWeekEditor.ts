@@ -3,12 +3,12 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo, useState } from "react";
 
-import { addDaysIso } from "@/components/site-planning/week";
 import { timesheetWeekQuery, type TimesheetCode } from "@/lib/api/hooks/useTimesheet";
 import { useSaveTimesheetWeek } from "@/lib/api/hooks/useTimesheetMutations";
 import { downloadTimesheetExport } from "@/lib/api/timesheet-client";
 
-import { mondayOfIsoWeek, shiftIsoWeek, type TimesheetIsoWeek } from "./iso-week";
+import { isoWeekDates, mondayOfIsoWeek, shiftIsoWeek, type TimesheetIsoWeek } from "./iso-week";
+import { buildCopyPreviousWeekDraft } from "./timesheet-copy";
 import {
   buildWeekSaveBody,
   EMPTY_TIMESHEET_DRAFT,
@@ -17,19 +17,39 @@ import {
   type TimesheetDraft,
   type TimesheetDraftCell,
 } from "./timesheet-draft";
-import { timesheetExportErrorMessage, timesheetSaveErrorMessage } from "./timesheet-errors";
+import {
+  timesheetExportErrorMessage,
+  timesheetLockConflictLocks,
+  timesheetSaveErrorMessage,
+} from "./timesheet-errors";
+import {
+  discardLockedDraft,
+  lockConflictText,
+  lockedCopyNotice,
+  type TimesheetDayLock,
+} from "./timesheet-lock";
 import type { TimesheetSourcedCell } from "./week-derive";
 
 export type TimesheetSaveState =
   | { readonly kind: "idle" }
   | { readonly kind: "saving" }
   | { readonly kind: "saved" }
-  | { readonly kind: "failed"; readonly message: string };
+  | { readonly kind: "failed"; readonly message: string }
+  /**
+   * PLN-F2.4 · kilit 409'u (§3.14 P4, mockup (e)): kilitli günlerin taslağı
+   * atıldı, kilitsiz günlerinki korundu. Metin `lockConflictText`ten.
+   */
+  | { readonly kind: "locked"; readonly title: string; readonly body: string };
 
 export type TimesheetCopyState =
   | { readonly kind: "idle" }
   | { readonly kind: "copying" }
-  | { readonly kind: "copied"; readonly cellCount: number }
+  | {
+      readonly kind: "copied";
+      readonly cellCount: number;
+      /** Mockup (b) — kilitli gün atlandıysa bildirim; yoksa `null`. */
+      readonly lockNotice: string | null;
+    }
   | { readonly kind: "failed"; readonly message: string };
 
 export interface TimesheetWeekEditorHandle {
@@ -50,11 +70,21 @@ export interface TimesheetWeekEditorHandle {
   ) => void;
   readonly save: (allCells: readonly TimesheetSourcedCell[]) => Promise<void>;
   readonly saveState: TimesheetSaveState;
-  readonly copyPreviousWeek: (allCells: readonly TimesheetSourcedCell[]) => Promise<void>;
+  /** `lockedDays`: bu haftanın KİLİTLİ günleri — kopya onları ATLAR (§3.14 P2). */
+  readonly copyPreviousWeek: (
+    allCells: readonly TimesheetSourcedCell[],
+    lockedDays: ReadonlySet<string>,
+  ) => Promise<void>;
   readonly copyState: TimesheetCopyState;
   readonly exportExcel: (year: number, month: number) => Promise<void>;
   readonly isExporting: boolean;
   readonly exportError: string | null;
+  /**
+   * Kilit 409'unun getirdiği günler (bu şantiye+hafta kapsamında). Ekran
+   * bunları sunucunun `locked_days`iyle BİRLEŞTİRİR — gün, yeniden yükleme
+   * beklemeden salt okunur olur (§3.14 P4).
+   */
+  readonly conflictLocks: readonly TimesheetDayLock[];
 }
 
 export interface UseTimesheetWeekEditorInput {
@@ -63,8 +93,6 @@ export interface UseTimesheetWeekEditorInput {
   /** Aktif bölüm filtresi — YALNIZ YENİ hücrenin bölümünü belirler. */
   sectionId: string | null;
 }
-
-const DAYS_IN_WEEK = 7;
 
 /**
  * Haftalık puantajın düzenleme + kaydetme + kopyalama + dışa aktarma kolu.
@@ -103,6 +131,12 @@ export function useTimesheetWeekEditor({
     draft: EMPTY_TIMESHEET_DRAFT,
   });
   const draft = stored.scope === scope ? stored.draft : EMPTY_TIMESHEET_DRAFT;
+  // Kilit 409'unun günleri taslakla AYNI kapsam kuralıyla saklanır.
+  const [storedLocks, setStoredLocks] = useState<{
+    scope: string;
+    locks: readonly TimesheetDayLock[];
+  }>({ scope, locks: [] });
+  const conflictLocks = storedLocks.scope === scope ? storedLocks.locks : NO_LOCKS;
   const dirtyKeys = useMemo(() => new Set(Object.keys(draft)), [draft]);
 
   const writeDraft = useCallback(
@@ -164,10 +198,39 @@ export function useTimesheetWeekEditor({
         setStored({ scope, draft: EMPTY_TIMESHEET_DRAFT });
         setSaveState({ kind: "saved" });
       } catch (error) {
-        setSaveState({ kind: "failed", message: timesheetSaveErrorMessage(error) });
+        const locks = timesheetLockConflictLocks(error);
+        if (locks === null) {
+          setSaveState({ kind: "failed", message: timesheetSaveErrorMessage(error) });
+          return;
+        }
+        // §3.14 P4 — kilitli günlerin taslağı ATILIR (hücre sunucu değerine
+        // döner), kilitsiz günlerin taslağı KORUNUR; kullanıcı yeniden gönderir.
+        const lockedSet = new Set(locks.map((lock) => lock.day));
+        const { discardedDays } = discardLockedDraft(draft, lockedSet);
+        setStored((previous) => ({
+          scope,
+          draft: discardLockedDraft(
+            previous.scope === scope ? previous.draft : EMPTY_TIMESHEET_DRAFT,
+            lockedSet,
+          ).draft,
+        }));
+        setStoredLocks((previous) => ({
+          scope,
+          locks: [...(previous.scope === scope ? previous.locks : []), ...locks],
+        }));
+        // Atılan gün yoksa (taslakta kilitli gün yoktu) 409'un günleri söylenir.
+        const discardedSet = new Set(discardedDays);
+        const reported = discardedDays.length > 0
+          ? locks.filter((lock) => discardedSet.has(lock.day))
+          : locks;
+        setSaveState({ kind: "locked", ...lockConflictText(reported) });
+        // Sunucunun `locked_days`i esas: hafta yeniden çekilir.
+        void queryClient.invalidateQueries({
+          queryKey: timesheetWeekQuery(siteId, week).queryKey,
+        });
       }
     },
-    [saveMutation, scope],
+    [draft, queryClient, saveMutation, scope, siteId, week],
   );
 
   /**
@@ -183,34 +246,27 @@ export function useTimesheetWeekEditor({
    * sayının nereden geldiğini bilemezdi.
    */
   const copyPreviousWeek = useCallback(
-    async (allCells: readonly TimesheetSourcedCell[]) => {
+    async (allCells: readonly TimesheetSourcedCell[], lockedDays: ReadonlySet<string>) => {
       setCopyState({ kind: "copying" });
       try {
         const previous = shiftIsoWeek(week, -1);
         const data = await queryClient.fetchQuery(timesheetWeekQuery(siteId, previous));
-        const shift: Record<string, TimesheetDraftCell | null> = {};
-        // 1) Bu haftanın MEVCUT hücreleri önce temizlenir.
-        for (const cell of allCells) {
-          shift[timesheetDraftKey(cell.personnelId, cell.work_date)] = null;
-        }
-        // 2) Önceki haftanın hücreleri aynı gün ofsetiyle yazılır.
-        let cellCount = 0;
-        for (const row of data.rows) {
-          for (const cell of row.cells) {
-            // Önceki haftanın Pazartesi'si yanıtın KENDİ `start_date`idir — uydurulmaz.
-            const offset = dayOffset(data.start_date, cell.work_date);
-            if (offset < 0 || offset >= DAYS_IN_WEEK) continue;
-            const target = addDaysIso(mondayOfIsoWeek(week.isoYear, week.isoWeek), offset);
-            shift[timesheetDraftKey(row.personnel_id, target)] = {
-              hours: cell.hours,
-              code: cell.code,
-              sectionId: cell.section_id,
-            };
-            cellCount += 1;
-          }
-        }
-        writeDraft(shift);
-        setCopyState({ kind: "copied", cellCount });
+        const { entries, cellCount } = buildCopyPreviousWeekDraft({
+          allCells,
+          previous: data,
+          targetMonday: mondayOfIsoWeek(week.isoYear, week.isoWeek),
+          lockedDays,
+        });
+        writeDraft(entries);
+        setCopyState({
+          kind: "copied",
+          cellCount,
+          lockNotice: lockedCopyNotice({
+            lockedDays: [...lockedDays],
+            weekDays: isoWeekDates(week),
+            sourceIsoWeek: previous.isoWeek,
+          }),
+        });
       } catch (error) {
         setCopyState({ kind: "failed", message: timesheetSaveErrorMessage(error) });
       }
@@ -253,15 +309,8 @@ export function useTimesheetWeekEditor({
     exportExcel,
     isExporting: exportState.isExporting,
     exportError: exportState.error,
+    conflictLocks,
   };
 }
 
-function toUtc(iso: string): number {
-  const [year, month, day] = iso.split("-").map(Number);
-  return Date.UTC(year ?? 0, (month ?? 1) - 1, day ?? 1);
-}
-
-function dayOffset(fromIso: string, toIso: string): number {
-  return Math.round((toUtc(toIso) - toUtc(fromIso)) / (24 * 60 * 60 * 1000));
-}
-
+const NO_LOCKS: readonly TimesheetDayLock[] = [];

@@ -120,6 +120,9 @@ export interface SectionParams extends SiteParams {
 export interface SiteTimesheetParams extends SiteParams {
   /** Verilmezse süzgeçsiz şantiye görünümü — `?section=` EKLENMEZ. */
   section?: RouteId;
+  /** Açılış haftası (PLN-F2.1b) — ekran `?iso_year=&iso_week=` okur (`SiteTimesheetView` `parseIsoWeek`). */
+  isoYear?: number;
+  isoWeek?: number;
 }
 
 /**
@@ -200,8 +203,8 @@ export const routes = {
       progressPayments: (p: SiteParams) => `${siteBase(p)}/hakedisler`,
       stock: ({ section, ...p }: SiteStockParams) => `${siteBase(p)}/stok${qs({ section })}`,
       stockEntry: (p: SiteParams) => `${siteBase(p)}/stok/giris`,
-      timesheet: ({ section, ...p }: SiteTimesheetParams) =>
-        `${siteBase(p)}/puantaj${qs({ section })}`,
+      timesheet: ({ section, isoYear, isoWeek, ...p }: SiteTimesheetParams) =>
+        `${siteBase(p)}/puantaj${qs({ section, iso_year: isoYear, iso_week: isoWeek })}`,
       diary: (p: SiteParams) => `${siteBase(p)}/gunluk-kayit`,
       diarySummary: (p: SiteParams) => `${siteBase(p)}/gunluk-kayit/ozet`,
       diaryPlanning: (p: SiteParams) => `${siteBase(p)}/gunluk-kayit/planlama`,

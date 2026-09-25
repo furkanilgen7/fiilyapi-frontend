@@ -96,7 +96,15 @@ const tokensCss = readFileSync(
 // ondan koyu), düzenleyici zemini (ai-info-tint ondan mor), açık satır
 // (surface-2 ondan gri), boş oran satırı (danger-row-bg ondan pembe).
 // Üç gölge (sticky-bar · menu · popover) hex taşımaz, sayacı oynatmaz.
-const EXPECTED_HEX_COUNT = 97;
+// PLN-F2.3 (Günlük ilerleme adaptörü): 97 → 102 — BEŞ ton mevcut palette
+// yoktu, adaptör en yakın tona bağlanmıştı: kod kolonu çizgisi #eef2f6
+// (ev-chip-neutral #eef2f7 ondan mavi), hücre çizgisi #f5f7fa (divider #f1f5f9
+// ondan koyu), grup başlığı #f5f7ff (ev-editor-bg #f8fbff ondan açık-mavi),
+// grup hücresi #fafbff (ev-row-open-bg #fbfdff ondan morumsu), taşeron satırı
+// #fcfcfd (surface-2 #f8fafc ondan koyu-mavi). Kaynak: Günlük Kayıt (İlerleme)
+// İ 443/469/664/666/670. Gönder çubuğu gölgesi (.10) shadow-menu'den (.12)
+// ayrı değerdir; hex taşımaz, sayacı oynatmaz.
+const EXPECTED_HEX_COUNT = 102;
 
 describe("tokens.css", () => {
   it("çekirdek renk token'larını tanımlar (açık tema Slate + Blue)", () => {
@@ -252,6 +260,34 @@ describe("tokens.css", () => {
     ];
     for (const [token, value] of screenTokens) {
       expect(tokensCss).toMatch(new RegExp(`${token}:\\s*${value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*;`));
+    }
+  });
+
+  it("Günlük ilerleme adaptörü (PLN-F2.3) token'ları tanımlı ve mockup değerlerini taşır", () => {
+    // Kaynak: Şantiye - Günlük Kayıt (İlerleme).dc.html (İ) · … (Ek Formlar).dc.html (EF).
+    const diaryTokens: ReadonlyArray<readonly [string, string]> = [
+      ["--color-ev-diary-grid-line", "#eef2f6"], // kod kolonu çizgisi + boş hücre kenarlığı (İ 443, 481, 486, 666)
+      ["--color-ev-diary-cell-line", "#f5f7fa"], // gövde hücresi dikey çizgisi (İ 469)
+      ["--color-ev-diary-group-head-bg", "#f5f7ff"], // grup kodu başlık zemini (İ 670)
+      ["--color-ev-diary-group-cell-bg", "#fafbff"], // grup kodu gövde hücresi zemini (İ 666)
+      ["--color-ev-diary-sub-row-bg", "#fcfcfd"], // taşeron satırı zemini (İ 664)
+      ["--shadow-ev-diary-submit-bar", "0 8px 24px rgba(15, 23, 42, 0.1)"], // gönder çubuğu (İ 493 · EF 591)
+    ];
+    for (const [token, value] of diaryTokens) {
+      expect(tokensCss).toMatch(new RegExp(`${token}:\\s*${value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*;`));
+    }
+  });
+
+  it("bilgi popover'ı genişliği (PLN-F2.5) token'dır; kullanıcı CSS'lerinde çıplak 292px kalmaz", () => {
+    // Kaynak: Planlama - Adam-Saat Bütçesi.dc.html:245 (öneri popover'ı) · Şantiye - Puantaj (Kilitli Gün).dc.html:340.
+    expect(tokensCss).toMatch(/--width-info-popover:\s*292px\s*;/);
+    for (const file of [
+      "../components/earned-value/budget/budget-rates.css",
+      "../components/timesheet/timesheet.css",
+    ]) {
+      const css = readFileSync(fileURLToPath(new URL(file, import.meta.url)), "utf8");
+      expect(css, file).not.toMatch(/\b292px\b/);
+      expect(css, file).toContain("var(--width-info-popover)");
     }
   });
 

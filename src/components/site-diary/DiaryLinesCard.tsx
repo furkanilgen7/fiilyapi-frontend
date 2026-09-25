@@ -1,72 +1,127 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge/Badge";
-import { Input } from "@/components/ui/input/Input";
-import { formatAmount, formatCurrencyPrecise, formatQuantity } from "@/lib/format";
-import type { SiteDiaryEntryDetail, SiteDiaryLineRead } from "@/lib/api/hooks/useSiteDiary";
+import { formatCurrencyPrecise } from "@/lib/format";
+import type { SiteDiaryEntryDetail } from "@/lib/api/hooks/useSiteDiary";
 
-import { DIARY_QUANTITY_MAX } from "./diary-labels";
-import { parseDiaryQuantity, type DiaryFormState } from "./form-state";
+import type { DiaryItemMeta, DiaryLineColumns, DiaryLineRef } from "./diary-extension";
+import type { DiaryItemGroup, DiaryLeafRow, DiaryTreeSection } from "./diary-lines-tree";
+import { DiaryItemHeaderRow, DiaryLeafRowView } from "./DiaryLineRows";
+import { DiaryLineRemoveModal } from "./DiaryLineRemoveModal";
+import { DiarySectionPicker } from "./DiarySectionPicker";
+import type { DiaryAddedLine, DiaryFormState } from "./form-state";
+import "./site-diary-progress.css";
 
 export interface DiaryLinesCardProps {
   /** Kayıt henüz açılmadıysa `undefined` — satır iskeleti sunucudan gelir. */
   entry: SiteDiaryEntryDetail | undefined;
+  /** Kalem ağacı (`buildDiaryLineTree`). */
+  groups: readonly DiaryItemGroup[];
+  sections: readonly DiaryTreeSection[];
   form: DiaryFormState;
-  onQuantityChange: (boqItemId: string, value: string) => void;
+  onQuantityChange: (key: string, value: string) => void;
+  onOverrunReasonChange: (key: string, value: string) => void;
+  onAddLines: (lines: DiaryAddedLine[]) => void;
+  onRemoveLine: (key: string) => void;
+  /** Salt-okunur (izin yok / gönderilmiş / kilitli). */
   disabled: boolean;
-  /** `boq_item_id` → sözleşme (BOQ) miktarı; okunamadıysa boş nesne. */
-  // 🔴 KAPSAM MASKESİ (2026-09-19): `finance` kapsamlı rol metrajı göremez →
-  //    değer `null` gelir. Sözleşme kotası bilinmiyorsa hücre "—" basar;
-  //    `"0"` yazmak günlükte SAHTE bir kota gösterirdi.
-  contractQuantities: Record<string, string | null>;
-  /** BOQ okuması başarısızsa sözleşme miktarı basılmaz, gerekçe görünür. */
-  contractQuantitiesUnavailable: boolean;
+  /** Kilitli gün — Bugün düz metin, "+ Bölüm" ve × gizli (Ek Formlar hâl d). */
+  isLocked: boolean;
+  /** Satır ekle/kaldır yüzeyi (G10: `site_diary` yazma; gönderim/kilit yok). */
+  canEditRows: boolean;
+  /** BOQ okuması başarısız — satırı olmayan kalemler gösterilemiyor. */
+  isBoqUnavailable: boolean;
   /** Kaydedilmemiş değişiklik var mı — türev sütunları için görünür uyarı. */
   isDirty: boolean;
-  /** GK264 "Hakediş Durumu →". */
+  /** İ:259 "Hakediş Durumu →". */
   paymentsHref: string;
+  /** Şantiyenin İş Kalemleri sayfası (seçicideki tahsis bağlantısı); yoksa `null`. */
+  boqHref: string | null;
+  /** Uzantının ek kolonları (planlama: "Bugün kaz. a-s" · "PF"). */
+  lineColumns?: DiaryLineColumns | null;
+  /** Uzantıya verilen satır referansları — `renderCells` girdisi. */
+  lineRefs: ReadonlyMap<string, DiaryLineRef>;
+  /** Kalem düzeyi planlama bilgisi (G9 dolaylı kalem · İ:225 etiket). */
+  itemMeta?: DiaryItemMeta | null;
+}
+
+/** Çekirdek kolonlar: Kalem · Birim · Bugün · Kümülatif · Planlı · Kalan · Hakediş ₺ · (×). */
+const CORE_COLUMN_COUNT = 8;
+
+function isAddExhausted(group: DiaryItemGroup, sections: readonly DiaryTreeSection[]): boolean {
+  const present = new Set(group.leaves.map((leaf) => leaf.sectionId));
+  return group.hasUnsectioned && sections.every((section) => present.has(section.id));
 }
 
 /**
- * GK205-266 · "📋 İş Kalemi Giriş" kartı.
+ * İ:209-261 + Ek Formlar M1–M4 · "📋 Yapılan Miktarlar" kartı (PLN-F2.2).
  *
- * KURAL (spec §2): satır iskeleti BOQ pozlarından SUNUCUDA üretilir
- * (`POST /sites/{id}/diary` yanıtı), ekran YALNIZ "Bugün Yapılan" hücresini
- * yazar. "Kümülatif" (GK229) ve "Hakediş (₺)" (GK230) sütunlarıyla tfoot
- * toplamı (GK257) YANITTAN okunur — frontend'de yeniden HESAPLANMAZ.
+ * G1 ağaç: kalem başlık satırı (G2 toplamları) → Bölümsüz (önce) ve bölüm
+ * satırları. "+ Bölüm" seçicisi (M1), satır kaldırma (M2 · G3 · G6), aşım alt
+ * satırı + gerekçe (M4). 🔴 K16: "Hakediş ₺" kolonu ve "Bugünkü Hakediş
+ * Katkısı" tfoot'u KALIR — tutarlar YANITTAN okunur, istemci hesaplamaz.
+ * Kümülatif/Kalan G8 önizlemesidir; kayıttan sonra backend esastır.
  */
 export function DiaryLinesCard({
   entry,
+  groups,
+  sections,
   form,
   onQuantityChange,
+  onOverrunReasonChange,
+  onAddLines,
+  onRemoveLine,
   disabled,
-  contractQuantities,
-  contractQuantitiesUnavailable,
+  isLocked,
+  canEditRows,
+  isBoqUnavailable,
   isDirty,
   paymentsHref,
+  boqHref,
+  lineColumns,
+  lineRefs,
+  itemMeta,
 }: DiaryLinesCardProps) {
-  const lines = entry?.lines ?? [];
+  const isIndirect = (itemId: string | null) => itemId !== null && (itemMeta?.indirectItemIds?.has(itemId) ?? false);
+  const [pickerItemId, setPickerItemId] = useState<string | null>(null);
+  const [pendingRemoval, setPendingRemoval] = useState<{ group: DiaryItemGroup; leaf: DiaryLeafRow } | null>(null);
+  const extraHeaders = lineColumns?.headers ?? [];
+  const columnCount = CORE_COLUMN_COUNT + extraHeaders.length;
+  const hasRows = entry !== undefined && groups.length > 0;
+  const canMutateRows = canEditRows && !disabled && !isLocked;
+
+  function handleRemove(group: DiaryItemGroup, leaf: DiaryLeafRow) {
+    // M2(a): miktarı boş satır onaysız kalkar; miktar girilmişse onay modalı.
+    const hasQuantity = leaf.todayValue !== null && Number(leaf.todayValue) > 0;
+    if (hasQuantity && !leaf.isAdded) {
+      setPendingRemoval({ group, leaf });
+      return;
+    }
+    onRemoveLine(leaf.key);
+  }
 
   return (
     <section className="diary-card" aria-labelledby="diary-lines-title">
-      {/* GK207-213: başlık + alt metin solda, rozet sağda */}
       <div className="diary-card__head">
         <div>
           <h2 className="diary-card__title" id="diary-lines-title">
-            📋 İş Kalemi Giriş
+            📋 Yapılan Miktarlar
           </h2>
-          {/* GK210 */}
+          {/* Uzantı `caption` (İ:213) alt başlığın TAMAMIdır — verilirse çekirdek
+              metni basılmaz (PLN-F2.5e · karar 3). */}
           <p className="diary-card__subtitle">
-            Bu girişler otomatik olarak aylık hakedişe işlenir
+            {lineColumns?.caption ?? "Kalem × bölüm · girişler otomatik olarak aylık hakedişe işlenir"}
           </p>
         </div>
-        {/* GK212 */}
         <Badge variant="primary" className="diary-lines__badge">
           Sözleşme BOQ&apos;a bağlı
         </Badge>
       </div>
 
-      {lines.length === 0 ? (
+      {!hasRows ? (
         // Dürüst boş durum: satırlar kayıt AÇILDIĞINDA sunucudan gelir; sahte
         // satır uydurulmaz (spec §2, backend sözleşmesi).
         <p className="diary-lines__empty">
@@ -75,75 +130,153 @@ export function DiaryLinesCard({
             : "İş kalemi satırları, gün için kayıt açıldığında sözleşme BOQ pozlarından otomatik gelir. Önce “Taslak Kaydet” deyin."}
         </p>
       ) : (
-        <table className="diary-lines">
-          <thead>
-            <tr>
-              {/* GK217-221 */}
-              <th scope="col" className="diary-lines__col-item">
-                Poz / İş Kalemi
-              </th>
-              <th scope="col" className="diary-lines__col-unit">
-                Birim
-              </th>
-              <th scope="col" className="diary-lines__col-today">
-                Bugün Yapılan
-              </th>
-              <th scope="col" className="diary-lines__col-cumulative">
-                Kümülatif
-              </th>
-              <th scope="col" className="diary-lines__col-amount">
-                Hakediş (₺)
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {lines.map((line) => (
-              <DiaryLineRow
-                key={line.id}
-                line={line}
-                value={line.boq_item_id === null ? "" : form.quantities[line.boq_item_id] ?? ""}
-                onChange={onQuantityChange}
-                disabled={disabled}
-                contractQuantity={
-                  line.boq_item_id === null ? undefined : contractQuantities[line.boq_item_id]
-                }
-              />
+        <div className="diary-lines__scroll">
+          <table className="diary-lines diary-lines--tree">
+            <thead>
+              <tr>
+                <th scope="col" className="diary-lines__col-item">
+                  Kalem / Bölüm
+                </th>
+                <th scope="col" className="diary-lines__col-unit">
+                  Birim
+                </th>
+                <th scope="col" className="diary-lines__col-today">
+                  Bugün
+                </th>
+                <th scope="col" className="diary-lines__col-cumulative">
+                  Kümülatif
+                </th>
+                <th scope="col" className="diary-lines__col-num">
+                  Planlı
+                </th>
+                <th scope="col" className="diary-lines__col-num">
+                  Kalan
+                </th>
+                {extraHeaders.map((header) => (
+                  <th
+                    key={header.key}
+                    scope="col"
+                    className={header.align === "left" ? "diary-lines__col-ext" : "diary-lines__col-ext diary-lines__col-num"}
+                  >
+                    {header.label}
+                  </th>
+                ))}
+                <th scope="col" className="diary-lines__col-amount">
+                  Hakediş ₺
+                </th>
+                <th scope="col" className="diary-lines__col-remove">
+                  <span className="diary-lines__sr">Satır işlemleri</span>
+                </th>
+              </tr>
+            </thead>
+            {groups.map((group) => (
+              <tbody key={group.key} className="diary-lines__group">
+                {!group.isOrphan && (
+                  <DiaryItemHeaderRow
+                    group={group}
+                    // G9: dolaylı ("Tüm şantiye") kalemde "+ Bölüm" YOK.
+                    canAddSection={canMutateRows && !isIndirect(group.boqItemId)}
+                    isAddExhausted={isAddExhausted(group, sections)}
+                    onOpenPicker={() => setPickerItemId(group.key)}
+                    extraColumnCount={extraHeaders.length}
+                    extraCells={
+                      lineColumns?.renderItemCells && group.boqItemId !== null
+                        ? lineColumns.renderItemCells(group.boqItemId)
+                        : null
+                    }
+                    itemTag={
+                      itemMeta?.renderItemTag && group.boqItemId !== null
+                        ? itemMeta.renderItemTag(group.boqItemId)
+                        : undefined
+                    }
+                    picker={
+                      pickerItemId === group.key ? (
+                        <DiarySectionPicker
+                          group={group}
+                          sections={sections}
+                          boqHref={boqHref}
+                          onClose={() => setPickerItemId(null)}
+                          onConfirm={(lines) => {
+                            onAddLines(lines);
+                            setPickerItemId(null);
+                          }}
+                        />
+                      ) : null
+                    }
+                  />
+                )}
+                {!group.isOrphan && group.leaves.length === 0 && (
+                  <tr className="diary-lines__hint-row">
+                    <td colSpan={columnCount}>
+                      {group.unallocatedQuantity !== null && Number(group.unallocatedQuantity) === 0
+                        ? "tamamen tahsisli · iskelet yok"
+                        : "bu kayıtta satırı yok"}
+                    </td>
+                  </tr>
+                )}
+                {group.leaves.map((leaf) => {
+                  const ref = lineRefs.get(leaf.key);
+                  return (
+                    <DiaryLeafRowView
+                      key={leaf.key}
+                      group={group}
+                      leaf={leaf}
+                      disabled={disabled}
+                      isLocked={isLocked}
+                      canRemove={canMutateRows}
+                      onQuantityChange={onQuantityChange}
+                      onOverrunReasonChange={onOverrunReasonChange}
+                      onRemove={(row) => handleRemove(group, row)}
+                      overrunReason={form.overrunReasons[leaf.key] ?? ""}
+                      extraCells={
+                        lineColumns && ref ? lineColumns.renderCells(ref) : extraHeaders.map(() => null)
+                      }
+                      columnCount={columnCount}
+                      isIndirect={isIndirect(group.boqItemId)}
+                      subRow={lineColumns?.renderSubRow && ref ? lineColumns.renderSubRow(ref) : null}
+                    />
+                  );
+                })}
+              </tbody>
             ))}
-          </tbody>
-          <tfoot>
-            {/* GK255-258 */}
-            <tr className="diary-lines__total-row">
-              <td colSpan={4}>Bugünkü Hakediş Katkısı</td>
-              <td className="diary-lines__total-amount">
-                {formatCurrencyPrecise(entry?.lines_total ?? "0")}
-              </td>
-            </tr>
-          </tfoot>
-        </table>
+            <tfoot>
+              {lineColumns?.footer && (
+                <tr className="diary-lines__ext-footer">
+                  <td colSpan={columnCount}>{lineColumns.footer}</td>
+                </tr>
+              )}
+              {/* K16 · GK255-258 — Hakediş katkısı KALIR. */}
+              <tr className="diary-lines__total-row">
+                <td colSpan={columnCount - 2}>Bugünkü Hakediş Katkısı</td>
+                <td className="diary-lines__total-amount">{formatCurrencyPrecise(entry?.lines_total ?? "0")}</td>
+                <td />
+              </tr>
+            </tfoot>
+          </table>
+        </div>
       )}
 
-      {contractQuantitiesUnavailable && lines.length > 0 && (
+      {isBoqUnavailable && hasRows && (
         <p className="diary__notice">
-          Sözleşme (BOQ) miktarları okunamadı — “Kümülatif” sütununda sözleşme
-          hedefi ve poz alt satırındaki sözleşme miktarı gösterilmiyor.
+          Sözleşme BOQ&apos;u okunamadı — satırı olmayan kalemler ve kalem sırası gösterilemiyor; kayıttaki
+          satırlar basılıyor.
         </p>
       )}
 
-      {isDirty && lines.length > 0 && (
+      {isDirty && hasRows && (
         <p className="diary__notice">
-          Kaydedilmemiş değişiklik var. “Kümülatif”, “Hakediş (₺)” ve günlük
-          toplam sunucudan gelen türevlerdir; kayıttan sonra güncellenir.
+          Kaydedilmemiş değişiklik var. “Kümülatif” ve “Kalan” yazdıkça önizlenir; “Hakediş ₺” ve günlük
+          toplam sunucudan gelen türevlerdir, kayıttan sonra güncellenir.
         </p>
       )}
 
       {(entry?.dropped_orphan_count ?? 0) > 0 && (
         <p className="diary__notice">
-          Sözleşme BOQ&apos;undan kaldırılan {entry?.dropped_orphan_count} poz bu
-          kayıttan düşürüldü.
+          Sözleşme BOQ&apos;undan kaldırılan {entry?.dropped_orphan_count} poz bu kayıttan düşürüldü.
         </p>
       )}
 
-      {/* GK261-265: bilgi kutusu + "Hakediş Durumu →" */}
+      {/* İ:256-260 — bilgi kutusu + "Hakediş Durumu →" */}
       <div className="diary-lines__info">
         <span className="diary-lines__info-icon" aria-hidden="true">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -151,79 +284,29 @@ export function DiaryLinesCard({
             <path d="M8 5v3l2 2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
           </svg>
         </span>
-        {/* GK263'teki "İşveren Hakedişi #5" SABİT bir numaradır; hangi hakedişe
-            işleneceğini veren bir uç yok — numara UYDURULMAZ, cümle numarasız
-            basılır (zarif düşüş). */}
+        {/* İ:258'deki "İşveren Hakedişi #5" SABİT bir numaradır; hangi hakedişe
+            işleneceğini veren bir uç yok — numara UYDURULMAZ (zarif düşüş). */}
         <span className="diary-lines__info-text">
-          Bu girişler ay sonunda otomatik olarak <strong>işveren hakedişine</strong>{" "}
-          ve ilgili <strong>taşeron hakedişlerine</strong> işlenecek.
+          Bu miktarlar ay sonunda <strong>işveren hakedişine</strong> ve ilgili{" "}
+          <strong>taşeron hakedişlerine</strong> de işlenir.
         </span>
         <Link href={paymentsHref} className="diary-lines__info-link">
           Hakediş Durumu →
         </Link>
       </div>
-    </section>
-  );
-}
 
-function DiaryLineRow({
-  line,
-  value,
-  onChange,
-  disabled,
-  contractQuantity,
-}: {
-  line: SiteDiaryLineRead;
-  value: string;
-  onChange: (boqItemId: string, value: string) => void;
-  disabled: boolean;
-  contractQuantity: string | null | undefined;
-}) {
-  const invalid = parseDiaryQuantity(value) === null;
-  return (
-    <tr>
-      {/* GK226: poz adı + "Sözleşme: … · Birim fiyat: …" alt satırı */}
-      <td className="diary-lines__item">
-        <span className="diary-lines__item-name">
-          {line.code} — {line.description}
-        </span>
-        <span className="diary-lines__item-meta">
-          {contractQuantity !== undefined
-            ? `Sözleşme: ${formatQuantity(contractQuantity)} ${line.unit} · `
-            : ""}
-          Birim fiyat: ₺{formatAmount(line.unit_price)}
-        </span>
-      </td>
-      <td className="diary-lines__unit">{line.unit}</td>
-      <td className="diary-lines__today">
-        {line.boq_item_id === null ? (
-          // Öksüz satır (BOQ pozu silinmiş): PUT gövdesi `boq_item_id`
-          // zorunlu tuttuğu için düzenlenemez — gizlenmez, gerekçesiyle basılır.
-          <span className="diary-lines__orphan" title="Sözleşme pozu kaldırılmış — düzenlenemez">
-            —
-          </span>
-        ) : (
-          <Input
-            size="row"
-            numeric
-            inputMode="decimal"
-            maxLength={DIARY_QUANTITY_MAX}
-            className="diary-lines__qty"
-            aria-label={`${line.code} bugün yapılan miktar`}
-            status={invalid ? "error" : "default"}
-            value={value}
-            disabled={disabled}
-            onChange={(event) => onChange(line.boq_item_id as string, event.target.value)}
-          />
-        )}
-      </td>
-      {/* GK229: "900 / 1.200" — solu yanıttan, sağı BOQ'tan. */}
-      <td className="diary-lines__cumulative">
-        {formatQuantity(line.cumulative_quantity)}
-        {contractQuantity !== undefined ? ` / ${formatQuantity(contractQuantity)}` : ""}
-      </td>
-      {/* GK230: satır hakedişi — YANITTAN. */}
-      <td className="diary-lines__amount">{formatAmount(line.line_amount)}</td>
-    </tr>
+      {pendingRemoval && (
+        <DiaryLineRemoveModal
+          group={pendingRemoval.group}
+          leaf={pendingRemoval.leaf}
+          entryDate={form.entryDate}
+          onClose={() => setPendingRemoval(null)}
+          onConfirm={() => {
+            onRemoveLine(pendingRemoval.leaf.key);
+            setPendingRemoval(null);
+          }}
+        />
+      )}
+    </section>
   );
 }

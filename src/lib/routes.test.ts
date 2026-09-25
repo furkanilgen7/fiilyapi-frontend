@@ -66,6 +66,10 @@ describe("routes — uretilen URL bicimi (elle yazilmis beklentiler)", () => {
     expect(routes.projects.sites.timesheet({ projectId: P, siteId: S, section: SEC })).toBe(
       "/projeler/p-1/santiyeler/s-9/puantaj?section=sec-4",
     );
+    // PLN-F2.1b — puantaj ekranının okuduğu hafta anahtarları (`SiteTimesheetView` `parseIsoWeek`).
+    expect(routes.projects.sites.timesheet({ projectId: P, siteId: S, isoYear: 2026, isoWeek: 39 })).toBe(
+      "/projeler/p-1/santiyeler/s-9/puantaj?iso_year=2026&iso_week=39",
+    );
     expect(routes.progressPayments.list({ projectId: P })).toBe("/hakedisler?project_id=p-1");
     expect(routes.progressPayments.new({ projectId: P })).toBe("/hakedisler/yeni?project=p-1");
     expect(routes.progressPayments.subcontractor.list({ projectId: P })).toBe(

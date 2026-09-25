@@ -11,6 +11,8 @@ export type SiteDiaryEntryListItem = components["schemas"]["SiteDiaryEntryListIt
 export type SiteDiaryEntryListResponse = components["schemas"]["SiteDiaryEntryListResponse"];
 export type SiteDiaryLineRead = components["schemas"]["SiteDiaryLineRead"];
 export type SiteDiaryWorkerCountRead = components["schemas"]["SiteDiaryWorkerCountRead"];
+/** PLN-F2.1b · G12 — kendi ekip, puantajdan TÜRETİLİR (salt okunur; kayıt yanıtı). */
+export type OwnCrewFromTimesheet = components["schemas"]["OwnCrewFromTimesheet"];
 export type SiteDiarySummary = components["schemas"]["SiteDiarySummary"];
 export type SiteDiarySummaryItem = components["schemas"]["SiteDiarySummaryItem"];
 export type DiaryStatus = components["schemas"]["DiaryStatus"];

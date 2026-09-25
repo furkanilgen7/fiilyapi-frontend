@@ -1,3 +1,5 @@
+import { AlertIcon } from "@/components/ui/icons";
+
 import type { TimesheetCopyState, TimesheetSaveState } from "./useTimesheetWeekEditor";
 
 interface StatusLine {
@@ -43,7 +45,7 @@ export function TimesheetSaveStatus({
 
   if (copyState.kind === "copying") {
     lines.push({ text: "Önceki hafta kopyalanıyor…", isFailure: false });
-  } else if (copyState.kind === "copied") {
+  } else if (copyState.kind === "copied" && copyState.lockNotice === null) {
     // Kopya TASLAĞA yazılır: kullanıcı kaydetmeden önce ne geleceğini görür.
     lines.push({
       text: `Önceki haftadan ${copyState.cellCount} hücre kopyalandı — “Haftayı Kaydet” ile yazın.`,
@@ -56,10 +58,24 @@ export function TimesheetSaveStatus({
   if (saveState.kind === "failed") lines.push({ text: saveState.message, isFailure: true });
   if (exportError !== null) lines.push({ text: exportError, isFailure: true });
 
-  if (lines.length === 0) return null;
+  // PLN-F2.4 · kilitli gün atlandıysa bildirim mockup (b)'nin yeşil bandıdır.
+  const copyLockNotice = copyState.kind === "copied" ? copyState.lockNotice : null;
+  const lockConflict = saveState.kind === "locked" ? saveState : null;
+
+  if (lines.length === 0 && copyLockNotice === null && lockConflict === null) return null;
 
   return (
     <div className="ts-save-status">
+      {/* Kilitli Gün (e) — kilit 409'u: satır içi hata bandı, düğme YOK. */}
+      {lockConflict !== null && (
+        <div className="ts-lock-conflict">
+          <AlertIcon width={17} height={17} className="ts-lock-conflict__icon" />
+          <span className="ts-lock-conflict__title">{lockConflict.title}</span>
+          <span className="ts-lock-conflict__body">{lockConflict.body}</span>
+        </div>
+      )}
+      {/* Kilitli Gün (b) — kopyalama bildirimi */}
+      {copyLockNotice !== null && <p className="ts-lock-copied">{copyLockNotice}</p>}
       {lines.map((line) => (
         <p
           key={line.text}

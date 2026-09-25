@@ -119,3 +119,22 @@ describe("buildRecentEntryRows", () => {
     expect(buildRecentEntryRows([], SECTIONS)).toEqual([]);
   });
 });
+
+describe("buildRecentEntryRows · PLN-F2.2 ilerleme varyantı (İ:313-327)", () => {
+  it("taslak 'Gönderilmedi' basılır, ₺ satırı YOKTUR; varsayılan (GK) varyant değişmez", () => {
+    const items = [
+      { id: "a", entry_date: "2026-09-23", status: "draft", weather: null, worker_total: 37, section_id: null, lines_total: "10.00" },
+      { id: "b", entry_date: "2026-09-22", status: "submitted", weather: null, worker_total: 36, section_id: null, lines_total: "5.00" },
+    ] as never;
+
+    const progress = buildRecentEntryRows(items, [], 3, "progress");
+    const legacy = buildRecentEntryRows(items, [], 3);
+
+    expect(progress.map((row) => [row.statusLabel, row.amountLabel])).toEqual([
+      ["Gönderilmedi", null],
+      ["Gönderildi", null],
+    ]);
+    expect(legacy[0].statusLabel).toBe("Taslak");
+    expect(legacy[0].amountLabel).toMatch(/hakediş katkısı$/);
+  });
+});

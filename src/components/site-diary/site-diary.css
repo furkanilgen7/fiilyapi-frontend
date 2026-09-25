@@ -187,11 +187,12 @@
   cursor: not-allowed;
 }
 
-/* ── Temel Bilgiler (GK181): dört sütun ────────────────────────────────── */
+/* ── Temel Bilgiler & Hava (İ:166): Tarih · Bölüm iki sütun ────────────── */
 .diary-basic__grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: 1fr 1fr;
   gap: 12px;
+  margin-bottom: 14px;
 }
 
 /* ── Serbest metin alanları (GK271, E7 143, GK447) ─────────────────────── */
@@ -792,9 +793,6 @@
 @media (max-width: 1200px) {
   .diary__grid {
     grid-template-columns: 1fr;
-  }
-  .diary-basic__grid {
-    grid-template-columns: repeat(2, 1fr);
   }
 }
 

@@ -2,16 +2,40 @@ import type { SiteDiaryEntryDetail, Weather } from "@/lib/api/hooks/useSiteDiary
 import type {
   SiteDiaryEntryCreate,
   SiteDiaryEntryUpdate,
-  SiteDiaryLinesSave,
 } from "@/lib/api/hooks/useSiteDiaryMutations";
 
 import {
+  buildSiteDiaryLinesSave,
+  siteDiaryLineKey,
+  type SiteDiaryFullLinesSave,
+} from "@/lib/api/hooks/site-diary-save-bodies";
+
+import { DIARY_TEMPERATURE_MAX, DIARY_TEMPERATURE_MIN } from "./diary-labels";
+
+import {
   areWorkerCountsDirty,
+  buildDiaryWorkerRows,
   buildWorkerCountsBody,
-  buildWorkerRows,
   invalidWorkerCountKeys,
+  invalidWorkerHourKeys,
   workerCountsFromEntry,
+  workerHoursFromEntry,
+  type DiaryAddedFirm,
 } from "./worker-counts";
+
+export type { DiaryAddedFirm } from "./worker-counts";
+
+/** "+ Bölüm" ile eklenen, henüz kaydedilmemiş satır (G1 · G4 · G5). */
+export interface DiaryAddedLine {
+  boqItemId: string;
+  /** `null` = Bölümsüz (G4: tam tahsisli kalemde menüden eklenir). */
+  sectionId: string | null;
+  /**
+   * Seçicide görülen planlı miktar (BOQ tahsisi; tahsissiz bölümde `"0"` —
+   * G5). Kayıttan sonra backend `planned_quantity` esastır; yalnız önizleme.
+   */
+  plannedQuantity: string | null;
+}
 
 /**
  * "Kayıt Gir" ekranının yerel form durumu (F-SD T2).
@@ -36,8 +60,15 @@ export interface DiaryFormState {
   sectionId: string;
   /** `""` = seçilmedi (alan nullable, GK188). */
   weather: Weather | "";
-  /** Serbest metin; sayıya çevrilemezse gövdeye `null` gider (GK194). */
-  temperatureC: string;
+  /**
+   * PLN-F2.1 hava genişlemesi: min/max °C ve rüzgâr m/s — serbest metin;
+   * sayıya çevrilemezse gövdeye `null` gider. Bugünkü tek "Sıcaklık" kutusu
+   * (GK194) `tempMaxC`yi yazar (backend yanıtında `temperature_c` =
+   * `temp_max_c`); min + rüzgâr kutuları F2.2'de basılır.
+   */
+  tempMinC: string;
+  tempMaxC: string;
+  windMs: string;
   /** GK271. */
   workDone: string;
   /** E7 143 — `chief_note`. */
@@ -48,11 +79,27 @@ export interface DiaryFormState {
   hasIncident: boolean;
   /** GK447 (E7 195). */
   incidentNote: string;
-  /** `boq_item_id` → "Bugün Yapılan" hücresinin HAM metni (GK228). */
+  /**
+   * Satır anahtarı (`siteDiaryLineKey(kalem, bölüm)`; Bölümsüz = `"<kalem>|"`)
+   * → "Bugün" hücresinin HAM metni (GK228 · İ:228). PLN-F2.2: bölümlü
+   * satırlar da kendi hücresini yazar (G1).
+   */
   quantities: Record<string, string>;
+  /** Satır anahtarı → aşım gerekçesi (`overrun_reason`, İ:235-240 · B2-8). */
+  overrunReasons: Record<string, string>;
+  /** "+ Bölüm" ile eklenen, henüz kaydedilmemiş satırlar. */
+  addedLines: readonly DiaryAddedLine[];
+  /** AÇIKÇA kaldırılan KAYITLI satırların anahtarları (G6) — yalnız bunlar düşer. */
+  removedLines: readonly string[];
   /** `workerCountKey(trade, source)` → işçi sayısı hücresinin HAM metni
    * (GK420/424/428/432). */
   workerCounts: Record<string, string>;
+  /** Firma satırı anahtarı → saat hücresinin HAM metni (İ:356-357). */
+  workerHours: Record<string, string>;
+  /** Eklenen taşeron firma satırları (G10). */
+  addedFirms: readonly DiaryAddedFirm[];
+  /** AÇIKÇA kaldırılan işçi satırlarının anahtarları (G10). */
+  removedWorkers: readonly string[];
 }
 
 /** Boş form — yeni gün için (tarih varsayılanı ÇAĞIRANDAN gelir). */
@@ -61,7 +108,9 @@ export function emptyDiaryForm(entryDate: string): DiaryFormState {
     entryDate,
     sectionId: "",
     weather: "",
-    temperatureC: "",
+    tempMinC: "",
+    tempMaxC: "",
+    windMs: "",
     workDone: "",
     chiefNote: "",
     safetyMeetingHeld: false,
@@ -69,7 +118,13 @@ export function emptyDiaryForm(entryDate: string): DiaryFormState {
     hasIncident: false,
     incidentNote: "",
     quantities: {},
+    overrunReasons: {},
+    addedLines: [],
+    removedLines: [],
     workerCounts: {},
+    workerHours: {},
+    addedFirms: [],
+    removedWorkers: [],
   };
 }
 
@@ -81,15 +136,21 @@ export function emptyDiaryForm(entryDate: string): DiaryFormState {
  */
 export function diaryFormFromEntry(entry: SiteDiaryEntryDetail): DiaryFormState {
   const quantities: Record<string, string> = {};
+  const overrunReasons: Record<string, string> = {};
   for (const line of entry.lines) {
     if (line.boq_item_id === null) continue;
-    quantities[line.boq_item_id] = Number(line.quantity) === 0 ? "" : line.quantity;
+    const key = siteDiaryLineKey(line.boq_item_id, line.section_id);
+    quantities[key] = Number(line.quantity) === 0 ? "" : line.quantity;
+    if (line.overrun_reason) overrunReasons[key] = line.overrun_reason;
   }
   return {
     entryDate: entry.entry_date,
     sectionId: entry.section_id ?? "",
     weather: entry.weather ?? "",
-    temperatureC: entry.temperature_c ?? "",
+    tempMinC: entry.temp_min_c ?? "",
+    // Eski kayıt/ikiz yeni alanı taşımayabilir: backend `temperature_c` = `temp_max_c`.
+    tempMaxC: entry.temp_max_c ?? entry.temperature_c ?? "",
+    windMs: entry.wind_ms ?? "",
     workDone: entry.work_done ?? "",
     chiefNote: entry.chief_note ?? "",
     safetyMeetingHeld: entry.safety_meeting_held,
@@ -97,7 +158,82 @@ export function diaryFormFromEntry(entry: SiteDiaryEntryDetail): DiaryFormState 
     hasIncident: entry.has_incident,
     incidentNote: entry.incident_note ?? "",
     quantities,
+    overrunReasons,
+    addedLines: [],
+    removedLines: [],
     workerCounts: workerCountsFromEntry(entry.worker_counts),
+    workerHours: workerHoursFromEntry(entry.worker_counts),
+    addedFirms: [],
+    removedWorkers: [],
+  };
+}
+
+/** Kaydı anahtar olmadan kopyalar (girdiyi DEĞİŞTİRMEZ). */
+function withoutKey(record: Record<string, string>, key: string): Record<string, string> {
+  return Object.fromEntries(Object.entries(record).filter(([entryKey]) => entryKey !== key));
+}
+
+function lineKeyOf(line: { boqItemId: string; sectionId: string | null }): string {
+  return siteDiaryLineKey(line.boqItemId, line.sectionId);
+}
+
+/**
+ * "+ Bölüm" (M1): satırları forma ekler. Aynı anahtar zaten ekliyse tekrar
+ * eklenmez; daha önce KALDIRILMIŞ kayıtlı satır yeniden eklenirse kaldırma
+ * geri alınır (yoksa `removed` onu gövdeden düşürürdü).
+ */
+export function addDiaryLines(form: DiaryFormState, lines: readonly DiaryAddedLine[]): DiaryFormState {
+  const removedBack = new Set(lines.map(lineKeyOf));
+  const known = new Set(form.addedLines.map(lineKeyOf));
+  const fresh = lines.filter((line) => {
+    const key = lineKeyOf(line);
+    return !known.has(key) && !form.removedLines.includes(key);
+  });
+  return {
+    ...form,
+    addedLines: [...form.addedLines, ...fresh],
+    removedLines: form.removedLines.filter((key) => !removedBack.has(key)),
+  };
+}
+
+/**
+ * Satır kaldırma (M2 · G6). Eklenmiş-kaydedilmemiş satır iz bırakmadan
+ * düşer; KAYITLI satır `removedLines`e girer. 🔴 G3: kayıtlı Bölümsüz
+ * iskelet satırı kaldırılamaz — işlem yok sayılır (form AYNEN döner).
+ */
+export function removeDiaryLine(form: DiaryFormState, key: string): DiaryFormState {
+  const isAdded = form.addedLines.some((line) => lineKeyOf(line) === key);
+  if (!isAdded && key.endsWith("|")) return form;
+  return {
+    ...form,
+    quantities: withoutKey(form.quantities, key),
+    overrunReasons: withoutKey(form.overrunReasons, key),
+    addedLines: form.addedLines.filter((line) => lineKeyOf(line) !== key),
+    removedLines: isAdded || form.removedLines.includes(key) ? form.removedLines : [...form.removedLines, key],
+  };
+}
+
+/** Taşeron firma satırı ekler (G10). Kaldırılmış firma geri eklenirse kaldırma geri alınır. */
+export function addDiaryFirm(form: DiaryFormState, firm: DiaryAddedFirm): DiaryFormState {
+  const key = `firm|${firm.subcontractorId}`;
+  if (form.removedWorkers.includes(key)) {
+    return { ...form, removedWorkers: form.removedWorkers.filter((item) => item !== key) };
+  }
+  if (form.addedFirms.some((item) => item.subcontractorId === firm.subcontractorId)) return form;
+  return { ...form, addedFirms: [...form.addedFirms, firm] };
+}
+
+/** İşçi satırını kaldırır (G10) — eklenmiş firma iz bırakmaz, kayıtlı satır `removedWorkers`e girer. */
+export function removeDiaryWorker(form: DiaryFormState, key: string): DiaryFormState {
+  const addedFirms = form.addedFirms.filter((firm) => `firm|${firm.subcontractorId}` !== key);
+  const wasAdded = addedFirms.length !== form.addedFirms.length;
+  return {
+    ...form,
+    workerCounts: withoutKey(form.workerCounts, key),
+    workerHours: withoutKey(form.workerHours, key),
+    addedFirms,
+    removedWorkers:
+      wasAdded || form.removedWorkers.includes(key) ? form.removedWorkers : [...form.removedWorkers, key],
   };
 }
 
@@ -121,12 +257,55 @@ export function parseDiaryQuantity(value: string): number | null {
   return parsed;
 }
 
-/** Sıcaklık: sayıya çevrilemezse `null` (alan zaten opsiyonel). */
-function parseTemperature(value: string): number | null {
+/** Sıcaklık / rüzgâr: sayıya çevrilemezse `null` (alanlar opsiyonel). */
+function parseWeatherNumber(value: string): number | null {
   const trimmed = value.trim().replace(",", ".");
   if (trimmed === "") return null;
   const parsed = Number(trimmed);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+/** Backend aralıkları (`site_diary/schemas.py`): sıcaklık −60..60, rüzgâr 0..80, bir ondalık. */
+const WIND_MS_MAX = 80;
+const ONE_DECIMAL = /^-?\d+(\.\d)?$/;
+
+function weatherNumberError(value: string, label: string, min: number, max: number): string | null {
+  const trimmed = value.trim().replace(",", ".");
+  if (trimmed === "") return null;
+  const parsed = Number(trimmed);
+  if (!ONE_DECIMAL.test(trimmed) || parsed < min || parsed > max) {
+    return `${label} ${min}–${max} arasında, en çok bir ondalıklı olmalı.`;
+  }
+  return null;
+}
+
+/**
+ * PLN-F2.2 · hava kutularının görünür doğrulaması (backend 422'sinden önce).
+ * İlk hatanın Türkçe metni; hepsi geçerliyse `null`.
+ */
+export function diaryWeatherError(form: DiaryFormState): string | null {
+  const error =
+    weatherNumberError(form.tempMinC, "Min °C", DIARY_TEMPERATURE_MIN, DIARY_TEMPERATURE_MAX) ??
+    weatherNumberError(form.tempMaxC, "Max °C", DIARY_TEMPERATURE_MIN, DIARY_TEMPERATURE_MAX) ??
+    weatherNumberError(form.windMs, "Rüzgâr m/s", 0, WIND_MS_MAX);
+  if (error) return error;
+  const min = parseWeatherNumber(form.tempMinC);
+  const max = parseWeatherNumber(form.tempMaxC);
+  if (min !== null && max !== null && min > max) return "Min °C, Max °C'den büyük olamaz.";
+  return null;
+}
+
+/**
+ * Hava alanları (PLN-B2.1). Kullanımdan kalkan `temperature_c` GÖNDERİLMEZ:
+ * yeni alanlar yokken backend onu min = max'a yayar ve kayıtlı min'i ezerdi.
+ */
+function weatherFields(form: DiaryFormState) {
+  return {
+    weather: form.weather === "" ? null : form.weather,
+    temp_min_c: parseWeatherNumber(form.tempMinC),
+    temp_max_c: parseWeatherNumber(form.tempMaxC),
+    wind_ms: parseWeatherNumber(form.windMs),
+  };
 }
 
 /**
@@ -138,8 +317,7 @@ export function buildDiaryCreateBody(form: DiaryFormState): SiteDiaryEntryCreate
   return {
     entry_date: form.entryDate,
     section_id: form.sectionId === "" ? null : form.sectionId,
-    weather: form.weather === "" ? null : form.weather,
-    temperature_c: parseTemperature(form.temperatureC),
+    ...weatherFields(form),
     work_done: textOrNull(form.workDone),
     chief_note: textOrNull(form.chiefNote),
     safety_meeting_held: form.safetyMeetingHeld,
@@ -153,8 +331,8 @@ export function buildDiaryCreateBody(form: DiaryFormState): SiteDiaryEntryCreate
  * `PATCH /diary/{entry_id}` gövdesi — başlık alanları + işçi kırılımı (T3).
  *
  * `worker_counts` DEĞİŞTİRME semantiğindedir (openapi açıklaması): gövdeye
- * kaydın TÜM satırları (ön tanımlılar + kayıttan gelen fazlalıklar) girer,
- * sıfır olanlar SİLİNSİN diye dışarıda bırakılır. Hücrelerden biri geçersizse
+ * kaydın TÜM satırları (ekrandakiler + G12a'da gizlenen sayısı 0 eski satırlar)
+ * girer; ekranda sıfıra çekilenler SİLİNSİN diye dışarıda bırakılır. Hücrelerden biri geçersizse
  * alan HİÇ gönderilmez (`undefined`) — backend mevcut kırılımı korur, yanlış
  * bir sayı yazılmaz. Çağıran zaten `invalidWorkerCountKeys` ile önce durur.
  */
@@ -163,13 +341,18 @@ export function buildDiaryUpdateBody(
   entry: SiteDiaryEntryDetail,
 ): SiteDiaryEntryUpdate {
   const workerCounts =
-    buildWorkerCountsBody(buildWorkerRows(entry.worker_counts), form.workerCounts) ?? undefined;
+    buildWorkerCountsBody(
+      entry.worker_counts,
+      buildDiaryWorkerRows(entry.worker_counts, form.addedFirms, form.removedWorkers),
+      form.workerCounts,
+      form.workerHours,
+      form.removedWorkers,
+    ) ?? undefined;
   return {
     worker_counts: workerCounts,
     entry_date: form.entryDate,
     section_id: form.sectionId === "" ? null : form.sectionId,
-    weather: form.weather === "" ? null : form.weather,
-    temperature_c: parseTemperature(form.temperatureC),
+    ...weatherFields(form),
     work_done: textOrNull(form.workDone),
     chief_note: textOrNull(form.chiefNote),
     safety_meeting_held: form.safetyMeetingHeld,
@@ -181,9 +364,11 @@ export function buildDiaryUpdateBody(
 
 /**
  * `PUT /diary/{entry_id}/lines` gövdesi — DEĞİŞTİRME semantiği: gövdede
- * geçmeyen satır sıfırlanır. Bu yüzden kaydın TÜM satırları (miktarı `0`
- * olanlar dahil) gönderilir; kullanıcı bir hücreyi boşaltınca sıfırlanması
- * gereken satır sessizce eski değerinde kalmaz.
+ * geçmeyen satır SİLİNİR. Gövde `buildSiteDiaryLinesSave` ile kaydın TÜM
+ * satırlarından kurulur (PLN-F2.1 tam küme): her satırın miktarı + aşım
+ * gerekçesi formdan (boşaltılan hücre `0`), "+ Bölüm" satırları `added`,
+ * kaldırılanlar `removed` (G6). Geçersiz hücrede satırın SUNUCUDAKİ miktarı
+ * korunur.
  *
  * `boq_item_id === null` olan satır (BOQ pozu silinmiş, öksüz satır)
  * GÖNDERİLEMEZ — şema `boq_item_id`i zorunlu tutar; bu satırlar atlanır.
@@ -191,15 +376,27 @@ export function buildDiaryUpdateBody(
 export function buildDiaryLinesBody(
   entry: SiteDiaryEntryDetail,
   form: DiaryFormState,
-): SiteDiaryLinesSave {
-  const lines = entry.lines
-    .filter((line) => line.boq_item_id !== null)
-    .map((line) => {
-      const boqItemId = line.boq_item_id as string;
-      const parsed = parseDiaryQuantity(form.quantities[boqItemId] ?? "");
-      return { boq_item_id: boqItemId, quantity: parsed ?? Number(line.quantity) };
-    });
-  return { lines };
+): SiteDiaryFullLinesSave {
+  const changes: Record<string, { quantity: number; overrunReason: string | null }> = {};
+  for (const line of entry.lines) {
+    if (line.boq_item_id === null) continue;
+    const key = siteDiaryLineKey(line.boq_item_id, line.section_id);
+    const parsed = parseDiaryQuantity(form.quantities[key] ?? "");
+    changes[key] = {
+      quantity: parsed ?? Number(line.quantity),
+      overrunReason: textOrNull(form.overrunReasons[key] ?? ""),
+    };
+  }
+  const added = form.addedLines.map((line) => {
+    const key = lineKeyOf(line);
+    return {
+      boq_item_id: line.boqItemId,
+      section_id: line.sectionId,
+      quantity: parseDiaryQuantity(form.quantities[key] ?? "") ?? 0,
+      overrun_reason: textOrNull(form.overrunReasons[key] ?? ""),
+    };
+  });
+  return buildSiteDiaryLinesSave(entry.lines, { changes, added, removed: form.removedLines });
 }
 
 /** Geçersiz miktar girilmiş hücrelerin poz kimlikleri (görünür hata için). */
@@ -211,7 +408,7 @@ export function invalidQuantityIds(form: DiaryFormState): string[] {
 
 /** Geçersiz işçi sayısı girilmiş hücrelerin anahtarları (görünür hata için). */
 export function invalidWorkerCountIds(form: DiaryFormState): string[] {
-  return invalidWorkerCountKeys(form.workerCounts);
+  return [...new Set([...invalidWorkerCountKeys(form.workerCounts), ...invalidWorkerHourKeys(form.workerHours)])];
 }
 
 /**
@@ -234,9 +431,19 @@ export function isDiaryFormDirty(entry: SiteDiaryEntryDetail, form: DiaryFormSta
   ) {
     return true;
   }
-  if (parseTemperature(saved.temperatureC) !== parseTemperature(form.temperatureC)) return true;
-  if (areWorkerCountsDirty(entry.worker_counts, buildWorkerRows(entry.worker_counts), form.workerCounts)) {
+  const weatherKeys = ["tempMinC", "tempMaxC", "windMs"] as const;
+  if (weatherKeys.some((key) => parseWeatherNumber(saved[key]) !== parseWeatherNumber(form[key]))) {
     return true;
+  }
+  if (form.addedLines.length > 0 || form.removedLines.length > 0) return true;
+  if (form.addedFirms.length > 0 || form.removedWorkers.length > 0) return true;
+  const workerRows = buildDiaryWorkerRows(entry.worker_counts, form.addedFirms, form.removedWorkers);
+  if (areWorkerCountsDirty(entry.worker_counts, workerRows, form.workerCounts, form.workerHours)) {
+    return true;
+  }
+  const reasonKeys = new Set([...Object.keys(saved.overrunReasons), ...Object.keys(form.overrunReasons)]);
+  for (const key of reasonKeys) {
+    if (textOrNull(saved.overrunReasons[key] ?? "") !== textOrNull(form.overrunReasons[key] ?? "")) return true;
   }
   const ids = new Set([...Object.keys(saved.quantities), ...Object.keys(form.quantities)]);
   for (const id of ids) {

@@ -8,7 +8,7 @@
  * `maximumFractionDigits` kullanır ("1,00" → "1"), `formatPercent` girdiyi
  * zaten yüzde sayar ve sondaki sıfırı atar ("%52,0" → "%52").
  */
-import { divideDecimalStrings, multiplyDecimalStrings } from "@/lib/decimal";
+import { divideDecimalStrings } from "@/lib/decimal";
 import { EMPTY_CELL } from "@/lib/format";
 
 import { roundHalfUp, toDecimalString, toPoints, type EvNumber } from "./decimal-input";
@@ -22,7 +22,6 @@ const VARIANCE_DIGITS = 1;
 const UNIT_RATE_WIDE_FROM = 10;
 const UNIT_RATE_WIDE_DIGITS = 1;
 const UNIT_RATE_NARROW_DIGITS = 2;
-const MS_TO_KMH = "3.6";
 
 /** Zaten yuvarlanmış ondalık string'i sabit basamakla tr-TR basar. */
 function formatFixed(rounded: string, digits: number): string {
@@ -62,10 +61,5 @@ export function formatUnitRate(value: EvNumber): string {
   return formatFixed(divideDecimalStrings(decimal, "1", digits) ?? decimal, digits);
 }
 
-/** Rüzgâr m/s → "18 km/sa" (İ:707 tam sayı · K22 etiket "km/sa"). */
-export function formatWindKmh(metersPerSecond: EvNumber): string {
-  const decimal = toDecimalString(metersPerSecond);
-  if (decimal === null) return EMPTY_CELL;
-  const kmh = roundHalfUp(multiplyDecimalStrings(decimal, MS_TO_KMH), 0);
-  return kmh === null ? EMPTY_CELL : `${formatFixed(kmh, 0)} km/sa`;
-}
+/** Rüzgâr m/s → "18 km/sa" — genel `lib/format`a taşındı (PLN-F2.1, §2.7); EV çağıranları için yeniden ihraç. */
+export { formatWindKmh } from "@/lib/format";

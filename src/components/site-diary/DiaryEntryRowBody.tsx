@@ -58,8 +58,8 @@ export function DiaryEntryRowBody({ row }: { row: DiaryRecentEntryRow }) {
           — fotoğraf
         </span>
       </span>
-      {/* GK364 */}
-      <span className="diary-recent__amount">{row.amountLabel}</span>
+      {/* GK364 — İlerleme görünümünde (İ:313-327) ₺ satırı YOK. */}
+      {row.amountLabel !== null && <span className="diary-recent__amount">{row.amountLabel}</span>}
     </>
   );
 }

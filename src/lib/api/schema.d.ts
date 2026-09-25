@@ -5926,7 +5926,8 @@ export interface paths {
         };
         /**
          * Get Budget Item Suggestions
-         * @description Oran onerisi popover'i: katalog adaylari (bagli · tam · kismi). Gecmis B3'te dolar.
+         * @description Oran onerisi popover'i: katalog adaylari (bagli · tam · kismi) + her aday icin
+         *     "son 3 santiye gerceklesen" (K4: yalniz TAMAMLANMIS santiye, miktar agirlikli).
          */
         get: operations["get_budget_item_suggestions_sites__site_id__earned_value_budget_items__boq_item_id__suggestions_get"];
         put?: never;
@@ -6179,6 +6180,108 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sites/{site_id}/earned-value/panel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Panel
+         * @description Planlama paneli — filtre (disiplin kokü `d:…`, kendi/taseron) BUTUN panele uygulanir.
+         */
+        get: operations["get_panel_sites__site_id__earned_value_panel_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sites/{site_id}/earned-value/reports/daily": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Daily Report
+         * @description Gunluk ilerleme raporu (GIR). Onayli + kilitli gun → donmus snapshot (B3-5).
+         */
+        get: operations["get_daily_report_sites__site_id__earned_value_reports_daily_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sites/{site_id}/earned-value/reports/daily/{day}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve Daily Report
+         * @description Onayla ve kilitle: K13 taslak gunluk varsa 422 · gunluk yoksa 409 · eksik gunler
+         *     (gunlugu hic olmayan is gunleri) yanitta `missing_diary_dates` (B3-1).
+         */
+        post: operations["approve_daily_report_sites__site_id__earned_value_reports_daily__day__approve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sites/{site_id}/earned-value/reports/weekly": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Weekly Report
+         * @description Haftalik QURR (B3-2: onaylanmaz, canli). `week` yoksa bugunun haftasi (takvime
+         *     kirpilir, §3.15 S6). Baseline yok → 409 NO_BASELINE · hafta takvimde yok → 404 NO_WEEK.
+         */
+        get: operations["get_weekly_report_sites__site_id__earned_value_reports_weekly_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sites/{site_id}/earned-value/reports/weekly.xlsx": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Weekly Report
+         * @description QURR Excel — okuma ucuyla AYNI hesap (`_qurr`); export saf sunumdur.
+         */
+        get: operations["export_weekly_report_sites__site_id__earned_value_reports_weekly_xlsx_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sites/{site_id}/earned-value/settings": {
         parameters: {
             query?: never;
@@ -6199,6 +6302,47 @@ export interface paths {
          *     DEGILDIR (K7); "her n. haftanin X gunu" kurali YOKTUR (S5). Yanit guncel GET govdesi.
          */
         put: operations["save_settings_endpoint_sites__site_id__earned_value_settings_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sites/{site_id}/earned-value/settings/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Settings Preview
+         * @description AYP canli degerleri: bugunun sapmasi (K27 puan) · gunluk/haftalik PF · hafta no ·
+         *     kayitli pacal metriklerin gerceklesen/planlisi (B3-3). Kayitli ayarla hesaplanir.
+         */
+        get: operations["get_settings_preview_sites__site_id__earned_value_settings_preview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sites/{site_id}/earned-value/settings/preview/composite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Composite Preview
+         * @description Duzenlenen (kaydedilmemis) pacal metrigin canli degeri — kayitli metriklerle AYNI formul.
+         */
+        get: operations["get_composite_preview_sites__site_id__earned_value_settings_preview_composite_get"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -8046,6 +8190,12 @@ export interface components {
             /** Total */
             total: number;
         };
+        /** ApprovalResult */
+        ApprovalResult: {
+            /** Missing Diary Dates */
+            missing_diary_dates: string[];
+            report: components["schemas"]["DailyReport"];
+        };
         /**
          * ApprovalRole
          * @description Onay zincirinin ADIM ROLU — sistem rolu DEGILDIR (modul docstring'i).
@@ -8449,6 +8599,25 @@ export interface components {
             source: ("override" | "section" | "union" | "snapshot") | null;
             /** Start Date */
             start_date: string | null;
+        };
+        /** BarPoint */
+        BarPoint: {
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            /**
+             * Diary Status
+             * @enum {string}
+             */
+            diary_status: "none" | "draft" | "submitted";
+            /** Earned Day */
+            earned_day: string | null;
+            /** Is Holiday */
+            is_holiday: boolean;
+            /** Spent Day */
+            spent_day: string | null;
         };
         /** BlockCreate */
         BlockCreate: {
@@ -9516,6 +9685,33 @@ export interface components {
             /** Website */
             website?: string | null;
         };
+        /** CompositeCard */
+        CompositeCard: {
+            /** Actual */
+            actual: string | null;
+            /** Denominator Name */
+            denominator_name?: string | null;
+            /** Deviation */
+            deviation: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Measure
+             * @enum {string}
+             */
+            measure: "spent" | "earned" | "budget";
+            /** Name */
+            name: string;
+            /** Numerator Names */
+            numerator_names?: string[];
+            /** Planned */
+            planned: string | null;
+            /** Unit */
+            unit: string | null;
+        };
         /**
          * CompositeMeasure
          * @description Pacal metrigin TEK olcusu (K25).
@@ -9556,6 +9752,20 @@ export interface components {
             name: string;
             /** Numerator Item Ids */
             numerator_item_ids: string[];
+        };
+        /**
+         * CompositeValueOut
+         * @description Duzenlenen (kaydedilmemis) pacal metrigin canli degeri — B3-3 formulu.
+         */
+        CompositeValueOut: {
+            /** Actual */
+            actual: string | null;
+            /** Deviation */
+            deviation: string | null;
+            /** Planned */
+            planned: string | null;
+            /** Unit */
+            unit: string | null;
         };
         /**
          * ConsumptionStatus
@@ -9818,6 +10028,23 @@ export interface components {
             /** Pending Module */
             pending_module: string;
         };
+        /** CurvePoint */
+        CurvePoint: {
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            /** Is Future */
+            is_future: boolean;
+            /** Planned Pct Cum */
+            planned_pct_cum: string | null;
+            /** Progress Pct Cum */
+            progress_pct_cum: string | null;
+            status?: components["schemas"]["Status"] | null;
+            /** Variance */
+            variance?: string | null;
+        };
         /** CustomerCreate */
         CustomerCreate: {
             /** Address */
@@ -9882,6 +10109,19 @@ export interface components {
             /** Tax Number */
             tax_number?: string | null;
         };
+        /** DailyFooter */
+        DailyFooter: {
+            /** Spent Total Day */
+            spent_total_day: string;
+            /** Timesheet Total Day */
+            timesheet_total_day: string;
+            /** Unallocated Day */
+            unallocated_day: string;
+            /** Undistributed Day */
+            undistributed_day: string;
+            /** Undistributed Reason */
+            undistributed_reason: string | null;
+        };
         /**
          * DailyPfBands
          * @description Gunluk PF: < `red_below` kirmizi · [`green_from`; `high_above`] yesil ·
@@ -9907,6 +10147,66 @@ export interface components {
             high_above: string;
             /** Red Below */
             red_below: string;
+        };
+        /** DailyReport */
+        DailyReport: {
+            /** Approved At */
+            approved_at: string | null;
+            approved_by: components["schemas"]["UserRef"] | null;
+            /** Calendar End */
+            calendar_end?: string | null;
+            /** Calendar Start */
+            calendar_start?: string | null;
+            /** Day No */
+            day_no: number | null;
+            /** Draft Diary Dates */
+            draft_diary_dates: string[];
+            footer: components["schemas"]["DailyFooter"] | null;
+            /**
+             * Generated At
+             * Format: date-time
+             */
+            generated_at: string;
+            /** Kpis */
+            kpis: components["schemas"]["KpiRowOut"][];
+            /** Missing Diary Dates */
+            missing_diary_dates: string[];
+            pf_bands?: components["schemas"]["PfBandsOut"] | null;
+            /** Project Start */
+            project_start: string | null;
+            /** Quantities */
+            quantities: components["schemas"]["QtyTreeRow"][];
+            /**
+             * Report Date
+             * Format: date
+             */
+            report_date: string;
+            /** Report No */
+            report_no: number | null;
+            revision: components["schemas"]["RevisionRef"] | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "not_generated" | "draft" | "approved";
+            /** Tolerance Points */
+            tolerance_points: string | null;
+            /** Trend */
+            trend: components["schemas"]["TrendPoint"][];
+            /** Unrated Entries */
+            unrated_entries: components["schemas"]["WarningOut"][];
+            /** Version */
+            version: number | null;
+            /** Warnings */
+            warnings: components["schemas"]["WarningOut"][];
+            /** Weather */
+            weather: components["schemas"]["WeatherDay"][];
+            /** Week End */
+            week_end: string | null;
+            /** Week No */
+            week_no: number | null;
+            /** Week Start */
+            week_start: string | null;
         };
         /** DashboardProjectCard */
         DashboardProjectCard: {
@@ -11741,6 +12041,8 @@ export interface components {
         GroupOut: {
             /** Budget Mhr */
             budget_mhr: string;
+            /** Code */
+            code?: string | null;
             /** Direct Budget Mhr */
             direct_budget_mhr: string;
             /** Discipline Id */
@@ -11763,6 +12065,26 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** HistogramWeek */
+        HistogramWeek: {
+            /** Actual People */
+            actual_people: string | null;
+            /** Is Future */
+            is_future: boolean;
+            /** Planned People */
+            planned_people: string | null;
+            /** Week End */
+            week_end?: string | null;
+            /** Week No */
+            week_no?: number | null;
+            /**
+             * Week Start
+             * Format: date
+             */
+            week_start: string;
+            /** Working Days */
+            working_days: number;
         };
         /**
          * HolidayInput
@@ -12688,6 +13010,23 @@ export interface components {
             is_direct?: boolean | null;
         };
         /**
+         * ItemProgressOut
+         * @description Is tipi (kalem, `i:<kalem>`) dugumu: TUM alt agac + kaleme DOGRUDAN yazilan saat
+         *     (EV-BORC-2: `direct` kuralla kalem koduna yazilan saat yapraklarda gorunmez).
+         */
+        ItemProgressOut: {
+            /** Earned Day */
+            earned_day: string;
+            /** Node Id */
+            node_id: string;
+            /** Pf Day */
+            pf_day: string | null;
+            /** Qty Day */
+            qty_day: string | null;
+            /** Spent Day */
+            spent_day: string;
+        };
+        /**
          * JournalEntryCreate
          * @description `POST /journal-entries` (E8:67 `+ Yevmiye Kaydı`).
          *
@@ -12952,6 +13291,60 @@ export interface components {
             total_debit: string;
             /** Year */
             year: number;
+        };
+        /** KpiPf */
+        KpiPf: {
+            /** Pf Cum */
+            pf_cum: string | null;
+            pf_cum_band: components["schemas"]["PfBand"] | null;
+            /** Pf Week */
+            pf_week: string | null;
+            pf_week_band: components["schemas"]["PfBand"] | null;
+            /**
+             * Scope
+             * @enum {string}
+             */
+            scope: "overall_own" | "overall_subcon";
+        };
+        /** KpiRowOut */
+        KpiRowOut: {
+            /** Budget Mhr */
+            budget_mhr: string;
+            /** Contractor Mix */
+            contractor_mix: string | null;
+            /** Earned Cum */
+            earned_cum: string;
+            /** Earned Day */
+            earned_day: string;
+            kind: components["schemas"]["RowKind"];
+            /** Name */
+            name: string | null;
+            /** Node Id */
+            node_id: string | null;
+            /** Pf Cum */
+            pf_cum: string | null;
+            pf_cum_band: components["schemas"]["PfBand"] | null;
+            /** Pf Day */
+            pf_day: string | null;
+            pf_day_band: components["schemas"]["PfBand"] | null;
+            /** Pf Week */
+            pf_week: string | null;
+            pf_week_band: components["schemas"]["PfBand"] | null;
+            /** Planned Pct Cum */
+            planned_pct_cum: string | null;
+            /** Planned Pct Day */
+            planned_pct_day: string | null;
+            /** Progress Pct Cum */
+            progress_pct_cum: string | null;
+            /** Progress Pct Day */
+            progress_pct_day: string | null;
+            /** Spent Cum */
+            spent_cum: string;
+            /** Spent Day */
+            spent_day: string;
+            status: components["schemas"]["Status"] | null;
+            /** Variance */
+            variance: string | null;
         };
         /**
          * LandShareBalance
@@ -13308,6 +13701,8 @@ export interface components {
             /** Planned Qty */
             planned_qty: string;
             rate_source: components["schemas"]["RateSource"] | null;
+            /** Section Code */
+            section_code?: string | null;
             /** Section Id */
             section_id: string | null;
             /** Section Name */
@@ -13860,6 +14255,155 @@ export interface components {
             installment_count: number;
             /** Late Fee Amount */
             late_fee_amount: string | null;
+        };
+        /**
+         * OwnCrewFromTimesheet
+         * @description Puantajdan türeyen ekip satırı (EV-BORC-2): personelin KENDİ `trade` + `source` alanı.
+         */
+        OwnCrewFromTimesheet: {
+            /** Headcount */
+            headcount: number;
+            /** Hours */
+            hours: string;
+            source: components["schemas"]["WorkerSource"];
+            /** Trade */
+            trade: string;
+        };
+        /**
+         * PanelDiscipline
+         * @description EV-BORC-3 G1: filtre acilir listesi — `discipline_id` filtresinden BAGIMSIZ, tum kokler.
+         */
+        PanelDiscipline: {
+            /** Contractor Mix */
+            contractor_mix: string | null;
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /** PanelKpi */
+        PanelKpi: {
+            /** Budget Mhr */
+            budget_mhr: string;
+            /** Earned Cum */
+            earned_cum: string | null;
+            /** Earned Day */
+            earned_day: string | null;
+            /** Pf Cum */
+            pf_cum: string | null;
+            pf_cum_band: components["schemas"]["PfBand"] | null;
+            /** Pf Week */
+            pf_week: string | null;
+            pf_week_band: components["schemas"]["PfBand"] | null;
+            /** Planned Pct Cum */
+            planned_pct_cum: string | null;
+            /** Progress Pct Cum */
+            progress_pct_cum: string | null;
+            /** Spent Day */
+            spent_day: string | null;
+            status: components["schemas"]["Status"] | null;
+            /** Timesheet Total Day */
+            timesheet_total_day: string | null;
+            /** Undistributed Day */
+            undistributed_day: string | null;
+            /** Variance */
+            variance: string | null;
+        };
+        /** PanelReport */
+        PanelReport: {
+            /**
+             * Actual Basis
+             * @enum {string}
+             */
+            actual_basis: "headcount" | "equivalent";
+            /** Bars */
+            bars: components["schemas"]["BarPoint"][];
+            /** Calendar End */
+            calendar_end?: string | null;
+            /** Calendar Start */
+            calendar_start?: string | null;
+            contractor_type: components["schemas"]["ContractorType"] | null;
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            /** Day No */
+            day_no: number | null;
+            /** Discipline Id */
+            discipline_id: string | null;
+            /** Disciplines */
+            disciplines?: components["schemas"]["PanelDiscipline"][];
+            /** Has Baseline */
+            has_baseline: boolean;
+            /** Has Field Data */
+            has_field_data: boolean;
+            /** Histogram */
+            histogram: components["schemas"]["HistogramWeek"][];
+            kpi: components["schemas"]["PanelKpi"] | null;
+            pf_bands?: components["schemas"]["PfBandsOut"] | null;
+            /** Pf Trend */
+            pf_trend: components["schemas"]["PfPoint"][];
+            /**
+             * Range
+             * @enum {string}
+             */
+            range: "4w" | "3m" | "all";
+            revision: components["schemas"]["RevisionRef"] | null;
+            /** Rows */
+            rows: components["schemas"]["PanelRow"][];
+            /** S Curve */
+            s_curve: components["schemas"]["CurvePoint"][];
+            /** Standard Daily Hours */
+            standard_daily_hours: string | null;
+            /** Tolerance Points */
+            tolerance_points: string | null;
+            /** Warnings */
+            warnings: components["schemas"]["WarningOut"][];
+            /** Week End */
+            week_end: string | null;
+            /** Week No */
+            week_no: number | null;
+            /** Week Start */
+            week_start: string | null;
+        };
+        /** PanelRow */
+        PanelRow: {
+            /** Budget Mhr */
+            budget_mhr: string;
+            /** Contractor Mix */
+            contractor_mix: string | null;
+            contractor_type: components["schemas"]["ContractorType"] | null;
+            /** Earned Cum */
+            earned_cum: string | null;
+            /** Name */
+            name: string;
+            /** Node Id */
+            node_id: string | null;
+            /** Parent Id */
+            parent_id: string | null;
+            /** Pf Cum */
+            pf_cum: string | null;
+            pf_cum_band: components["schemas"]["PfBand"] | null;
+            /** Pf Week */
+            pf_week: string | null;
+            pf_week_band: components["schemas"]["PfBand"] | null;
+            /** Planned Pct Cum */
+            planned_pct_cum: string | null;
+            /** Progress Pct Cum */
+            progress_pct_cum: string | null;
+            /**
+             * Scope
+             * @enum {string}
+             */
+            scope: "overall" | "overall_own" | "overall_subcon" | "discipline" | "discipline_own" | "discipline_subcon" | "non_direct" | "item";
+            /** Spent Cum */
+            spent_cum: string | null;
+            status: components["schemas"]["Status"] | null;
+            /** Uom */
+            uom: string | null;
+            /** Variance */
+            variance: string | null;
         };
         /** PasswordReset */
         PasswordReset: {
@@ -14990,6 +15534,20 @@ export interface components {
             wage_amount?: number | string | null;
             wage_type?: components["schemas"]["WageType"] | null;
         };
+        /**
+         * PfBand
+         * @enum {string}
+         */
+        PfBand: "red" | "amber" | "green" | "high";
+        /** PfBandOut */
+        PfBandOut: {
+            /** Green From */
+            green_from: string;
+            /** High Above */
+            high_above: string | null;
+            /** Red Below */
+            red_below: string;
+        };
         /** PfBands */
         "PfBands-Input": {
             daily: components["schemas"]["DailyPfBands-Input"];
@@ -14999,6 +15557,27 @@ export interface components {
         "PfBands-Output": {
             daily: components["schemas"]["DailyPfBands-Output"];
             weekly: components["schemas"]["WeeklyPfBands-Output"];
+        };
+        /**
+         * PfBandsOut
+         * @description EV-BORC-3 G2: raporun KULLANDIGI PF esikleri. Haftalik PF kumulatif esigini kullanir
+         *     (motor: `pf_week_band` = cumulative). Gunluk raporda SNAPSHOT'a girer.
+         */
+        PfBandsOut: {
+            cumulative: components["schemas"]["PfBandOut"];
+            daily: components["schemas"]["PfBandOut"];
+        };
+        /** PfPoint */
+        PfPoint: {
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            /** Pf Day */
+            pf_day: string | null;
+            /** Pf Rolling */
+            pf_rolling: string | null;
         };
         /**
          * PlanCellTag
@@ -15078,6 +15657,8 @@ export interface components {
             end: string | null;
             /** Indirect Budget Mhr */
             indirect_budget_mhr: string;
+            /** Standard Daily Hours */
+            standard_daily_hours?: string | null;
             /** Start */
             start: string | null;
             total: components["schemas"]["SeriesOut"];
@@ -15118,6 +15699,8 @@ export interface components {
         ProgressOut: {
             /** Earned Day */
             earned_day: string;
+            /** Items */
+            items?: components["schemas"]["ItemProgressOut"][];
             /** Leaves */
             leaves: components["schemas"]["LeafProgressOut"][];
             /** Pf Day */
@@ -16595,6 +17178,44 @@ export interface components {
             /** Quote Wait Requests */
             quote_wait_requests: number;
         };
+        /** QtyTreeRow */
+        QtyTreeRow: {
+            /** Actual Unit Mhr Cum */
+            actual_unit_mhr_cum: string | null;
+            /** Actual Unit Mhr Day */
+            actual_unit_mhr_day: string | null;
+            contractor_type: components["schemas"]["ContractorType"] | null;
+            /** Is Direct */
+            is_direct: boolean | null;
+            /** Level */
+            level: number;
+            /** Name */
+            name: string;
+            /** Node Id */
+            node_id: string;
+            /** Pf Cum */
+            pf_cum?: string | null;
+            pf_cum_band?: components["schemas"]["PfBand"] | null;
+            /** Pf Day */
+            pf_day: string | null;
+            pf_day_band: components["schemas"]["PfBand"] | null;
+            /** Planned Qty */
+            planned_qty: string | null;
+            /** Planned Unit Mhr */
+            planned_unit_mhr: string | null;
+            /** Progress Pct Cum */
+            progress_pct_cum: string | null;
+            /** Qty Cum */
+            qty_cum: string | null;
+            /** Qty Day */
+            qty_day: string | null;
+            /** Remaining Qty */
+            remaining_qty: string | null;
+            /** Spent Day */
+            spent_day: string;
+            /** Uom */
+            uom: string | null;
+        };
         /**
          * QuantitySource
          * @description Satır miktarının kaynağı — O87 "Günlük kayıttan" rozetinin altyapısı (spec §2).
@@ -16604,12 +17225,185 @@ export interface components {
          * @enum {string}
          */
         QuantitySource: "manual" | "diary";
+        /** QurrReport */
+        QurrReport: {
+            /** Calendar End */
+            calendar_end?: string | null;
+            /** Calendar Start */
+            calendar_start?: string | null;
+            /** Composites */
+            composites: components["schemas"]["CompositeCard"][];
+            /** Draft Diary Dates */
+            draft_diary_dates: string[];
+            /** Generated At */
+            generated_at?: string | null;
+            /** Has Field Data */
+            has_field_data?: boolean | null;
+            /** Kpis */
+            kpis: components["schemas"]["KpiPf"][];
+            /** Last Week No */
+            last_week_no?: number | null;
+            pf_bands?: components["schemas"]["PfBandsOut"] | null;
+            previous_revision: components["schemas"]["RevisionRef"] | null;
+            /**
+             * Report Date
+             * Format: date
+             */
+            report_date: string;
+            revision: components["schemas"]["RevisionRef"];
+            /** Rows */
+            rows: components["schemas"]["QurrRow"][];
+            /** Totals */
+            totals: components["schemas"]["QurrTotal"][];
+            /** Warnings */
+            warnings: components["schemas"]["WarningOut"][];
+            /**
+             * Week End
+             * Format: date
+             */
+            week_end: string;
+            /** Week No */
+            week_no: number;
+            /**
+             * Week Start
+             * Format: date
+             */
+            week_start: string;
+        };
+        /**
+         * QurrRow
+         * @description L3 (is tipi) satiri — Ek A §4.2 a–r kolonlari.
+         */
+        QurrRow: {
+            /** A Prev Qty */
+            a_prev_qty: string | null;
+            /** B Qty */
+            b_qty: string | null;
+            /** C Qty Cum */
+            c_qty_cum: string | null;
+            /** Changed Budget */
+            changed_budget: boolean;
+            /** Changed Qty */
+            changed_qty: boolean;
+            /** Changed Rate */
+            changed_rate: boolean;
+            /** Code */
+            code: string | null;
+            contractor_type: components["schemas"]["ContractorType"] | null;
+            /** D Remaining Qty */
+            d_remaining_qty: string | null;
+            /** E Qty Week */
+            e_qty_week: string | null;
+            /** F Prev Budget Mhr */
+            f_prev_budget_mhr: string | null;
+            /** G Budget Mhr */
+            g_budget_mhr: string;
+            /** H Earned Cum */
+            h_earned_cum: string;
+            /** I Spent Cum */
+            i_spent_cum: string;
+            /** Is Direct */
+            is_direct: boolean | null;
+            /** J Remaining Mhr */
+            j_remaining_mhr: string;
+            /** K Earned Week */
+            k_earned_week: string;
+            /** L Spent Week */
+            l_spent_week: string;
+            /** Level */
+            level: number;
+            /** M Prev Unit Mhr */
+            m_prev_unit_mhr: string | null;
+            /** N Unit Mhr */
+            n_unit_mhr: string | null;
+            /** Name */
+            name: string;
+            /** Node Id */
+            node_id: string;
+            /** O Actual Unit Mhr Cum */
+            o_actual_unit_mhr_cum: string | null;
+            /** P Actual Unit Mhr Week */
+            p_actual_unit_mhr_week: string | null;
+            /** Parent Id */
+            parent_id?: string | null;
+            q_band: components["schemas"]["PfBand"] | null;
+            /** Q Pf Cum */
+            q_pf_cum: string | null;
+            r_band: components["schemas"]["PfBand"] | null;
+            /** R Pf Week */
+            r_pf_week: string | null;
+            /** Uom */
+            uom: string | null;
+        };
+        /**
+         * QurrTotal
+         * @description Ara toplam / Σ direct / Σ direct+non-direct — f–l + q, r.
+         */
+        QurrTotal: {
+            /** Code */
+            code?: string | null;
+            /** Contractor Mix */
+            contractor_mix?: string | null;
+            /** F Prev Budget Mhr */
+            f_prev_budget_mhr: string | null;
+            /** G Budget Mhr */
+            g_budget_mhr: string;
+            /** H Earned Cum */
+            h_earned_cum: string;
+            /** I Spent Cum */
+            i_spent_cum: string;
+            /** J Remaining Mhr */
+            j_remaining_mhr: string;
+            /** K Earned Week */
+            k_earned_week: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "discipline" | "group" | "direct_total" | "all_total";
+            /** L Spent Week */
+            l_spent_week: string;
+            /** Name */
+            name: string;
+            /** Node Id */
+            node_id: string | null;
+            /** Parent Id */
+            parent_id?: string | null;
+            q_band?: components["schemas"]["PfBand"] | null;
+            /** Q Pf Cum */
+            q_pf_cum: string | null;
+            r_band?: components["schemas"]["PfBand"] | null;
+            /** R Pf Week */
+            r_pf_week: string | null;
+        };
         /**
          * RateSource
          * @description Oranin nereden geldigi (K4) — atama aninda kopyalanir, kaynak saklanir.
          * @enum {string}
          */
         RateSource: "catalog" | "history" | "manual";
+        /**
+         * RecentActualOut
+         * @description K4 "son 3 santiye gerceklesen": aday katalog kaleminin en yeni 3 TAMAMLANMIS santiyedeki
+         *     miktar agirlikli orani (Σspent ÷ Σqty) ve o santiyeler.
+         */
+        RecentActualOut: {
+            /** Avg */
+            avg: string | null;
+            /**
+             * Catalog Item Id
+             * Format: uuid
+             */
+            catalog_item_id: string;
+            /** Name */
+            name: string;
+            /** Site Count */
+            site_count: number;
+            /** Sites */
+            sites: components["schemas"]["CatalogActualSite"][];
+            /** Uom */
+            uom: string;
+        };
         /** RefreshPricesResponse */
         RefreshPricesResponse: {
             /** Refreshed Count */
@@ -17054,6 +17848,20 @@ export interface components {
             number: number;
             status: components["schemas"]["RevisionStatus"];
         };
+        /** RevisionRef */
+        RevisionRef: {
+            /** Frozen At */
+            frozen_at: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string | null;
+            /** Number */
+            number: number;
+        };
         /**
          * RevisionStatus
          * @enum {string}
@@ -17214,6 +18022,11 @@ export interface components {
             /** Name */
             name: string;
         };
+        /**
+         * RowKind
+         * @enum {string}
+         */
+        RowKind: "overall" | "overall_own" | "overall_subcon" | "discipline" | "discipline_own" | "discipline_subcon" | "non_direct";
         /** RowOut */
         RowOut: {
             /** Changed */
@@ -17882,6 +18695,41 @@ export interface components {
             weeks: components["schemas"]["WeekOut"][];
         };
         /**
+         * SettingsPreview
+         * @description AYP ekrani canli degerleri (KAYITLI ayarla). Istemci taslak tolerans/bantla yeniden
+         *     siniflar: durum `variance_points`a (K27), bant PF'nin 2 ondaligina (K18) bakar.
+         */
+        SettingsPreview: {
+            /** Composites */
+            composites: components["schemas"]["CompositeCard"][];
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            /** Day No */
+            day_no: number | null;
+            /** Has Baseline */
+            has_baseline: boolean;
+            /** Pf Day */
+            pf_day: string | null;
+            pf_day_band: components["schemas"]["PfBand"] | null;
+            /** Pf Week */
+            pf_week: string | null;
+            pf_week_band: components["schemas"]["PfBand"] | null;
+            status: components["schemas"]["Status"] | null;
+            /** Variance */
+            variance: string | null;
+            /** Variance Points */
+            variance_points: string | null;
+            /** Week End */
+            week_end: string | null;
+            /** Week No */
+            week_no: number | null;
+            /** Week Start */
+            week_start: string | null;
+        };
+        /**
          * SettingsRead
          * @description GET/PUT yaniti. Ayar satiri yoksa `defaults.py` degerleri, `is_default` = true.
          */
@@ -18274,6 +19122,8 @@ export interface components {
             lines: components["schemas"]["SiteDiaryLineRead"][];
             /** Lines Total */
             lines_total: string;
+            /** Own Crew From Timesheet */
+            own_crew_from_timesheet?: components["schemas"]["OwnCrewFromTimesheet"][];
             /** Ppe Checked */
             ppe_checked: boolean;
             /**
@@ -19372,6 +20222,11 @@ export interface components {
             /** Deed Transferred Count */
             deed_transferred_count: number;
         };
+        /**
+         * Status
+         * @enum {string}
+         */
+        Status: "normal" | "ahead" | "late";
         /**
          * StockCategory
          * @description Malzeme kartinin kategorisi (E3 99 select + tablo rozetleri).
@@ -20686,15 +21541,29 @@ export interface components {
         SubmitCheckOut: {
             /** Can Submit */
             can_submit: boolean;
+            /** Reason Items */
+            reason_items?: components["schemas"]["SubmitReasonOut"][];
             /** Reasons */
             reasons: string[];
+        };
+        /** SubmitReasonOut */
+        SubmitReasonOut: {
+            /** Code */
+            code: string;
+            /** Message */
+            message: string;
         };
         /** SuggestionsOut */
         SuggestionsOut: {
             /** Catalog */
             catalog: components["schemas"]["CandidateOut"][];
-            /** History */
+            /**
+             * History
+             * @deprecated
+             */
             history: components["schemas"]["CandidateOut"][];
+            /** Recent Actuals */
+            recent_actuals?: components["schemas"]["RecentActualOut"][];
         };
         /**
          * SupplierCard
@@ -20983,6 +21852,16 @@ export interface components {
          * @enum {string}
          */
         TimesheetCode: "leave" | "holiday" | "temporary_duty";
+        /** TimesheetDayLock */
+        TimesheetDayLock: {
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            /** Report Date */
+            report_date: string | null;
+        };
         /**
          * TimesheetDayTotal
          * @description Bir gün sütununun ayak satırı (E5 320-326).
@@ -21090,6 +21969,8 @@ export interface components {
          * @description E5 ekranının tamamı: hafta şeridi + KPI + 7 günlük ızgara + tfoot.
          */
         TimesheetWeek: {
+            /** Day Locks */
+            day_locks?: components["schemas"]["TimesheetDayLock"][];
             /** Day Totals */
             day_totals: components["schemas"]["TimesheetDayTotal"][];
             /**
@@ -21103,6 +21984,8 @@ export interface components {
             iso_year: number;
             /** Leave Day Count */
             leave_day_count: number;
+            /** Locked Days */
+            locked_days?: string[];
             /** Month Man Days */
             month_man_days: string;
             /** Month Month */
@@ -21231,6 +22114,34 @@ export interface components {
             source_hours: string;
             /** Unallocated Hours */
             unallocated_hours: string;
+        };
+        /** TrendPoint */
+        TrendPoint: {
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            /** Delta */
+            delta: string | null;
+            /** Earned Day */
+            earned_day: string | null;
+            /** Is Draft */
+            is_draft: boolean;
+            /** Is Future */
+            is_future: boolean;
+            /** Is Holiday */
+            is_holiday: boolean;
+            /** Pf Day */
+            pf_day: string | null;
+            /** Pf Rolling */
+            pf_rolling: string | null;
+            /** Planned Pct Cum */
+            planned_pct_cum: string | null;
+            /** Progress Pct Cum */
+            progress_pct_cum: string | null;
+            /** Spent Day */
+            spent_day: string | null;
         };
         /**
          * TrialBalanceResponse
@@ -22542,6 +23453,38 @@ export interface components {
             name: string;
         };
         /**
+         * WarningOut
+         * @description Uyari + hedef tipi (istemci baglantiyi hedefe gore kurar).
+         */
+        WarningOut: {
+            /**
+             * Code
+             * @enum {string}
+             */
+            code: "pf_out_of_band" | "undistributed_hours" | "qty_overrun" | "missing_diary" | "draft_diary" | "unrated_entry" | "unknown_line" | "empty_rate";
+            /** Item Name */
+            item_name?: string | null;
+            /** Message */
+            message: string;
+            /** Planned Qty */
+            planned_qty?: string | null;
+            /** Qty Cum */
+            qty_cum?: string | null;
+            /** Section Name */
+            section_name?: string | null;
+            /**
+             * Target
+             * @enum {string}
+             */
+            target: "node" | "day" | "leaf";
+            /** Target Id */
+            target_id: string | null;
+            /** Uom */
+            uom?: string | null;
+            /** Value */
+            value?: string | null;
+        };
+        /**
          * Weather
          * @description Hava durumu (spec §2). E7'nin BEŞLİSİ kanoniktir; GK'nin dörtlüsü alt kümedir
          *     (GK'de `snowy` yok) — süperset seçildi, ekran kendi listesini süzer.
@@ -22550,6 +23493,22 @@ export interface components {
          * @enum {string}
          */
         Weather: "sunny" | "partly_cloudy" | "cloudy" | "rainy" | "snowy" | "heavy_rain" | "drizzle" | "windy" | "dusty" | "foggy";
+        /** WeatherDay */
+        WeatherDay: {
+            /** Condition */
+            condition: string | null;
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            /** Temp Max C */
+            temp_max_c: string | null;
+            /** Temp Min C */
+            temp_min_c: string | null;
+            /** Wind Ms */
+            wind_ms: string | null;
+        };
         /** WeekOut */
         WeekOut: {
             /** Mhr */
@@ -37984,6 +38943,243 @@ export interface operations {
             };
         };
     };
+    get_panel_sites__site_id__earned_value_panel_get: {
+        parameters: {
+            query: {
+                date: string;
+                range?: "4w" | "3m" | "all";
+                discipline_id?: string | null;
+                contractor_type?: components["schemas"]["ContractorType"] | null;
+            };
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PanelReport"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_daily_report_sites__site_id__earned_value_reports_daily_get: {
+        parameters: {
+            query: {
+                date: string;
+            };
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DailyReport"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    approve_daily_report_sites__site_id__earned_value_reports_daily__day__approve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+                day: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApprovalResult"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_weekly_report_sites__site_id__earned_value_reports_weekly_get: {
+        parameters: {
+            query?: {
+                week?: number | null;
+            };
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QurrReport"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_weekly_report_sites__site_id__earned_value_reports_weekly_xlsx_get: {
+        parameters: {
+            query?: {
+                week?: number | null;
+            };
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": unknown;
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_settings_endpoint_sites__site_id__earned_value_settings_get: {
         parameters: {
             query?: never;
@@ -38051,6 +39247,105 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SettingsRead"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_settings_preview_sites__site_id__earned_value_settings_preview_get: {
+        parameters: {
+            query?: {
+                /** @description Varsayilan: bugun (TR) */
+                date?: string | null;
+            };
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsPreview"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_composite_preview_sites__site_id__earned_value_settings_preview_composite_get: {
+        parameters: {
+            query: {
+                measure: components["schemas"]["CompositeMeasure"];
+                numerator_item_id: string[];
+                denominator_item_id: string;
+                /** @description Varsayilan: bugun (TR) */
+                date?: string | null;
+            };
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompositeValueOut"];
                 };
             };
             /** @description Yetkisiz işlem */

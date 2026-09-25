@@ -48,6 +48,15 @@ export function GeneralTimesheetView() {
   // çizer — boş bir seçici uydurulmaz).
   const siteParam = searchParams.get("site");
   const selectedSiteId = siteParam ?? siteOptions.options[0]?.siteId ?? "";
+  // PLN-F2.4 · kilit bandının "Günlük kaydına git →" hedefi: seçili şantiyenin
+  // günlük rotası. Seçenek listesinde yoksa (yükleniyor / erişim dışı) `null`.
+  const selectedOption = siteOptions.options.find((option) => option.siteId === selectedSiteId);
+  const diaryHref = selectedOption
+    ? routes.projects.sites.diary({
+        projectId: selectedOption.projectId,
+        siteId: selectedOption.siteId,
+      })
+    : null;
 
   if (!permission.canView) return <AccessDenied />;
 
@@ -119,6 +128,7 @@ export function GeneralTimesheetView() {
       emptyMessage={(isLoading, isError) =>
         timesheetEmptyMessage(isLoading, isError, selectedSiteId)
       }
+      diaryHref={diaryHref}
     />
   );
 }

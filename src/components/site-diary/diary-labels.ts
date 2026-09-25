@@ -89,7 +89,8 @@ export const DIARY_QUANTITY_MAX = 20;
 export const DIARY_WORKER_COUNT_MAX = 4;
 
 /**
- * 🔴 `SiteDiaryEntryCreate.temperature_c` — sözleşme aralığı **-60..60**.
+ * 🔴 `SiteDiaryEntryCreate.temp_max_c` (PLN-F2.1; eski `temperature_c` kullanımdan
+ * kalkıyor, `temp_min_c` aynı aralık) — sözleşme aralığı **-60..60**.
  *
  * Kutuda `maxLength={6}` vardı ama bu YANLIŞ ARAÇTIR: `type="number"` bir
  * input'ta HTML `maxLength` niteliği ETKİSİZDİR (spec: yalnız metin türlerinde
@@ -98,3 +99,17 @@ export const DIARY_WORKER_COUNT_MAX = 4;
  */
 export const DIARY_TEMPERATURE_MIN = -60;
 export const DIARY_TEMPERATURE_MAX = 60;
+
+/**
+ * PLN-F2.2 · Min/Max °C ve rüzgâr kutuları METİN kutusudur (`inputMode=
+ * "decimal"`): TR klavyenin virgülü (`4,2`) `type="number"`da reddedilirdi.
+ * Metin kutusunda `maxLength` GERÇEKTEN çalışır — "-60.5" 5, tavan 6.
+ */
+export const DIARY_WEATHER_NUMBER_MAX = 6;
+
+/**
+ * PLN-F2.2 · aşım gerekçesi (`overrun_reason`, B2-8) — backend uzunluk
+ * sınırı koymuyor (`str`, kırpılır); serbest metin kuralı gereği tavan
+ * burada: bir cümlelik gerekçe için bol.
+ */
+export const DIARY_OVERRUN_REASON_MAX = 500;
