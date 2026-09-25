@@ -182,13 +182,15 @@ test("gunluk ilerleme is kodu secici gorsel", async ({ page }) => {
   await expect(picker.getByRole("checkbox")).toHaveCount(2);
   await expect(picker).toContainText("5 iş kodu seçili");
 
-  // ⚠️ BİLİNEN ALT PİKSEL KARARSIZLIĞI (DET-1.4 ölçümü, 2026-09-25): aynı commit'te
-  // (991e77b) iki baseline turu (36157871684 · 36159036716) bu karede FARKLI çıktı
-  // — Saat Dağıtımı ızgarasının yapışkan (`position: sticky`) kişi sütununda satır
-  // sınırları dönüşümlü 1 px kayıyor. KAYNAK: satır yüksekliği 45,5 px (ad 12,5px/18,75
-  // + meslek 10,5px/15,75 satır aralığı) → satır üstleri ,297/,797 yarım piksellerde;
-  // bileşik katman (sticky) yarım pikselde her rasterde aynı yuvarlanmıyor. Maske YOK
-  // (bilerek); kalıcı çözüm satırları tam piksele oturtmak — ayrı iş (yeni baseline turu).
+  // ✅ ALT PİKSEL KARARSIZLIĞI KAPANDI (F-SUBPX, 2026-09-25). DET-1'de aynı commit'te
+  // iki Linux turu bu karede farklıydı (yapışkan kişi sütununda satır sınırı 1 px
+  // kayması; pixelmatch eşik üstü 1799 px). Kök neden: ızgara satırları 45,5 px
+  // (1.5 satır aralığı mirası + kip düğmesinin UA-font strut'u). Çözüm: bütün ızgara
+  // satırları scroller'a göre TAM piksel (`--leading-ev-diary-*`). Kanıt: aynı commit
+  // (4d58323) iki tur → bu kare birebir. Tablet karesinde kalan fark yalnız giriş
+  // kutusu köşelerinde kenar yumuşatması (114 px, en büyük YIQ delta 0,6 ≪ eşik
+  // 1408,6 → Playwright'ta 0 eşik üstü piksel); kaynağı ızgara dışındaki sayfa geneli
+  // kesirler (F-SUBPX-2, kuyrukta).
   await prepareFrame(page);
   await expect(page.locator(".ev-diary-alloc")).toHaveScreenshot("gunluk-ilerleme-is-kodu-popover.png");
 });
@@ -299,13 +301,15 @@ test("gunluk ilerleme formen gorunumu gorsel", async ({ page }) => {
   await expect(page.getByRole("region", { name: "Gönder kontrolü" })).toContainText("Gönderim mühendiste");
   await expectNoTabletBars(page);
 
-  // ⚠️ BİLİNEN ALT PİKSEL KARARSIZLIĞI (DET-1.4 ölçümü, 2026-09-25): aynı commit'te
-  // (991e77b) iki baseline turu (36157871684 · 36159036716) bu karede (ızgara çizgilerinde birkaç piksel) FARKLI çıktı
-  // — Saat Dağıtımı ızgarasının yapışkan (`position: sticky`) kişi sütununda satır
-  // sınırları dönüşümlü 1 px kayıyor. KAYNAK: satır yüksekliği 45,5 px (ad 12,5px/18,75
-  // + meslek 10,5px/15,75 satır aralığı) → satır üstleri ,297/,797 yarım piksellerde;
-  // bileşik katman (sticky) yarım pikselde her rasterde aynı yuvarlanmıyor. Maske YOK
-  // (bilerek); kalıcı çözüm satırları tam piksele oturtmak — ayrı iş (yeni baseline turu).
+  // ✅ ALT PİKSEL KARARSIZLIĞI KAPANDI (F-SUBPX, 2026-09-25). DET-1'de aynı commit'te
+  // iki Linux turu bu karede farklıydı (yapışkan kişi sütununda satır sınırı 1 px
+  // kayması; pixelmatch eşik üstü 1799 px). Kök neden: ızgara satırları 45,5 px
+  // (1.5 satır aralığı mirası + kip düğmesinin UA-font strut'u). Çözüm: bütün ızgara
+  // satırları scroller'a göre TAM piksel (`--leading-ev-diary-*`). Kanıt: aynı commit
+  // (4d58323) iki tur → bu kare birebir. Tablet karesinde kalan fark yalnız giriş
+  // kutusu köşelerinde kenar yumuşatması (114 px, en büyük YIQ delta 0,6 ≪ eşik
+  // 1408,6 → Playwright'ta 0 eşik üstü piksel); kaynağı ızgara dışındaki sayfa geneli
+  // kesirler (F-SUBPX-2, kuyrukta).
   await prepareFrame(page);
   await expect(page).toHaveScreenshot("gunluk-ilerleme-formen.png", { fullPage: true });
 });
