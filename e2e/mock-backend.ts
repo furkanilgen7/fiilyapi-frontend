@@ -477,6 +477,14 @@ function fakeJwt(): string {
 }
 
 const TOKEN_PAIR = { access_token: fakeJwt(), refresh_token: fakeJwt(), token_type: "bearer" };
+// PLN-F1.7a · `permissions` sözleşmede ZORUNLUDUR (`MeResponse`) ve eksikti.
+// Yalnız `earned_value` yazılır: öteki modüllerin anahtarı YOK, yani
+// `useModulePermission` onlar için "bilinmezlik kuralı"na (görünür + yazılabilir)
+// düşmeye DEVAM EDER — mevcut ekran/kare davranışı değişmez. Planlama
+// ekranlarının yazma kapısı ise `hasAtLeast(level, "full")`tur: seviye
+// bilinmezse ekran SALT OKUNUR açılırdı. Patron = `admin` (disiplin silme dahil).
+// Görüntüleyici hâli `e2e/earned-value-helpers.ts` → `withEarnedValueLevel`
+// (`/api/auth/me` yanıtını kadraja özel değiştirir; paylaşılan durum oynamaz).
 const ME = {
   id: "11111111-1111-1111-1111-111111111111",
   email: "patron@fiil.com",
@@ -484,7 +492,8 @@ const ME = {
   title: "Patron",
   role_key: "patron",
   status: "active",
-};
+  permissions: { earned_value: "admin" },
+} satisfies components["schemas"]["MeResponse"];
 
 // NOT: Gercek backend semasi (bkz. src/lib/api/schema.d.ts) tip-basi metrikleri duz
 // alanlar olarak degil, ContractingCard/InvestmentCard/LandShareCard icine gomulu
@@ -7787,6 +7796,8 @@ const AI_CONVERSATION_FIXTURES = [
 
 export function startMockBackend(port: number): { server: Server; close: () => Promise<void> } {
   const state = seedState();
+  // PLN-F1.7a · Planlama (EV) durumu — ayrı tohum, dosya sonundaki blok.
+  const evState = seedEarnedValueState();
   let milestoneSeq = 3;
 
   const server = createServer((req, res) => {
@@ -7824,6 +7835,39 @@ export function startMockBackend(port: number): { server: Server; close: () => P
     // gövde/parametre doğrulamasından önce döner.
     const queryViolation = queryConstraintViolation(path, parsed.searchParams);
     if (queryViolation !== null) return send(422, queryViolation);
+
+    // ================================================================
+    // PLN-F1.7a · PLANLAMA (EARNED VALUE) — 25 operasyon, dosya sonundaki
+    // işaretli blok (`handleEarnedValue`). EV yolu değilse `false` döner.
+    // ================================================================
+    const evHandled = handleEarnedValue(evState, {
+      method,
+      path,
+      query: parsed.searchParams,
+      send,
+      readBody: (handler) => {
+        let raw = "";
+        req.on("data", (chunk) => (raw += chunk));
+        req.on("end", () => {
+          let body: unknown;
+          try {
+            body = JSON.parse(raw || "{}");
+          } catch {
+            return send(422, {
+              detail: [{ type: "json_invalid", loc: ["body", 0], msg: "JSON decode error", input: {} }],
+            });
+          }
+          if (typeof body !== "object" || body === null || Array.isArray(body)) {
+            return send(422, {
+              detail: [{ type: "model_attributes_type", loc: ["body"], msg: "Input should be a valid dictionary or object to extract fields from", input: body }],
+            });
+          }
+          handler(body as Record<string, unknown>);
+        });
+      },
+      findSite: (siteId) => state.sites.find((site) => site.id === siteId),
+    });
+    if (evHandled) return;
 
     // ================================================================
     // EXPORT-XLSX · ALTI YENİ EXCEL UCU
@@ -18373,4 +18417,2386 @@ function approvalInboxFixture(state: MockState, limit: number, offset: number): 
     offset,
     my_approval_roles: MY_APPROVAL_ROLES,
   };
+}
+
+/* ══════════════ PLN-F1.7a · PLANLAMA (EARNED VALUE) İKİZİ ══════════════════
+ * B1'in 25 operasyonunun (20 yol) sahte karşılıkları: disiplin · katalog ·
+ * şantiye ayarı · adam-saat bütçesi (revizyon, ağaç, fark, yazmalar, Gantt,
+ * önizleme, dondurma).
+ *
+ * 🔴 NEDEN AYRI MODÜL DEĞİL, BU DOSYADA: dönüş tipi bekçisi
+ * (`src/lib/api/mock-backend-return-types.contract.test.ts`) YALNIZ
+ * `e2e/mock-backend.ts`i AST ile tarar. Ayrı bir `mock-backend-*.ts` modülü
+ * o bekçinin DIŞINDA kalırdı: oraya tipsiz eklenen bir üretici hiçbir kapıyı
+ * kırmazdı. Depoda ikizi modüllere bölen bir emsal de YOK (`slug-resolve.ts`
+ * yalnız saf yardımcıdır). Blok bu yüzden burada, işaretli ve bitişiktir;
+ * istek işleyicisinden TEK çağrıyla (`handleEarnedValue`) girilir.
+ *
+ * 🔴 GÖVDE KISITLARI UYDURULMAZ, `openapi.json`dan OKUNUR (`loadBodySchema`
+ * kapısı + iç içe gövdeler için `evNestedViolation` + dizi sınırları için
+ * `loadArrayBounds`). İş kuralı hataları backend'in `guards.py` METİNLERİYLE
+ * ve kodlarıyla döner (`{detail: "<metin>"}` · 404/409/422).
+ *
+ * 📦 ÖRNEK VERİ (mockup'larla tutarlı):
+ *   · disiplinler KAB/DUV/MEK/ELK — renkler `Planlama - Adam-Saat Bütçesi.dc.html:523`
+ *   · katalog 16 iş tipi — `Planlama - Birim Oran Kataloğu.dc.html:416-432`;
+ *     `actual` BOŞ, `diff_pct` null (B1 gerçeği: gerçekleşen PLN-B3'te dolar)
+ *   · ayarlar — `Ayarlar - Planlama (Ek).dc.html:416-417` (K5 Pzt · K6 2,0 ·
+ *     K10 9 sa · günlük PF 0,95/0,95/1,05 · haftalık 0,95/1,00 — F0-1)
+ *   · bütçe (s-1 A-Blok, devam ediyor) — `Adam-Saat Bütçesi.dc.html:526-553`
+ *     ağacı + Ek Formlar M1 (Disiplinsiz grup) / M4 (Bölümsüz yaprak):
+ *     Rev 0 arşiv · Rev 1 aktif · Rev 2 taslak. s-2 B-Blok (tamamlandı)
+ *     yalnız Rev 1 aktif taşır (salt okunur hâl).
+ *
+ * ⚠️ BİLİNEN SAPMA: `p-1`in adı "Kule A"dır (mockup "Güneşkent Konut"); proje
+ * adı ONLARCA başka karenin girdisidir, bu dilimde DEĞİŞTİRİLMEDİ. Bütçenin
+ * EV-BOQ anlık görüntüsü (grup/kalem/bölüm) mockup'tan gelir ve
+ * `/sites/{id}/boq` fikstüründen TÜRETİLMEZ; paçal metrikleri ise ayar ekranı
+ * `/boq`u okuduğu için `bi-*` kalemlerine bağlıdır (COMPOSITE_ITEM_FOREIGN
+ * kuralı o kümeye karşı sınanır).
+ * ========================================================================= */
+
+type EvSchemas = components["schemas"];
+type EvContractor = EvSchemas["ContractorType"];
+type EvRateSource = EvSchemas["RateSource"];
+type EvDistribution = EvSchemas["DistributionPair"]["distribution"];
+type EvWindowSource = NonNullable<EvSchemas["LeafOut"]["window_source"]>;
+/**
+ * Saklanan disiplin — kullanım sayaçları (`used_by_item_count` ·
+ * `used_by_site_count`, B2 devri) SAKLANMAZ, yanıt anında türetilir
+ * (`evDisciplineReadOut`): sayaç ile kayıt ayrışamaz.
+ */
+type EvDisciplineRecord = Omit<EvSchemas["DisciplineRead"], "used_by_item_count" | "used_by_site_count">;
+
+/** Yazma damgası — makine saati DEĞİL (determinizm; mockup günü 24.09.2026). */
+const EV_NOW = "2026-09-24T09:00:00Z";
+const EV_ACTOR: EvSchemas["UserRef"] = { id: ME.id, full_name: ME.full_name };
+
+/** Backend `guards.py` metinleri — BİREBİR (ekran bunları kullanıcıya basar). */
+const EV_MSG = {
+  siteMissing: "Şantiye bulunamadı",
+  disciplineMissing: "Disiplin bulunamadı",
+  disciplineCodeTaken: "Bu disiplin kodu zaten kayıtlı",
+  disciplineInUse: "Disiplin kullanımda (BOQ grubu eşlemesi, katalog ya da baseline); silinemez",
+  catalogMissing: "Katalog iş tipi bulunamadı",
+  catalogTaken: "Bu disiplinde aynı ad ve birimle bir iş tipi zaten var",
+  catalogNoActual: "Bu iş tipi için tamamlanmış şantiye gerçekleşeni yok",
+  holidayRangeInvalid: "Tatil bitişi başlangıçtan önce olamaz",
+  holidayRangeOverlap: "Tatil aralıkları çakışıyor",
+  dailyBandsOrder: "Günlük PF bantları sıralı olmalı: kırmızı ≤ yeşil ≤ şüpheli yüksek",
+  weeklyBandsOrder: "Haftalık PF bantları sıralı olmalı: kırmızı ≤ yeşil",
+  allDaysOff: "En az bir çalışma günü olmalı",
+  compositeForeign: "Paçal metrikteki iş tipi bu şantiyenin BOQ'unda yok",
+  revisionMissing: "Revizyon bulunamadı",
+  noDraft: "Açık taslak revizyon yok",
+  draftExists: "Zaten açık bir taslak revizyon var",
+  notDraft: "Yalnız taslak revizyon düzenlenebilir",
+  groupForeign: "BOQ grubu bu şantiyeye ait değil",
+  itemForeign: "BOQ kalemi bu şantiyeye ait değil",
+  sectionForeign: "Bölüm bu şantiyeye ait değil",
+  leafMissing: "Bu kalem × bölüm için planlı miktar yok (BOQ tahsisi)",
+  windowRangeInvalid: "Pencere bitişi başlangıçtan önce olamaz",
+  freezeBlocked: "Baseline dondurulamaz: engeller giderilmeli",
+  settingsCompleted: "Tamamlanmış şantiyenin planlama ayarları salt okunurdur",
+  budgetCompleted: "Tamamlanmış şantiyenin bütçesi salt okunurdur",
+} as const;
+
+/* ─────────────────────────────── gövde kapıları ─────────────────────────── */
+
+interface EvArrayBounds {
+  minItems?: number;
+  maxItems?: number;
+}
+
+/** `openapi.json` → şemanın DİZİ alanlarının `minItems`/`maxItems` sınırları. */
+function loadArrayBounds(schemaName: string): Map<string, EvArrayBounds> {
+  const file = nodePath.join(process.cwd(), "openapi", "openapi.json");
+  const spec = JSON.parse(readFileSync(file, "utf8")) as {
+    components: {
+      schemas: Record<string, { properties?: Record<string, EvArrayBounds & { type?: string }> }>;
+    };
+  };
+  const bounds = new Map<string, EvArrayBounds>();
+  for (const [name, raw] of Object.entries(spec.components.schemas[schemaName]?.properties ?? {})) {
+    if (raw.type !== "array") continue;
+    bounds.set(name, { minItems: raw.minItems, maxItems: raw.maxItems });
+  }
+  return bounds;
+}
+
+/** `openapi.json` → alanın `pattern` kısıtı (`anyOf` içindeki string dalı dahil). */
+function loadFieldPattern(schemaName: string, field: string): RegExp {
+  const file = nodePath.join(process.cwd(), "openapi", "openapi.json");
+  const spec = JSON.parse(readFileSync(file, "utf8")) as {
+    components: { schemas: Record<string, { properties?: Record<string, { pattern?: string; anyOf?: { pattern?: string }[] }> }> };
+  };
+  const raw = spec.components.schemas[schemaName]?.properties?.[field];
+  const pattern = raw?.pattern ?? raw?.anyOf?.find((branch) => branch.pattern !== undefined)?.pattern;
+  if (pattern === undefined) throw new Error(`${schemaName}.${field} pattern sözleşmede yok`);
+  return new RegExp(pattern);
+}
+
+/** `DisciplineCreate.color` — `^#[0-9A-Fa-f]{6}$` (sözleşmeden). */
+const EV_COLOR_PATTERN = loadFieldPattern("DisciplineCreate", "color");
+
+const EV_BODY = {
+  disciplineCreate: loadBodySchema("DisciplineCreate"),
+  disciplineUpdate: loadBodySchema("DisciplineUpdate"),
+  catalogCreate: loadBodySchema("CatalogItemCreate"),
+  catalogUpdate: loadBodySchema("CatalogItemUpdate"),
+  settingsSave: loadBodySchema("SettingsSave"),
+  pfBands: loadBodySchema("PfBands-Input"),
+  dailyBands: loadBodySchema("DailyPfBands-Input"),
+  weeklyBands: loadBodySchema("WeeklyPfBands-Input"),
+  holiday: loadBodySchema("HolidayInput"),
+  metric: loadBodySchema("CompositeMetricInput"),
+  groupDisciplines: loadBodySchema("GroupDisciplinesBody"),
+  groupPair: loadBodySchema("GroupDisciplinePair"),
+  itemPatch: loadBodySchema("ItemPatch"),
+  leavesPatch: loadBodySchema("LeavesPatch"),
+  leafPatch: loadBodySchema("LeafPatch"),
+  distributions: loadBodySchema("DistributionsBody"),
+  distributionPair: loadBodySchema("DistributionPair"),
+  windows: loadBodySchema("WindowsBody"),
+  window: loadBodySchema("WindowIn"),
+  preview: loadBodySchema("PreviewBody"),
+  freeze: loadBodySchema("FreezeBody"),
+} as const;
+
+const EV_ARRAYS = {
+  settingsSave: loadArrayBounds("SettingsSave"),
+  metric: loadArrayBounds("CompositeMetricInput"),
+  groupDisciplines: loadArrayBounds("GroupDisciplinesBody"),
+  leavesPatch: loadArrayBounds("LeavesPatch"),
+  distributions: loadArrayBounds("DistributionsBody"),
+  windows: loadArrayBounds("WindowsBody"),
+  preview: loadArrayBounds("PreviewBody"),
+} as const;
+
+type EvLoc = readonly (string | number)[];
+
+interface EvViolationBody {
+  detail: { type: string; loc: (string | number)[]; msg: string; input: unknown }[];
+}
+
+function evViolation(type: string, loc: EvLoc, msg: string, input: unknown): EvViolationBody {
+  return { detail: [{ type, loc: ["body", ...loc], msg, input }] };
+}
+
+/**
+ * İç içe gövde (dizi elemanı / alt nesne) için AYNI kapı — `bodySchemaViolation`
+ * yalnız üst düzey `loc` üretir; burada FastAPI'nin tam yolu (`["body",
+ * "leaves", 0, "unit_mhr"]`) kurulur.
+ */
+function evNestedViolation(schema: MockBodySchema, value: unknown, loc: EvLoc): EvViolationBody | null {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return evViolation(
+      "model_attributes_type",
+      loc,
+      "Input should be a valid dictionary or object to extract fields from",
+      value,
+    );
+  }
+  const found = bodySchemaViolation(schema, value as Record<string, unknown>) as EvViolationBody | null;
+  if (found === null) return null;
+  const [first] = found.detail;
+  return { detail: [{ ...first, loc: ["body", ...loc, ...first.loc.slice(1)] }] };
+}
+
+/** Dizi alanı: tip + `minItems`/`maxItems` (sözleşmeden). Eksik alan `null` döner (zorunluluk ayrı). */
+function evArrayViolation(value: unknown, loc: EvLoc, bounds: EvArrayBounds | undefined): EvViolationBody | null {
+  if (value === undefined) return null;
+  if (!Array.isArray(value)) return evViolation("list_type", loc, "Input should be a valid list", value);
+  if (bounds?.minItems !== undefined && value.length < bounds.minItems) {
+    const unit = bounds.minItems === 1 ? "item" : "items";
+    return evViolation(
+      "too_short",
+      loc,
+      `List should have at least ${bounds.minItems} ${unit} after validation, not ${value.length}`,
+      value,
+    );
+  }
+  if (bounds?.maxItems !== undefined && value.length > bounds.maxItems) {
+    return evViolation(
+      "too_long",
+      loc,
+      `List should have at most ${bounds.maxItems} items after validation, not ${value.length}`,
+      value,
+    );
+  }
+  return null;
+}
+
+/** Dizinin her elemanını iç içe kapıdan geçirir; ilk ihlal döner. */
+function evEachViolation(
+  list: readonly unknown[],
+  schema: MockBodySchema,
+  field: string,
+): EvViolationBody | null {
+  for (const [index, entry] of list.entries()) {
+    const found = evNestedViolation(schema, entry, [field, index]);
+    if (found !== null) return found;
+  }
+  return null;
+}
+
+/* ─────────────────────────────── kimlik ve sayı ──────────────────────────── */
+
+/**
+ * Deterministik UUID biçimli kimlik. `kind` 3 onaltılık hane (disiplin `d15`,
+ * katalog `ca7`, bölüm `5ec`, grup `b0a`, kalem `b17`, revizyon `ae5`, tatil
+ * `401`, paçal `9ac`, yeni kayıt `a00`).
+ */
+function evId(kind: string, n: number): string {
+  return `e7${kind}000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+}
+
+/** Kayıpsız görünümlü ondalık dize: `2376` · `0.6758` · `-114` (sondaki sıfırlar atılır). */
+function evDec(value: number, places = 4): string {
+  if (!Number.isFinite(value) || Math.abs(value) < 1e-9) return "0";
+  const fixed = value.toFixed(places);
+  return fixed.includes(".") ? fixed.replace(/0+$/, "").replace(/\.$/, "") : fixed;
+}
+
+/** Kolon ölçeğine sabitleme (`Numeric(4,2)` → `"9.00"`) — backend `defaults.py` kuralı. */
+function evScale(raw: unknown, places: number): string {
+  return Number(raw).toFixed(places);
+}
+
+function evNum(raw: string | null | undefined): number | null {
+  if (raw === null || raw === undefined || raw === "") return null;
+  const value = Number(raw);
+  return Number.isFinite(value) ? value : null;
+}
+
+/** Backend `normalize_label`: Türkçe İ/I + üst simge + boşluk. */
+function evNormalizeLabel(text: string): string {
+  return text
+    .replace(/İ/g, "i")
+    .replace(/I/g, "ı")
+    .toLowerCase()
+    .replace(/³/g, "3")
+    .replace(/²/g, "2")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/* ─────────────────────────────── takvim ──────────────────────────────────── */
+
+const EV_DAY_MS = 86_400_000;
+
+function evAddDays(iso: string, days: number): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d) + days * EV_DAY_MS).toISOString().slice(0, 10);
+}
+
+/** 0 = Pazartesi … 6 = Pazar (backend `date.weekday()`). */
+function evWeekday(iso: string): number {
+  const [y, m, d] = iso.split("-").map(Number);
+  return (new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 6) % 7;
+}
+
+/** Kapalı aralıktaki günler (başlangıç > bitiş ise boş). */
+function evDaysInRange(start: string, end: string): string[] {
+  const out: string[] = [];
+  for (let day = start; day <= end; day = evAddDays(day, 1)) out.push(day);
+  return out;
+}
+
+interface EvCalendar {
+  weekStartDow: number;
+  offDays: ReadonlySet<number>;
+  holidays: ReadonlySet<string>;
+  hours: number;
+}
+
+function evIsWorkingDay(calendar: EvCalendar, iso: string): boolean {
+  return !calendar.offDays.has(evWeekday(iso)) && !calendar.holidays.has(iso);
+}
+
+/* ─────────────────────────────── durum modeli ────────────────────────────── */
+
+interface EvCatalogEntry {
+  id: string;
+  disciplineId: string;
+  name: string;
+  uom: string;
+  standardUnitMhr: string;
+  defaultContractorType: EvContractor;
+  description: string | null;
+  standardUpdatedAt: string;
+}
+
+interface EvLeafInput {
+  unitMhr?: string | null;
+  rateSource?: EvRateSource | null;
+  contractorType?: EvContractor;
+  isDirect?: boolean;
+}
+
+interface EvItemInput {
+  contractorType?: EvContractor;
+  isDirect?: boolean;
+  catalogItemId?: string;
+}
+
+interface EvWindowInput {
+  start: string;
+  end: string;
+}
+
+interface EvInputs {
+  /** BOQ grubu → disiplin (yoksa Disiplinsiz). */
+  groupDisciplines: Readonly<Record<string, string>>;
+  items: Readonly<Record<string, EvItemInput>>;
+  /** Anahtar `evLeafKey(item, section)`. */
+  leaves: Readonly<Record<string, EvLeafInput>>;
+  distributions: Readonly<Record<string, EvDistribution>>;
+  /** Anahtar `evWindowKey(discipline, section)`. */
+  windows: Readonly<Record<string, EvWindowInput>>;
+}
+
+/** Dondurulmuş revizyonun o günkü BOQ'dan FARKI (miktar · olmayan yaprak/grup). */
+interface EvSnapshot {
+  qty: Readonly<Record<string, string>>;
+  absentLeaves: readonly string[];
+  absentGroups: readonly string[];
+}
+
+interface EvRevisionRecord {
+  out: EvSchemas["RevisionOut"];
+  inputs: EvInputs;
+  snapshot: EvSnapshot | null;
+}
+
+interface EvSection {
+  id: string;
+  name: string;
+  startDate: string | null;
+  endDate: string | null;
+  plannedWorkerCount: number | null;
+}
+
+interface EvBoqLeafTpl {
+  sectionId: string | null;
+  qty: string;
+}
+
+interface EvBoqItemTpl {
+  id: string;
+  code: string;
+  description: string;
+  uom: string;
+  leaves: readonly EvBoqLeafTpl[];
+}
+
+interface EvBoqGroupTpl {
+  id: string;
+  name: string;
+  items: readonly EvBoqItemTpl[];
+}
+
+interface EvSiteBoq {
+  syncedAt: string;
+  sections: readonly EvSection[];
+  groups: readonly EvBoqGroupTpl[];
+}
+
+interface EvState {
+  disciplines: EvDisciplineRecord[];
+  catalog: EvCatalogEntry[];
+  settings: Map<string, EvSchemas["SettingsRead"]>;
+  boq: Map<string, EvSiteBoq>;
+  revisions: Map<string, EvRevisionRecord[]>;
+  /** Yeni kayıt kimliği sayacı (`Date.now()` YASAK — determinizm). */
+  seq: number;
+}
+
+const EV_EMPTY_INPUTS: EvInputs = {
+  groupDisciplines: {},
+  items: {},
+  leaves: {},
+  distributions: {},
+  windows: {},
+};
+
+function evLeafKey(itemId: string, sectionId: string | null): string {
+  return `${itemId}:${sectionId ?? "none"}`;
+}
+
+function evWindowKey(disciplineId: string, sectionId: string | null): string {
+  return `${disciplineId}:${sectionId ?? "none"}`;
+}
+
+function evNextId(state: EvState): string {
+  state.seq += 1;
+  return evId("a00", state.seq);
+}
+
+/* ─────────────────────────────── tohum verisi ────────────────────────────── */
+
+/** Disiplin kimlikleri — BÜT spec'i bunlara ADIYLA bağlanabilir. */
+export const EV_DISCIPLINE_IDS = {
+  KAB: evId("d15", 1),
+  DUV: evId("d15", 2),
+  MEK: evId("d15", 3),
+  ELK: evId("d15", 4),
+} as const;
+
+function evSeedDisciplines(): EvDisciplineRecord[] {
+  // `Planlama - Adam-Saat Bütçesi.dc.html:523` DISC[].c · KAT:413 vars. Kendi/Taşeron.
+  return [
+    { id: EV_DISCIPLINE_IDS.KAB, code: "KAB", name: "Kaba İnşaat", color: "#2563eb", default_contractor_type: "own", sort_order: 1 },
+    { id: EV_DISCIPLINE_IDS.DUV, code: "DUV", name: "Duvar & Sıva", color: "#93c5fd", default_contractor_type: "subcon", sort_order: 2 },
+    { id: EV_DISCIPLINE_IDS.MEK, code: "MEK", name: "Mekanik Tesisat", color: "#64748b", default_contractor_type: "subcon", sort_order: 3 },
+    { id: EV_DISCIPLINE_IDS.ELK, code: "ELK", name: "Elektrik", color: "#cbd5e1", default_contractor_type: "own", sort_order: 4 },
+  ];
+}
+
+/** KAT:416-432 — [kod, disiplin, ad, birim, standart, yapan, son güncelleme, açıklama]. */
+const EV_CATALOG_ROWS: readonly (readonly [string, keyof typeof EV_DISCIPLINE_IDS, string, string, string, EvContractor, string, string])[] = [
+  ["KAB-KAL", "KAB", "Kalıp", "m²", "0.85", "own", "2026-03-14", "Ahşap + plywood, döşeme ve perde"],
+  ["KAB-HKS", "KAB", "Hazır kalıp sistemi", "m²", "0.7", "own", "2025-11-30", "Tünel / masa kalıp, tekrar eden katlar"],
+  ["KAB-DEM", "KAB", "Demir", "ton", "11.5", "own", "2026-03-14", "Kesme, bükme, bağlama"],
+  ["KAB-BET", "KAB", "Beton döküm", "m³", "1.8", "own", "2026-03-14", "C30 pompa ile döküm + vibrasyon"],
+  ["KAB-GRO", "KAB", "Grobeton", "m³", "1.2", "own", "2025-06-22", "Temel altı tesviye betonu"],
+  ["KAB-HAS", "KAB", "Hasır çelik", "ton", "9", "own", "2026-04-12", "Zemin betonu hasırı"],
+  ["DUV-TUG", "DUV", "Tuğla duvar", "m²", "0.55", "subcon", "2026-03-14", "13,5 / 19 luk tuğla, harç dahil"],
+  ["DUV-GAZ", "DUV", "Gazbeton duvar", "m²", "0.45", "subcon", "2025-11-30", "Yapıştırıcı harçlı"],
+  ["DUV-ICS", "DUV", "İç sıva", "m²", "0.25", "subcon", "2026-03-14", "Makine sıvası, alçı esaslı"],
+  ["DUV-DIS", "DUV", "Dış sıva", "m²", "0.32", "subcon", "2026-03-14", "Çimento esaslı, file dahil"],
+  ["MEK-PIS", "MEK", "Pis su borusu", "m", "0.75", "subcon", "2026-03-14", "PVC Ø100–Ø150, askı dahil"],
+  ["MEK-TEM", "MEK", "Temiz su borusu", "m", "0.6", "subcon", "2026-03-14", "PPR, test dahil"],
+  ["MEK-YAN", "MEK", "Yangın tesisatı borusu", "m", "0.9", "subcon", "2026-04-12", "Siyah boru, kaynaklı"],
+  ["ELK-KAB", "ELK", "Kablo çekimi", "m", "0.2", "own", "2026-03-14", "NYM / NYY, boru içi"],
+  ["ELK-BUA", "ELK", "Buat/priz montajı", "adet", "1.4", "own", "2026-03-14", "Sıva altı buat + anahtar/priz"],
+  ["ELK-TOP", "ELK", "Topraklama", "m", "0.3", "own", "2025-11-30", "Bakır iletken, klemens dahil"],
+];
+
+/** Katalog kimliği — mockup kodu ile (ör. `KAB-BET`). */
+function evCatalogId(code: string): string {
+  const index = EV_CATALOG_ROWS.findIndex((row) => row[0] === code);
+  return evId("ca7", index + 1);
+}
+
+function evSeedCatalog(): EvCatalogEntry[] {
+  return EV_CATALOG_ROWS.map(([code, disc, name, uom, rate, own, updated, description]) => ({
+    id: evCatalogId(code),
+    disciplineId: EV_DISCIPLINE_IDS[disc],
+    name,
+    uom,
+    standardUnitMhr: rate,
+    defaultContractorType: own,
+    description,
+    standardUpdatedAt: `${updated}T09:00:00Z`,
+  }));
+}
+
+/**
+ * Ek:416 — beş tatil + iki paçal metrik. Paçal metrikleri AYARIN okuduğu
+ * `/sites/{id}/boq` kalemlerine (`bi-*`) bağlıdır (Ek'teki KAB.01.* kodları
+ * o fikstürde YOK).
+ */
+function evSeedSettings(
+  holidays: readonly (readonly [string, string, string])[],
+  metrics: EvSchemas["CompositeMetricRead"][],
+  updatedAt: string,
+): EvSchemas["SettingsRead"] {
+  return {
+    week_start_dow: 0,
+    weekly_off_days: [6],
+    standard_daily_hours: "9.00",
+    tolerance_points: "2.00",
+    pf_bands: {
+      daily: { red_below: "0.950", green_from: "0.950", high_above: "1.050" },
+      weekly: { red_below: "0.950", green_from: "1.000" },
+    },
+    holidays: holidays.map(([from, to, note], index) => ({
+      id: evId("401", index + 1),
+      date_from: from,
+      date_to: to,
+      note,
+    })),
+    composite_metrics: metrics,
+    is_default: false,
+    updated_at: updatedAt,
+    updated_by: EV_ACTOR,
+  };
+}
+
+/** Satırı olmayan şantiyenin GET yanıtı — backend `defaults.py` sabitleri. */
+function evDefaultSettings(): EvSchemas["SettingsRead"] {
+  return {
+    week_start_dow: 0,
+    weekly_off_days: [6],
+    standard_daily_hours: "9.00",
+    tolerance_points: "2.00",
+    pf_bands: {
+      daily: { red_below: "0.950", green_from: "0.950", high_above: "1.050" },
+      weekly: { red_below: "0.950", green_from: "1.000" },
+    },
+    holidays: [],
+    composite_metrics: [],
+    is_default: true,
+    updated_at: null,
+    updated_by: null,
+  };
+}
+
+const EV_HOLIDAYS_2026: readonly (readonly [string, string, string])[] = [
+  ["2026-05-26", "2026-05-30", "Kurban Bayramı"],
+  ["2026-07-15", "2026-07-15", "Demokrasi ve Millî Birlik Günü"],
+  ["2026-08-30", "2026-08-30", "Zafer Bayramı"],
+  ["2026-10-29", "2026-10-29", "Cumhuriyet Bayramı"],
+  ["2027-01-01", "2027-01-01", "Yılbaşı"],
+];
+
+const EV_METRICS_S1: EvSchemas["CompositeMetricRead"][] = [
+  {
+    id: evId("9ac", 1),
+    name: "1 m³ beton başına toplam betonarme a-s",
+    measure: "spent",
+    numerator_item_ids: ["bi-3", "bi-4"],
+    denominator_item_id: "bi-3",
+  },
+  {
+    id: evId("9ac", 2),
+    name: "1 m² duvar başına duvar + sıva a-s",
+    measure: "spent",
+    numerator_item_ids: ["bi-5", "bi-6"],
+    denominator_item_id: "bi-5",
+  },
+];
+
+/**
+ * Bütçe ağacının EV-BOQ anlık görüntüsü — `Adam-Saat Bütçesi.dc.html:526-553`
+ * (`BL`/`T`/`BOL`) + Ek Formlar M1 (IZO.01 Disiplinsiz) / M4 (DUV.01.01
+ * Bölümsüz kalan). `site` = kimlik ofseti (s-1 → 1, s-2 → 2): iki şantiye
+ * aynı şablonu taşır ama kimlikleri ÇAKIŞMAZ.
+ */
+function evSeedBoq(site: number, withDraftExtras: boolean): EvSiteBoq {
+  const sec = (n: number) => evId("5ec", site * 100 + n);
+  const grp = (n: number) => evId("b0a", site * 100 + n);
+  const itm = (n: number) => evId("b17", site * 100 + n);
+  const TML = sec(1);
+  const K15 = sec(2);
+  const K610 = sec(3);
+  const CAT = sec(4);
+  // Ek M4 "Penceresi çıkmıyor": tarihsiz bölüme tahsisli yaprak (yalnız s-1).
+  const PEY = sec(5);
+  const leaves = (...pairs: (readonly [string | null, string])[]) =>
+    pairs.map(([sectionId, qty]) => ({ sectionId, qty }));
+  const groups: EvBoqGroupTpl[] = [
+    {
+      id: grp(1),
+      name: "Betonarme",
+      items: [
+        { id: itm(1), code: "KAB.01.01", description: "Kalıp", uom: "m²", leaves: leaves([TML, "2600"], [K15, "5600"], [K610, "5300"], [CAT, "500"]) },
+        { id: itm(2), code: "KAB.01.02", description: "Demir", uom: "ton", leaves: leaves([TML, "130"], [K15, "190"], [K610, "180"], [CAT, "20"]) },
+        { id: itm(3), code: "KAB.01.03", description: "Beton döküm", uom: "m³", leaves: leaves([TML, "1320"], [K15, "1900"], [K610, "1800"], [CAT, "250"]) },
+      ],
+    },
+    {
+      id: grp(2),
+      name: "Duvar",
+      items: [
+        { id: itm(4), code: "DUV.01.01", description: "Tuğla duvar", uom: "m²", leaves: leaves([K15, "4600"], [K610, "4400"], [null, "300"]) },
+      ],
+    },
+    {
+      id: grp(3),
+      name: "Sıva",
+      items: [
+        { id: itm(5), code: "DUV.02.01", description: "İç sıva", uom: "m²", leaves: leaves([K15, "8000"], [K610, "8000"]) },
+      ],
+    },
+    {
+      id: grp(4),
+      name: "Sıhhi tesisat",
+      items: [
+        { id: itm(6), code: "MEK.01.01", description: "Pis su borusu", uom: "m", leaves: leaves([TML, "400"], [K15, "1400"], [K610, "1400"]) },
+        { id: itm(7), code: "MEK.01.02", description: "Temiz su borusu", uom: "m", leaves: leaves([K15, "2000"], [K610, "2000"]) },
+      ],
+    },
+    {
+      id: grp(5),
+      name: "Kuvvetli akım",
+      items: [
+        {
+          id: itm(8),
+          code: "ELK.01.01",
+          description: "Kablo çekimi",
+          uom: "m",
+          leaves: withDraftExtras
+            ? leaves([K15, "8500"], [K610, "8500"], [CAT, "1000"], [PEY, "600"])
+            : leaves([K15, "8500"], [K610, "8500"], [CAT, "1000"]),
+        },
+        { id: itm(9), code: "ELK.01.02", description: "Buat/priz montajı", uom: "adet", leaves: leaves([K15, "1200"], [K610, "1200"], [CAT, "120"]) },
+      ],
+    },
+    {
+      id: grp(6),
+      name: "Şantiye genel",
+      items: [
+        { id: itm(10), code: "GEN.01.01", description: "Mobilizasyon", uom: "gtr", leaves: leaves([null, "1"]) },
+        { id: itm(11), code: "GEN.01.02", description: "Şantiye temizliği", uom: "ay", leaves: leaves([null, "11"]) },
+      ],
+    },
+  ];
+  if (withDraftExtras) {
+    groups.push({
+      id: grp(7),
+      name: "Su yalıtımı",
+      items: [
+        { id: itm(12), code: "IZO.01.01", description: "Membran yalıtım", uom: "m²", leaves: leaves([null, "2280"]) },
+      ],
+    });
+  }
+  return {
+    syncedAt: "2026-09-18T10:00:00Z",
+    sections: [
+      { id: TML, name: "Temel", startDate: "2026-05-06", endDate: "2026-07-15", plannedWorkerCount: 18 },
+      { id: K15, name: "Kat 1–5 Kaba", startDate: "2026-07-01", endDate: "2026-10-31", plannedWorkerCount: 26 },
+      { id: K610, name: "Kat 6–10 Kaba", startDate: "2026-09-01", endDate: "2026-12-15", plannedWorkerCount: 26 },
+      { id: CAT, name: "Çatı", startDate: "2026-12-01", endDate: "2027-02-19", plannedWorkerCount: 10 },
+      // `sec-3` emsali: taslak, TARİHSİZ bölüm → yaprağı `missing_window` engeli.
+      ...(withDraftExtras
+        ? [{ id: PEY, name: "Peyzaj Düzenlemesi (Taslak)", startDate: null, endDate: null, plannedWorkerCount: null }]
+        : []),
+    ],
+    groups,
+  };
+}
+
+/**
+ * Taslak (Rev 2) girdileri — Adam-Saat Bütçesi.dc.html:526-536 oranları
+ * (`K` → catalog · `G` → manual: B1'de geçmiş gerçekleşen YOK, `history`
+ * kaynağı oluşamaz · `E` → manual) + :544-547 pencere ezmeleri.
+ */
+function evDraftInputs(site: number): EvInputs {
+  const sec = (n: number) => evId("5ec", site * 100 + n);
+  const grp = (n: number) => evId("b0a", site * 100 + n);
+  const itm = (n: number) => evId("b17", site * 100 + n);
+  const [TML, K15, K610, CAT] = [sec(1), sec(2), sec(3), sec(4)];
+  const { KAB, DUV, MEK, ELK } = EV_DISCIPLINE_IDS;
+  const rate = (unitMhr: string | null, rateSource: EvRateSource | null): EvLeafInput => ({ unitMhr, rateSource });
+  const leaves: Record<string, EvLeafInput> = {};
+  const put = (item: number, sections: readonly (string | null)[], input: EvLeafInput) => {
+    for (const sectionId of sections) leaves[evLeafKey(itm(item), sectionId)] = input;
+  };
+  put(1, [TML, K15, K610, CAT], rate("0.85", "catalog"));
+  put(2, [TML, K15, K610, CAT], rate("12", "manual"));
+  put(3, [TML, K15, K610, CAT], rate("1.8", "catalog"));
+  // fixture emsali: Çatı betonu taşerona ezilmiş (contractor_source override).
+  leaves[evLeafKey(itm(3), CAT)] = { ...rate("1.8", "catalog"), contractorType: "subcon" };
+  put(4, [K15, K610, null], rate("0.55", "catalog"));
+  put(5, [K15], rate("0.25", "catalog"));
+  put(5, [K610], rate("0.28", "manual"));
+  put(6, [TML, K15, K610], rate("0.8", "manual"));
+  put(7, [K15, K610], rate("0.6", "catalog"));
+  put(8, [K15, K610, CAT, sec(5)], rate("0.2", "catalog"));
+  put(9, [K15, K610], rate("1.5", "manual"));
+  // ELK.01.02 · Çatı — ORAN BOŞ (`empty_rate` uyarısı, mockup :536 `null`).
+  put(10, [null], rate("1400", "manual"));
+  put(11, [null], rate("120", "manual"));
+  put(12, [null], rate("0.5", "manual"));
+  return {
+    groupDisciplines: { [grp(1)]: KAB, [grp(2)]: DUV, [grp(3)]: DUV, [grp(4)]: MEK, [grp(5)]: ELK },
+    // grp(6) "Şantiye genel" ve grp(7) "Su yalıtımı" EŞLENMEMİŞ (Ek M1): ilki
+    // yalnız dolaylı → uyarı, ikincisi doğrudan bütçeli → DONDURMA ENGELİ.
+    items: {
+      [itm(1)]: { catalogItemId: evCatalogId("KAB-KAL") },
+      [itm(2)]: { catalogItemId: evCatalogId("KAB-DEM") },
+      [itm(3)]: { catalogItemId: evCatalogId("KAB-BET") },
+      [itm(4)]: { catalogItemId: evCatalogId("DUV-TUG") },
+      [itm(5)]: { catalogItemId: evCatalogId("DUV-ICS") },
+      [itm(6)]: { catalogItemId: evCatalogId("MEK-PIS") },
+      [itm(7)]: { catalogItemId: evCatalogId("MEK-TEM") },
+      [itm(8)]: { catalogItemId: evCatalogId("ELK-KAB") },
+      [itm(9)]: { catalogItemId: evCatalogId("ELK-BUA") },
+      [itm(10)]: { isDirect: false },
+      [itm(11)]: { isDirect: false },
+    },
+    leaves,
+    // :515 distType — KAB çan · DUV doğrusal · MEK geç ağırlıklı · ELK doğrusal.
+    distributions: { [KAB]: "bell", [DUV]: "linear", [MEK]: "back", [ELK]: "linear" },
+    windows: {
+      // :545-547 — bölüm tarihinden SAPAN çubuklar ezme olarak yazılır.
+      // MEK × Temel 20.07'ye taşar → `outside_section_dates` (F0-4) örneği.
+      [evWindowKey(MEK, TML)]: { start: "2026-06-15", end: "2026-07-20" },
+      [evWindowKey(ELK, K15)]: { start: "2026-07-01", end: "2026-09-30" },
+      [evWindowKey(MEK, K15)]: { start: "2026-07-15", end: "2026-09-30" },
+      [evWindowKey(DUV, K15)]: { start: "2026-08-10", end: "2026-10-31" },
+      [evWindowKey(ELK, K610)]: { start: "2026-09-01", end: "2026-10-31" },
+      [evWindowKey(KAB, K610)]: { start: "2026-09-15", end: "2026-12-15" },
+      [evWindowKey(MEK, K610)]: { start: "2026-10-01", end: "2026-12-15" },
+      [evWindowKey(DUV, K610)]: { start: "2026-11-01", end: "2026-12-15" },
+      [evWindowKey(KAB, CAT)]: { start: "2026-12-01", end: "2027-01-15" },
+      [evWindowKey(ELK, CAT)]: { start: "2027-01-15", end: "2027-02-19" },
+      // Ek M4 — DUV.01.01 Bölümsüz kalan · "pencere 10.08–15.12".
+      [evWindowKey(DUV, null)]: { start: "2026-08-10", end: "2026-12-15" },
+    },
+  };
+}
+
+/** Rev 1 = taslağın :537 `REV1` farkıyla hâli (IZO.01 grubu o gün BOQ'da yoktu). */
+function evActiveSnapshot(site: number): EvSnapshot {
+  const sec = (n: number) => evId("5ec", site * 100 + n);
+  const itm = (n: number) => evId("b17", site * 100 + n);
+  return {
+    qty: { [evLeafKey(itm(3), sec(1))]: "1250" },
+    absentLeaves: [evLeafKey(itm(9), sec(4)), evLeafKey(itm(8), sec(5))],
+    absentGroups: [evId("b0a", site * 100 + 7)],
+  };
+}
+
+function evActiveInputs(site: number): EvInputs {
+  const draft = evDraftInputs(site);
+  const itm = (n: number) => evId("b17", site * 100 + n);
+  const K610 = evId("5ec", site * 100 + 3);
+  return {
+    ...draft,
+    leaves: {
+      ...draft.leaves,
+      // :537 — Kat 6–10 iç sıva Rev 1'de katalog oranıydı (0,25).
+      [evLeafKey(itm(5), K610)]: { unitMhr: "0.25", rateSource: "catalog" },
+    },
+    // Rev 1 bölüm tarihleriyle donduruldu (ezme yok).
+    windows: {},
+  };
+}
+
+function evRevisionOut(
+  site: number,
+  number: number,
+  status: EvSchemas["RevisionStatus"],
+  fields: Partial<EvSchemas["RevisionOut"]>,
+): EvSchemas["RevisionOut"] {
+  return {
+    id: evId("ae5", site * 100 + number),
+    number,
+    status,
+    name: null,
+    description: null,
+    frozen_at: null,
+    frozen_by: null,
+    created_at: "2026-04-20T08:00:00Z",
+    last_edited_at: "2026-04-28T09:00:00Z",
+    ...fields,
+  };
+}
+
+/** BÜT spec'inin adıyla bağlanabileceği revizyon kimlikleri. */
+export const EV_REVISION_IDS = {
+  s1Rev0: evId("ae5", 100),
+  s1Rev1: evId("ae5", 101),
+  s1Rev2: evId("ae5", 102),
+  s2Rev1: evId("ae5", 201),
+} as const;
+
+function evSeedRevisions(): Map<string, EvRevisionRecord[]> {
+  const s1: EvRevisionRecord[] = [
+    {
+      out: evRevisionOut(1, 0, "archived", {
+        frozen_at: "2026-04-28T09:00:00Z",
+        frozen_by: EV_ACTOR,
+      }),
+      inputs: evActiveInputs(1),
+      snapshot: evActiveSnapshot(1),
+    },
+    {
+      out: evRevisionOut(1, 1, "active", {
+        name: "Rev 1",
+        created_at: "2026-06-20T08:00:00Z",
+        last_edited_at: "2026-07-02T09:00:00Z",
+        frozen_at: "2026-07-02T09:00:00Z",
+        frozen_by: EV_ACTOR,
+      }),
+      inputs: evActiveInputs(1),
+      snapshot: evActiveSnapshot(1),
+    },
+    {
+      out: evRevisionOut(1, 2, "draft", {
+        name: "Rev 2 — Temel beton ve iç sıva revizyonu",
+        description:
+          "Temel beton miktarı BOQ revizyonuyla 1.250 → 1.320 m³. Kat 6–10 iç sıva oranı son 3 şantiye gerçekleşenine çekildi. Çatı buat/priz kalemi eklendi.",
+        created_at: "2026-09-20T08:00:00Z",
+        last_edited_at: "2026-09-23T15:40:00Z",
+      }),
+      inputs: evDraftInputs(1),
+      snapshot: null,
+    },
+  ];
+  const s2: EvRevisionRecord[] = [
+    {
+      out: evRevisionOut(2, 1, "active", {
+        name: "Rev 1",
+        created_at: "2024-01-10T08:00:00Z",
+        last_edited_at: "2024-01-20T09:00:00Z",
+        frozen_at: "2024-01-20T09:00:00Z",
+        frozen_by: EV_ACTOR,
+      }),
+      inputs: evActiveInputs(2),
+      snapshot: { qty: {}, absentLeaves: [], absentGroups: [] },
+    },
+  ];
+  return new Map([
+    ["s-1", s1],
+    ["s-2", s2],
+  ]);
+}
+
+function seedEarnedValueState(): EvState {
+  return {
+    disciplines: evSeedDisciplines(),
+    catalog: evSeedCatalog(),
+    settings: new Map([
+      ["s-1", evSeedSettings(EV_HOLIDAYS_2026, EV_METRICS_S1, "2026-09-12T14:20:00Z")],
+      [
+        "s-2",
+        evSeedSettings(
+          [
+            ["2025-03-30", "2025-04-01", "Ramazan Bayramı"],
+            ["2025-06-06", "2025-06-09", "Kurban Bayramı"],
+          ],
+          [],
+          "2024-01-15T08:30:00Z",
+        ),
+      ],
+    ]),
+    boq: new Map([
+      ["s-1", evSeedBoq(1, true)],
+      ["s-2", evSeedBoq(2, false)],
+    ]),
+    revisions: evSeedRevisions(),
+    seq: 0,
+  };
+}
+
+/* ─────────────────────────────── ağaç kurulumu ───────────────────────────── */
+
+interface EvLeafNode {
+  id: string;
+  itemId: string;
+  sectionId: string | null;
+  sectionName: string | null;
+  key: string;
+  qty: number;
+  unitMhr: string | null;
+  rateSource: EvRateSource | null;
+  contractorType: EvContractor;
+  contractorOverridden: boolean;
+  isDirect: boolean;
+  directOverridden: boolean;
+  budget: number;
+  windowStart: string | null;
+  windowEnd: string | null;
+  windowSource: EvWindowSource | null;
+  outside: boolean;
+}
+
+interface EvItemNode {
+  tpl: EvBoqItemTpl;
+  contractorType: EvContractor;
+  contractorInherited: boolean;
+  isDirect: boolean;
+  catalogItemId: string | null;
+  leaves: EvLeafNode[];
+}
+
+interface EvGroupNode {
+  groupId: string;
+  name: string;
+  disciplineId: string | null;
+  items: EvItemNode[];
+}
+
+interface EvDisciplineNode {
+  id: string;
+  discipline: EvDisciplineRecord | null;
+  distribution: EvDistribution;
+  groups: EvGroupNode[];
+}
+
+interface EvTree {
+  disciplines: EvDisciplineNode[];
+  blockers: EvSchemas["FindingOut"][];
+  warnings: EvSchemas["FindingOut"][];
+}
+
+/** Ön izleme gövdesinin KALICI OLMAYAN ezmeleri (B1 frontend isteği 2). */
+interface EvOverrides {
+  distributions?: Readonly<Record<string, EvDistribution>>;
+  windows?: Readonly<Record<string, EvWindowInput>>;
+}
+
+function evCalendarOf(state: EvState, siteId: string): EvCalendar {
+  const settings = state.settings.get(siteId) ?? evDefaultSettings();
+  const holidays = new Set<string>();
+  for (const holiday of settings.holidays) {
+    for (const day of evDaysInRange(holiday.date_from, holiday.date_to)) holidays.add(day);
+  }
+  return {
+    weekStartDow: settings.week_start_dow,
+    offDays: new Set(settings.weekly_off_days),
+    holidays,
+    hours: Number(settings.standard_daily_hours),
+  };
+}
+
+function evEmptyBoq(): EvSiteBoq {
+  return { syncedAt: "", sections: [], groups: [] };
+}
+
+function evBuildLeaf(
+  tpl: EvBoqLeafTpl,
+  item: EvBoqItemTpl,
+  sections: ReadonlyMap<string, EvSection>,
+  inputs: EvInputs,
+  snapshot: EvSnapshot | null,
+  itemCt: EvContractor,
+  itemDirect: boolean,
+): EvLeafNode {
+  const key = evLeafKey(item.id, tpl.sectionId);
+  const setting = inputs.leaves[key] ?? {};
+  const qty = Number(snapshot?.qty[key] ?? tpl.qty);
+  const unitMhr = setting.unitMhr ?? null;
+  const rate = evNum(unitMhr);
+  return {
+    id: `l:${key}`,
+    itemId: item.id,
+    sectionId: tpl.sectionId,
+    sectionName: tpl.sectionId === null ? null : (sections.get(tpl.sectionId)?.name ?? null),
+    key,
+    qty,
+    unitMhr,
+    rateSource: unitMhr === null ? null : (setting.rateSource ?? "manual"),
+    contractorType: setting.contractorType ?? itemCt,
+    contractorOverridden: setting.contractorType !== undefined,
+    isDirect: setting.isDirect ?? itemDirect,
+    directOverridden: setting.isDirect !== undefined,
+    budget: rate === null ? 0 : qty * rate,
+    windowStart: null,
+    windowEnd: null,
+    windowSource: null,
+    outside: false,
+  };
+}
+
+/** B1-3 pencere önceliği: ezme › bölüm tarihleri › (Bölümsüz) disiplin birleşimi. */
+function evApplyWindows(
+  leaves: EvLeafNode[],
+  disciplineId: string | null,
+  windows: Readonly<Record<string, EvWindowInput>>,
+  sections: ReadonlyMap<string, EvSection>,
+): EvLeafNode[] {
+  return leaves.map((leaf) => {
+    const override = disciplineId === null ? undefined : windows[evWindowKey(disciplineId, leaf.sectionId)];
+    const section = leaf.sectionId === null ? undefined : sections.get(leaf.sectionId);
+    if (override !== undefined) {
+      const outside =
+        section?.startDate != null &&
+        section.endDate != null &&
+        (override.start < section.startDate || override.end > section.endDate);
+      return { ...leaf, windowStart: override.start, windowEnd: override.end, windowSource: "override", outside };
+    }
+    if (section?.startDate != null && section.endDate != null && section.startDate <= section.endDate) {
+      return { ...leaf, windowStart: section.startDate, windowEnd: section.endDate, windowSource: "section" };
+    }
+    return leaf;
+  });
+}
+
+function evFillUnion(groups: EvGroupNode[]): EvGroupNode[] {
+  const spans = groups.flatMap((g) =>
+    g.items.flatMap((i) =>
+      i.leaves.filter((lf) => lf.sectionId !== null && lf.windowStart !== null && lf.windowEnd !== null),
+    ),
+  );
+  if (spans.length === 0) return groups;
+  const start = spans.reduce((min, lf) => (lf.windowStart! < min ? lf.windowStart! : min), spans[0].windowStart!);
+  const end = spans.reduce((max, lf) => (lf.windowEnd! > max ? lf.windowEnd! : max), spans[0].windowEnd!);
+  return groups.map((g) => ({
+    ...g,
+    items: g.items.map((i) => ({
+      ...i,
+      leaves: i.leaves.map((lf) =>
+        lf.sectionId === null && lf.windowStart === null
+          ? { ...lf, windowStart: start, windowEnd: end, windowSource: "union" as const }
+          : lf,
+      ),
+    })),
+  }));
+}
+
+function evHasWorkingDay(calendar: EvCalendar, start: string, end: string): boolean {
+  return evDaysInRange(start, end).some((day) => evIsWorkingDay(calendar, day));
+}
+
+/** Backend `_findings` (B1-7) — engel/uyarı KODLARI ve düğüm kimlikleri. */
+function evFindings(
+  disciplines: readonly EvDisciplineNode[],
+  calendar: EvCalendar,
+): Pick<EvTree, "blockers" | "warnings"> {
+  const disciplinelessBlocking: string[] = [];
+  const disciplinelessWarning: string[] = [];
+  const missingWindow: string[] = [];
+  const noWorkingDay: string[] = [];
+  const emptyRate: string[] = [];
+  for (const d of disciplines) {
+    for (const g of d.groups) {
+      const direct = g.items.flatMap((i) => i.leaves).filter((lf) => lf.isDirect).reduce((s, lf) => s + lf.budget, 0);
+      if (d.discipline === null) (direct > 0 ? disciplinelessBlocking : disciplinelessWarning).push(`g:${g.groupId}`);
+      for (const leaf of g.items.flatMap((i) => i.leaves)) {
+        if (leaf.unitMhr === null) emptyRate.push(leaf.id);
+        if (!leaf.isDirect || leaf.budget <= 0 || d.discipline === null) continue;
+        if (leaf.windowStart === null || leaf.windowEnd === null) missingWindow.push(leaf.id);
+        else if (!evHasWorkingDay(calendar, leaf.windowStart, leaf.windowEnd)) noWorkingDay.push(leaf.id);
+      }
+    }
+  }
+  const pack = (pairs: readonly (readonly [string, string[]])[]): EvSchemas["FindingOut"][] =>
+    pairs.filter(([, ids]) => ids.length > 0).map(([code, ids]) => ({ code, count: ids.length, node_ids: ids }));
+  return {
+    blockers: pack([
+      ["disciplineless_group", disciplinelessBlocking],
+      ["missing_window", missingWindow],
+      ["no_working_day", noWorkingDay],
+    ]),
+    warnings: pack([
+      ["empty_rate", emptyRate],
+      ["disciplineless_group_without_budget", disciplinelessWarning],
+    ]),
+  };
+}
+
+function evBuildTree(
+  state: EvState,
+  siteId: string,
+  revision: EvRevisionRecord | null,
+  overrides: EvOverrides = {},
+): EvTree {
+  const boq = state.boq.get(siteId) ?? evEmptyBoq();
+  const inputs = revision?.inputs ?? EV_EMPTY_INPUTS;
+  const snapshot = revision?.snapshot ?? null;
+  const windows = { ...inputs.windows, ...overrides.windows };
+  const sections = new Map(boq.sections.map((s) => [s.id, s]));
+  const byDiscipline = new Map(state.disciplines.map((d) => [d.id, d]));
+  const groupsByDiscipline = new Map<string | null, EvGroupNode[]>();
+
+  for (const group of boq.groups) {
+    if (snapshot?.absentGroups.includes(group.id)) continue;
+    const mapped = inputs.groupDisciplines[group.id];
+    const discipline = mapped === undefined ? null : (byDiscipline.get(mapped) ?? null);
+    const disciplineId = discipline?.id ?? null;
+    const items: EvItemNode[] = group.items.map((tpl) => {
+      const setting = inputs.items[tpl.id] ?? {};
+      const itemCt = setting.contractorType ?? discipline?.default_contractor_type ?? "own";
+      const itemDirect = setting.isDirect ?? true;
+      const leaves = tpl.leaves
+        .filter((leaf) => !snapshot?.absentLeaves.includes(evLeafKey(tpl.id, leaf.sectionId)))
+        .map((leaf) => evBuildLeaf(leaf, tpl, sections, inputs, snapshot, itemCt, itemDirect));
+      return {
+        tpl,
+        contractorType: itemCt,
+        contractorInherited: setting.contractorType === undefined,
+        isDirect: itemDirect,
+        catalogItemId: setting.catalogItemId ?? null,
+        leaves: evApplyWindows(leaves, disciplineId, windows, sections),
+      };
+    });
+    const bucket = groupsByDiscipline.get(disciplineId) ?? [];
+    groupsByDiscipline.set(disciplineId, [
+      ...bucket,
+      { groupId: group.id, name: group.name, disciplineId, items },
+    ]);
+  }
+
+  const ordered = [...state.disciplines].sort((a, b) => a.sort_order - b.sort_order || a.code.localeCompare(b.code));
+  const nodes: EvDisciplineNode[] = ordered
+    .filter((d) => groupsByDiscipline.has(d.id))
+    .map((d) => ({
+      id: `d:${d.id}`,
+      discipline: d,
+      distribution: overrides.distributions?.[d.id] ?? inputs.distributions[d.id] ?? "linear",
+      groups: evFillUnion(groupsByDiscipline.get(d.id) ?? []),
+    }));
+  const orphans = groupsByDiscipline.get(null);
+  if (orphans !== undefined) {
+    nodes.push({ id: "d:none", discipline: null, distribution: "linear", groups: evFillUnion(orphans) });
+  }
+  // Donmuş revizyonun pencereleri anlık görüntüdür (MB6: `window_source = snapshot`).
+  const frozen = snapshot === null ? nodes : nodes.map((d) => ({
+    ...d,
+    groups: d.groups.map((g) => ({
+      ...g,
+      items: g.items.map((i) => ({
+        ...i,
+        leaves: i.leaves.map((lf) => (lf.windowStart === null ? lf : { ...lf, windowSource: "snapshot" as const })),
+      })),
+    })),
+  }));
+  return { disciplines: frozen, ...evFindings(nodes, evCalendarOf(state, siteId)) };
+}
+
+function evTreeLeaves(tree: EvTree): { discipline: EvDisciplineNode; item: EvItemNode; leaf: EvLeafNode }[] {
+  return tree.disciplines.flatMap((discipline) =>
+    discipline.groups.flatMap((g) => g.items.flatMap((item) => item.leaves.map((leaf) => ({ discipline, item, leaf })))),
+  );
+}
+
+/* ─────────────────────────────── sunucular ───────────────────────────────── */
+
+function evShare(part: number, total: number): string | null {
+  return total === 0 ? null : evDec(part / total);
+}
+
+function evSumBudget(leaves: readonly EvLeafNode[], directOnly: boolean): number {
+  return leaves.filter((lf) => lf.isDirect || !directOnly).reduce((sum, lf) => sum + lf.budget, 0);
+}
+
+function evLeafOut(leaf: EvLeafNode, total: number): EvSchemas["LeafOut"] {
+  return {
+    id: leaf.id,
+    item_id: leaf.itemId,
+    section_id: leaf.sectionId,
+    section_name: leaf.sectionName,
+    planned_qty: evDec(leaf.qty),
+    unit_mhr: leaf.unitMhr,
+    rate_source: leaf.rateSource,
+    contractor_type: leaf.contractorType,
+    contractor_source: leaf.contractorOverridden ? "override" : "inherited",
+    is_direct: leaf.isDirect,
+    is_direct_source: leaf.directOverridden ? "override" : "inherited",
+    budget_mhr: evDec(leaf.budget),
+    share: leaf.isDirect ? evShare(leaf.budget, total) : null,
+    window_start: leaf.windowStart,
+    window_end: leaf.windowEnd,
+    window_source: leaf.windowSource,
+    outside_section_dates: leaf.outside,
+  };
+}
+
+function evItemOut(item: EvItemNode, total: number): EvSchemas["ItemOut"] {
+  const direct = evSumBudget(item.leaves, true);
+  return {
+    id: `i:${item.tpl.id}`,
+    item_id: item.tpl.id,
+    code: item.tpl.code,
+    description: item.tpl.description,
+    uom: item.tpl.uom,
+    planned_qty: evDec(item.leaves.reduce((sum, lf) => sum + lf.qty, 0)),
+    contractor_type: item.contractorType,
+    contractor_source: item.contractorInherited ? "inherited" : "item",
+    is_direct: item.isDirect,
+    catalog_item_id: item.catalogItemId,
+    empty_rate_count: item.leaves.filter((lf) => lf.unitMhr === null).length,
+    budget_mhr: evDec(evSumBudget(item.leaves, false)),
+    direct_budget_mhr: evDec(direct),
+    share: evShare(direct, total),
+    leaves: item.leaves.map((lf) => evLeafOut(lf, total)),
+  };
+}
+
+function evGroupOut(group: EvGroupNode, total: number): EvSchemas["GroupOut"] {
+  const leaves = group.items.flatMap((i) => i.leaves);
+  const direct = evSumBudget(leaves, true);
+  return {
+    id: `g:${group.groupId}`,
+    group_id: group.groupId,
+    name: group.name,
+    discipline_id: group.disciplineId,
+    budget_mhr: evDec(evSumBudget(leaves, false)),
+    direct_budget_mhr: evDec(direct),
+    share: evShare(direct, total),
+    items: group.items.map((i) => evItemOut(i, total)),
+  };
+}
+
+function evDisciplineOut(node: EvDisciplineNode, total: number): EvSchemas["DisciplineOut"] {
+  const leaves = node.groups.flatMap((g) => g.items.flatMap((i) => i.leaves));
+  const direct = evSumBudget(leaves, true);
+  return {
+    id: node.id,
+    discipline_id: node.discipline?.id ?? null,
+    code: node.discipline?.code ?? null,
+    name: node.discipline?.name ?? null,
+    color: node.discipline?.color ?? null,
+    default_contractor_type: node.discipline?.default_contractor_type ?? "own",
+    distribution: node.distribution,
+    budget_mhr: evDec(evSumBudget(leaves, false)),
+    direct_budget_mhr: evDec(direct),
+    share: evShare(direct, total),
+    groups: node.groups.map((g) => evGroupOut(g, total)),
+  };
+}
+
+function evBudgetView(state: EvState, siteId: string, revision: EvRevisionRecord | null): EvSchemas["BudgetView"] {
+  const tree = evBuildTree(state, siteId, revision);
+  const leaves = evTreeLeaves(tree).map((entry) => entry.leaf);
+  const direct = evSumBudget(leaves, true);
+  const boq = state.boq.get(siteId);
+  return {
+    revision: revision?.out ?? null,
+    editable: revision === null || revision.out.status === "draft",
+    boq_synced_at: boq?.syncedAt ?? null,
+    totals: {
+      direct_budget_mhr: evDec(direct),
+      indirect_budget_mhr: evDec(evSumBudget(leaves, false) - direct),
+      item_count: tree.disciplines.flatMap((d) => d.groups.flatMap((g) => g.items)).length,
+      leaf_count: leaves.length,
+      empty_rate_leaf_count: leaves.filter((lf) => lf.unitMhr === null).length,
+    },
+    disciplines: tree.disciplines.map((d) => evDisciplineOut(d, direct)),
+    freeze_blockers: tree.blockers,
+    freeze_warnings: tree.warnings,
+  };
+}
+
+function evSettingsOf(state: EvState, siteId: string): EvSchemas["SettingsRead"] {
+  return state.settings.get(siteId) ?? evDefaultSettings();
+}
+
+interface EvDisciplineUsage {
+  itemCount: number;
+  siteCount: number;
+}
+
+/**
+ * Backend `catalog_service.discipline_usage` (origin/main): iş tipi = disipline
+ * bağlı katalog kalemi · şantiye = grup eşlemesi (aktif/taslak/arşiv fark
+ * etmez) ∪ donmuş baseline yaprağı olan TEKİL şantiye. İkizde donmuş
+ * revizyonun yaprak disiplini o revizyonun grup eşlemesinden türer, yani
+ * eşleme taraması ikisini birden kapsar. Silme 409 kuralı DA bu sayılara dayanır.
+ */
+function evDisciplineUsage(state: EvState, disciplineId: string): EvDisciplineUsage {
+  return {
+    itemCount: state.catalog.filter((entry) => entry.disciplineId === disciplineId).length,
+    siteCount: [...state.revisions.values()].filter((revisions) =>
+      revisions.some((rev) => Object.values(rev.inputs.groupDisciplines).includes(disciplineId)),
+    ).length,
+  };
+}
+
+function evDisciplineReadOut(state: EvState, record: EvDisciplineRecord): EvSchemas["DisciplineRead"] {
+  const usage = evDisciplineUsage(state, record.id);
+  return { ...record, used_by_item_count: usage.itemCount, used_by_site_count: usage.siteCount };
+}
+
+function evCatalogOut(state: EvState, entry: EvCatalogEntry): EvSchemas["CatalogItemRead"] {
+  const discipline = state.disciplines.find((d) => d.id === entry.disciplineId);
+  // B1: kullanan şantiye = bütçesinde (herhangi bir revizyonda) bu iş tipine BAĞ olan şantiye.
+  const usedBy = [...state.revisions.entries()].filter(([, revisions]) =>
+    revisions.some((rev) => Object.values(rev.inputs.items).some((item) => item.catalogItemId === entry.id)),
+  ).length;
+  return {
+    id: entry.id,
+    discipline: {
+      id: entry.disciplineId,
+      code: discipline?.code ?? "",
+      name: discipline?.name ?? "",
+      color: discipline?.color ?? "",
+    },
+    name: entry.name,
+    uom: entry.uom,
+    standard_unit_mhr: entry.standardUnitMhr,
+    default_contractor_type: entry.defaultContractorType,
+    description: entry.description,
+    standard_updated_at: entry.standardUpdatedAt,
+    used_by_site_count: usedBy,
+    // B1 gerçeği: tamamlanmış şantiye gerçekleşeni PLN-B3'e kadar YOK.
+    actual: { avg: null, min: null, max: null, site_count: 0, sites: [] },
+    diff_pct: null,
+  };
+}
+
+/* ─────────────────────────────── Gantt · önizleme ────────────────────────── */
+
+function evScheduleOut(state: EvState, siteId: string, revision: EvRevisionRecord | null): EvSchemas["ScheduleOut"] {
+  const tree = evBuildTree(state, siteId, revision);
+  const boq = state.boq.get(siteId) ?? evEmptyBoq();
+  const calendar = evCalendarOf(state, siteId);
+  const settings = evSettingsOf(state, siteId);
+  const bars: EvSchemas["BarOut"][] = [];
+  for (const node of tree.disciplines) {
+    if (node.discipline === null) continue;
+    const bySection = new Map<string, EvLeafNode[]>();
+    for (const leaf of node.groups.flatMap((g) => g.items.flatMap((i) => i.leaves))) {
+      if (leaf.windowStart === null || leaf.windowEnd === null) continue;
+      const key = leaf.sectionId ?? "none";
+      bySection.set(key, [...(bySection.get(key) ?? []), leaf]);
+    }
+    for (const leaves of bySection.values()) {
+      const [first] = leaves;
+      const sources = new Set(leaves.map((lf) => lf.windowSource));
+      bars.push({
+        discipline_node_id: node.id,
+        discipline_id: node.discipline.id,
+        section_id: first.sectionId,
+        section_name: first.sectionName,
+        start_date: leaves.reduce((min, lf) => (lf.windowStart! < min ? lf.windowStart! : min), first.windowStart!),
+        end_date: leaves.reduce((max, lf) => (lf.windowEnd! > max ? lf.windowEnd! : max), first.windowEnd!),
+        source: sources.has("override") ? "override" : first.windowSource,
+        outside_section_dates: leaves.some((lf) => lf.outside),
+        budget_mhr: evDec(evSumBudget(leaves, true)),
+      });
+    }
+  }
+  return {
+    sections: boq.sections.map((s) => ({
+      id: s.id,
+      name: s.name,
+      start_date: s.startDate,
+      end_date: s.endDate,
+      planned_worker_count: s.plannedWorkerCount,
+    })),
+    bars,
+    weekly_off_days: [...settings.weekly_off_days],
+    holidays: [...calendar.holidays].sort(),
+  };
+}
+
+/** Dağılım ağırlıkları — n iş gününe (doğrusal · çan · önden · arkadan yüklü). */
+function evWeights(n: number, distribution: EvDistribution): number[] {
+  const raw = Array.from({ length: n }, (_, k) => {
+    switch (distribution) {
+      case "bell":
+        return Math.sin((Math.PI * (k + 0.5)) / n);
+      case "front":
+        return n - k;
+      case "back":
+        return k + 1;
+      case "linear":
+        return 1;
+    }
+  });
+  const sum = raw.reduce((a, b) => a + b, 0);
+  return raw.map((w) => (sum === 0 ? 0 : w / sum));
+}
+
+interface EvDailySeries {
+  budget: number;
+  start: string | null;
+  end: string | null;
+  daily: Map<string, number>;
+}
+
+function evWeekStartOf(calendar: EvCalendar, iso: string): string {
+  return evAddDays(iso, -((evWeekday(iso) - calendar.weekStartDow + 7) % 7));
+}
+
+function evSeriesOut(
+  series: EvDailySeries,
+  calendar: EvCalendar,
+  plannedPeople: (weekStart: string, weekEnd: string) => number | null,
+): EvSchemas["SeriesOut"] {
+  if (series.start === null || series.end === null) {
+    return { budget_mhr: "0", start: null, end: null, days: [], weeks: [], peak_week: null };
+  }
+  const workDays = evDaysInRange(series.start, series.end).filter((day) => evIsWorkingDay(calendar, day));
+  let cumulative = 0;
+  const days = workDays.map((day) => {
+    const mhr = series.daily.get(day) ?? 0;
+    cumulative += mhr;
+    return {
+      day,
+      mhr: evDec(mhr, 2),
+      cumulative_mhr: evDec(cumulative, 2),
+      planned_pct_cum: series.budget > 0 ? evDec(cumulative / series.budget) : null,
+    };
+  });
+  const weeks: EvSchemas["WeekOut"][] = [];
+  // Ajan A kararı (a): kova aralığa kırpılır; ilk/son hafta kısa olabilir.
+  for (let bucket = evWeekStartOf(calendar, series.start), no = 1; bucket <= series.end; bucket = evAddDays(bucket, 7), no += 1) {
+    const weekStart = bucket < series.start ? series.start : bucket;
+    const bucketEnd = evAddDays(bucket, 6);
+    const weekEnd = bucketEnd > series.end ? series.end : bucketEnd;
+    const span = evDaysInRange(weekStart, weekEnd);
+    const workingDays = span.filter((day) => evIsWorkingDay(calendar, day)).length;
+    const mhr = span.reduce((sum, day) => sum + (series.daily.get(day) ?? 0), 0);
+    weeks.push({
+      week_no: no,
+      week_start: weekStart,
+      week_end: weekEnd,
+      mhr: evDec(mhr, 2),
+      working_days: workingDays,
+      required_people: workingDays === 0 || calendar.hours === 0 ? null : evDec(mhr / (workingDays * calendar.hours), 2),
+      planned_people: plannedPeople(weekStart, weekEnd),
+    });
+  }
+  const peak = series.budget > 0
+    ? weeks.reduce<EvSchemas["WeekOut"] | null>((best, week) => (best === null || Number(week.mhr) > Number(best.mhr) ? week : best), null)
+    : null;
+  return {
+    budget_mhr: evDec(series.budget, 2),
+    start: series.start,
+    end: series.end,
+    days,
+    weeks,
+    peak_week: peak,
+  };
+}
+
+function evPreviewOut(
+  state: EvState,
+  siteId: string,
+  revision: EvRevisionRecord | null,
+  overrides: EvOverrides,
+): EvSchemas["PreviewOut"] {
+  // Gövde ezmeleri yalnız TASLAKTA anlamlıdır (backend `preview`).
+  const effective = revision === null || revision.out.status === "draft" ? overrides : {};
+  const tree = evBuildTree(state, siteId, revision, effective);
+  const calendar = evCalendarOf(state, siteId);
+  const boq = state.boq.get(siteId) ?? evEmptyBoq();
+  const unspreadable: string[] = [];
+  const perDiscipline = new Map<string, EvDailySeries>();
+  const total: EvDailySeries = { budget: 0, start: null, end: null, daily: new Map() };
+  let indirect = 0;
+  const directTotal = evSumBudget(evTreeLeaves(tree).map((e) => e.leaf), true);
+
+  for (const { discipline, leaf } of evTreeLeaves(tree)) {
+    if (!leaf.isDirect) {
+      indirect += leaf.budget;
+      continue;
+    }
+    if (discipline.discipline === null || leaf.windowStart === null || leaf.windowEnd === null || leaf.budget <= 0) continue;
+    const workDays = evDaysInRange(leaf.windowStart, leaf.windowEnd).filter((day) => evIsWorkingDay(calendar, day));
+    if (workDays.length === 0) {
+      unspreadable.push(leaf.id);
+      continue;
+    }
+    const series = perDiscipline.get(discipline.id) ?? { budget: 0, start: null, end: null, daily: new Map<string, number>() };
+    const weights = evWeights(workDays.length, discipline.distribution);
+    for (const [index, day] of workDays.entries()) {
+      const mhr = leaf.budget * weights[index];
+      series.daily.set(day, (series.daily.get(day) ?? 0) + mhr);
+      total.daily.set(day, (total.daily.get(day) ?? 0) + mhr);
+    }
+    for (const target of [series, total]) {
+      target.budget += leaf.budget;
+      target.start = target.start === null || leaf.windowStart < target.start ? leaf.windowStart : target.start;
+      target.end = target.end === null || leaf.windowEnd > target.end ? leaf.windowEnd : target.end;
+    }
+    perDiscipline.set(discipline.id, series);
+  }
+
+  const planned = (weekStart: string, weekEnd: string): number | null => {
+    const active = boq.sections.filter(
+      (s) => s.startDate !== null && s.endDate !== null && s.startDate <= weekEnd && s.endDate >= weekStart,
+    );
+    return active.length === 0 ? null : active.reduce((sum, s) => sum + (s.plannedWorkerCount ?? 0), 0);
+  };
+
+  return {
+    start: total.start,
+    end: total.end,
+    indirect_budget_mhr: evDec(indirect),
+    unspreadable,
+    total: evSeriesOut(total, calendar, planned),
+    disciplines: tree.disciplines
+      .filter((node) => node.discipline !== null)
+      .map((node) => {
+        const series = perDiscipline.get(node.id) ?? { budget: 0, start: null, end: null, daily: new Map<string, number>() };
+        return {
+          discipline_node_id: node.id,
+          discipline_id: node.discipline?.id ?? null,
+          code: node.discipline?.code ?? null,
+          name: node.discipline?.name ?? null,
+          color: node.discipline?.color ?? null,
+          distribution: node.distribution,
+          share: evShare(series.budget, directTotal),
+          series: evSeriesOut(series, calendar, () => null),
+        };
+      }),
+  };
+}
+
+/* ─────────────────────────────── fark · öneri ────────────────────────────── */
+
+function evDiffOut(state: EvState, siteId: string, revision: EvRevisionRecord): EvSchemas["RevisionDiffOut"] {
+  const revisions = state.revisions.get(siteId) ?? [];
+  const previous = revisions
+    .filter((r) => r.out.number < revision.out.number && r.out.status !== "draft")
+    .reduce<EvRevisionRecord | null>((best, r) => (best === null || r.out.number > best.out.number ? r : best), null);
+  const index = (tree: EvTree) =>
+    new Map(evTreeLeaves(tree).map(({ item, leaf }) => [leaf.id, { item, leaf }] as const));
+  const after = index(evBuildTree(state, siteId, revision));
+  const before = previous === null ? new Map<string, { item: EvItemNode; leaf: EvLeafNode }>() : index(evBuildTree(state, siteId, previous));
+  const direct = (entries: Map<string, { leaf: EvLeafNode }>) =>
+    [...entries.values()].filter((e) => e.leaf.isDirect).reduce((sum, e) => sum + e.leaf.budget, 0);
+
+  const leaves: EvSchemas["LeafDiffOut"][] = [];
+  for (const id of [...new Set([...after.keys(), ...before.keys()])].sort()) {
+    const now = after.get(id);
+    const old = before.get(id);
+    const reason = evDiffReason(now?.leaf ?? null, old?.leaf ?? null);
+    if (reason === null) continue;
+    const { item, leaf } = (now ?? old)!;
+    const budget = now === undefined ? 0 : leaf.budget;
+    const prevBudget = old?.leaf.budget ?? 0;
+    leaves.push({
+      leaf_id: id,
+      item_code: item.tpl.code,
+      item_description: item.tpl.description,
+      section_name: leaf.sectionName,
+      uom: item.tpl.uom,
+      prev_qty: old === undefined ? null : evDec(old.leaf.qty),
+      qty: now === undefined ? null : evDec(now.leaf.qty),
+      prev_unit_mhr: old?.leaf.unitMhr ?? null,
+      unit_mhr: now?.leaf.unitMhr ?? null,
+      prev_budget_mhr: evDec(prevBudget),
+      budget_mhr: evDec(budget),
+      delta_mhr: evDec(budget - prevBudget),
+      reason,
+    });
+  }
+  const directAfter = direct(after);
+  const directBefore = direct(before);
+  return {
+    revision: revision.out,
+    against: previous?.out ?? null,
+    direct_before_mhr: evDec(directBefore),
+    direct_after_mhr: evDec(directAfter),
+    direct_delta_mhr: evDec(directAfter - directBefore),
+    leaves,
+  };
+}
+
+function evDiffReason(now: EvLeafNode | null, old: EvLeafNode | null): EvSchemas["LeafDiffOut"]["reason"] | null {
+  if (now === null && old === null) return null;
+  if (old === null) return "new";
+  if (now === null) return "removed";
+  const qtyChanged = now.qty !== old.qty;
+  const rateChanged = evNum(now.unitMhr) !== evNum(old.unitMhr);
+  if (qtyChanged && rateChanged) return "qty_and_rate_changed";
+  if (qtyChanged) return "qty_changed";
+  if (rateChanged) return "rate_changed";
+  return null;
+}
+
+/** Backend `_candidates`: bağlı › tam › kısmi (aynı disiplin + aynı birim). */
+function evCandidates(
+  state: EvState,
+  item: EvItemNode,
+  disciplineId: string | null,
+): { entry: EvCatalogEntry; out: EvSchemas["CandidateOut"] }[] {
+  const name = evNormalizeLabel(item.tpl.description);
+  const uom = evNormalizeLabel(item.tpl.uom);
+  const order = { linked: 0, exact: 1, partial: 2 } as const;
+  const found: { entry: EvCatalogEntry; match: keyof typeof order }[] = [];
+  for (const entry of state.catalog) {
+    if (item.catalogItemId === entry.id) {
+      found.push({ entry, match: "linked" });
+      continue;
+    }
+    if (disciplineId !== null && entry.disciplineId !== disciplineId) continue;
+    if (evNormalizeLabel(entry.uom) !== uom) continue;
+    const candidate = evNormalizeLabel(entry.name);
+    if (candidate === name) found.push({ entry, match: "exact" });
+    else if (candidate.includes(name) || name.includes(candidate)) found.push({ entry, match: "partial" });
+  }
+  return found
+    .sort((a, b) => order[a.match] - order[b.match] || a.entry.name.localeCompare(b.entry.name, "tr"))
+    .map(({ entry, match }) => ({
+      entry,
+      out: {
+        catalog_item_id: entry.id,
+        name: entry.name,
+        uom: entry.uom,
+        standard_unit_mhr: entry.standardUnitMhr,
+        discipline_id: entry.disciplineId,
+        match,
+      },
+    }));
+}
+
+function evFindItem(tree: EvTree, itemId: string): { disciplineId: string | null; item: EvItemNode } | null {
+  for (const node of tree.disciplines) {
+    for (const group of node.groups) {
+      const item = group.items.find((i) => i.tpl.id === itemId);
+      if (item !== undefined) return { disciplineId: node.discipline?.id ?? null, item };
+    }
+  }
+  return null;
+}
+
+/* ─────────────────────────────── istek işleyicisi ────────────────────────── */
+
+interface EvRequest {
+  method: string;
+  path: string;
+  query: URLSearchParams;
+  send: (status: number, body?: unknown) => void;
+  /** Gövdeyi okur; bozuk JSON'da FastAPI gibi 422 `json_invalid` döner. */
+  readBody: (handler: (body: Record<string, unknown>) => void) => void;
+  /** Şantiye kaydı (durum için) — `state.sites`. */
+  findSite: (siteId: string) => { id: string; status: string } | undefined;
+}
+
+type EvBody = Record<string, unknown>;
+
+/**
+ * Planlama (EV) uçlarının TEK giriş noktası. Yol bir EV yolu değilse `false`
+ * döner ve istek işleyicisi kendi akışına devam eder.
+ */
+function handleEarnedValue(state: EvState, req: EvRequest): boolean {
+  if (req.path.startsWith("/earned-value/")) return evCompanyRoute(state, req);
+  const site = /^\/sites\/([^/]+)\/earned-value\/(.+)$/.exec(req.path);
+  if (site === null) return false;
+  const record = req.findSite(site[1]);
+  if (record === undefined) {
+    req.send(404, { detail: EV_MSG.siteMissing });
+    return true;
+  }
+  const rest = site[2];
+  if (rest === "settings") return evSettingsRoute(state, req, record);
+  if (rest === "budget" || rest.startsWith("budget/")) return evBudgetRoute(state, req, record, rest);
+  return false;
+}
+
+function evMethodNotAllowed(req: EvRequest): true {
+  req.send(405, { detail: "Method Not Allowed" });
+  return true;
+}
+
+/* ---- şirket: disiplin + katalog ---- */
+
+function evCompanyRoute(state: EvState, req: EvRequest): boolean {
+  const { method, path } = req;
+  if (path === "/earned-value/disciplines") {
+    if (method === "GET") {
+      const sorted = [...state.disciplines].sort((a, b) => a.sort_order - b.sort_order || a.code.localeCompare(b.code));
+      req.send(200, sorted.map((d) => evDisciplineReadOut(state, d)));
+      return true;
+    }
+    if (method === "POST") {
+      req.readBody((body) => evCreateDiscipline(state, req, body));
+      return true;
+    }
+    return evMethodNotAllowed(req);
+  }
+  const discipline = /^\/earned-value\/disciplines\/([^/]+)$/.exec(path);
+  if (discipline !== null) {
+    if (method === "PATCH") {
+      req.readBody((body) => evUpdateDiscipline(state, req, discipline[1], body));
+      return true;
+    }
+    if (method === "DELETE") {
+      evDeleteDiscipline(state, req, discipline[1]);
+      return true;
+    }
+    return evMethodNotAllowed(req);
+  }
+  if (path === "/earned-value/catalog") {
+    if (method === "GET") {
+      req.send(200, evListCatalog(state, req.query));
+      return true;
+    }
+    if (method === "POST") {
+      req.readBody((body) => evCreateCatalogItem(state, req, body));
+      return true;
+    }
+    return evMethodNotAllowed(req);
+  }
+  const adopt = /^\/earned-value\/catalog\/([^/]+)\/adopt-actual$/.exec(path);
+  if (adopt !== null) {
+    if (method !== "POST") return evMethodNotAllowed(req);
+    const found = state.catalog.some((entry) => entry.id === adopt[1]);
+    // B1: gerçekleşen HİÇ yok → her zaman 409 (PLN-B3'e kadar).
+    req.send(found ? 409 : 404, { detail: found ? EV_MSG.catalogNoActual : EV_MSG.catalogMissing });
+    return true;
+  }
+  const catalogItem = /^\/earned-value\/catalog\/([^/]+)$/.exec(path);
+  if (catalogItem !== null) {
+    if (method !== "PATCH") return evMethodNotAllowed(req);
+    req.readBody((body) => evUpdateCatalogItem(state, req, catalogItem[1], body));
+    return true;
+  }
+  return false;
+}
+
+function evCodeTaken(state: EvState, code: string, exceptId: string | null): boolean {
+  const wanted = code.trim().toUpperCase();
+  return state.disciplines.some((d) => d.id !== exceptId && d.code.toUpperCase() === wanted);
+}
+
+function evColorViolation(color: unknown): EvViolationBody | null {
+  if (typeof color === "string" && EV_COLOR_PATTERN.test(color)) return null;
+  return evViolation("string_pattern_mismatch", ["color"], `String should match pattern '${EV_COLOR_PATTERN.source}'`, color);
+}
+
+function evCreateDiscipline(state: EvState, req: EvRequest, body: EvBody): void {
+  const violation = bodySchemaViolation(EV_BODY.disciplineCreate, body) ?? evColorViolation(body.color);
+  if (violation !== null) return req.send(422, violation);
+  const code = String(body.code).trim();
+  if (evCodeTaken(state, code, null)) return req.send(409, { detail: EV_MSG.disciplineCodeTaken });
+  const created: EvDisciplineRecord = {
+    id: evNextId(state),
+    code,
+    name: String(body.name).trim(),
+    color: String(body.color),
+    default_contractor_type: body.default_contractor_type as EvContractor,
+    sort_order:
+      typeof body.sort_order === "number"
+        ? body.sort_order
+        : Math.max(0, ...state.disciplines.map((d) => d.sort_order)) + 1,
+  };
+  state.disciplines = [...state.disciplines, created];
+  req.send(201, evDisciplineReadOut(state, created));
+}
+
+function evUpdateDiscipline(state: EvState, req: EvRequest, id: string, body: EvBody): void {
+  const current = state.disciplines.find((d) => d.id === id);
+  if (current === undefined) return req.send(404, { detail: EV_MSG.disciplineMissing });
+  const violation =
+    bodySchemaViolation(EV_BODY.disciplineUpdate, body) ??
+    (typeof body.color === "string" ? evColorViolation(body.color) : null);
+  if (violation !== null) return req.send(422, violation);
+  if (typeof body.code === "string" && evCodeTaken(state, body.code, id)) {
+    return req.send(409, { detail: EV_MSG.disciplineCodeTaken });
+  }
+  // §3.10 F0-7: kod kullanımdayken de değişebilir; `null` alan = dokunma.
+  const updated: EvDisciplineRecord = {
+    ...current,
+    ...(typeof body.code === "string" ? { code: body.code.trim() } : {}),
+    ...(typeof body.name === "string" ? { name: body.name.trim() } : {}),
+    ...(typeof body.color === "string" ? { color: body.color } : {}),
+    ...(typeof body.default_contractor_type === "string"
+      ? { default_contractor_type: body.default_contractor_type as EvContractor }
+      : {}),
+    ...(typeof body.sort_order === "number" ? { sort_order: body.sort_order } : {}),
+  };
+  state.disciplines = state.disciplines.map((d) => (d.id === id ? updated : d));
+  req.send(200, evDisciplineReadOut(state, updated));
+}
+
+function evDeleteDiscipline(state: EvState, req: EvRequest, id: string): void {
+  if (!state.disciplines.some((d) => d.id === id)) return req.send(404, { detail: EV_MSG.disciplineMissing });
+  // B1-9 / B2: kural = sayaçlar (iş tipi 0 VE şantiye 0), yanıttaki sayılarla AYNI kaynak.
+  const usage = evDisciplineUsage(state, id);
+  if (usage.itemCount > 0 || usage.siteCount > 0) return req.send(409, { detail: EV_MSG.disciplineInUse });
+  state.disciplines = state.disciplines.filter((d) => d.id !== id);
+  req.send(204);
+}
+
+function evListCatalog(state: EvState, query: URLSearchParams): EvSchemas["CatalogItemRead"][] {
+  const disciplineId = query.get("discipline_id");
+  const needle = evNormalizeLabel(query.get("q") ?? "");
+  const order = new Map(state.disciplines.map((d) => [d.id, d.sort_order]));
+  return state.catalog
+    .filter((entry) => !disciplineId || entry.disciplineId === disciplineId)
+    .filter((entry) => needle === "" || evNormalizeLabel(entry.name).includes(needle))
+    .map((entry, index) => ({ entry, index }))
+    .sort((a, b) => (order.get(a.entry.disciplineId) ?? 0) - (order.get(b.entry.disciplineId) ?? 0) || a.index - b.index)
+    .map(({ entry }) => evCatalogOut(state, entry));
+}
+
+function evCatalogTaken(state: EvState, disciplineId: string, name: string, uom: string, exceptId: string | null): boolean {
+  return state.catalog.some(
+    (entry) =>
+      entry.id !== exceptId &&
+      entry.disciplineId === disciplineId &&
+      evNormalizeLabel(entry.name) === evNormalizeLabel(name) &&
+      evNormalizeLabel(entry.uom) === evNormalizeLabel(uom),
+  );
+}
+
+function evCreateCatalogItem(state: EvState, req: EvRequest, body: EvBody): void {
+  const violation = bodySchemaViolation(EV_BODY.catalogCreate, body);
+  if (violation !== null) return req.send(422, violation);
+  const disciplineId = String(body.discipline_id);
+  if (!state.disciplines.some((d) => d.id === disciplineId)) return req.send(404, { detail: EV_MSG.disciplineMissing });
+  const name = String(body.name).trim();
+  const uom = String(body.uom).trim();
+  if (evCatalogTaken(state, disciplineId, name, uom, null)) return req.send(409, { detail: EV_MSG.catalogTaken });
+  const entry: EvCatalogEntry = {
+    id: evNextId(state),
+    disciplineId,
+    name,
+    uom,
+    standardUnitMhr: evDec(Number(body.standard_unit_mhr)),
+    defaultContractorType: body.default_contractor_type as EvContractor,
+    description: typeof body.description === "string" && body.description.trim() !== "" ? body.description : null,
+    standardUpdatedAt: EV_NOW,
+  };
+  state.catalog = [...state.catalog, entry];
+  req.send(201, evCatalogOut(state, entry));
+}
+
+function evUpdateCatalogItem(state: EvState, req: EvRequest, id: string, body: EvBody): void {
+  const current = state.catalog.find((entry) => entry.id === id);
+  if (current === undefined) return req.send(404, { detail: EV_MSG.catalogMissing });
+  const violation = bodySchemaViolation(EV_BODY.catalogUpdate, body);
+  if (violation !== null) return req.send(422, violation);
+  const disciplineId = typeof body.discipline_id === "string" ? body.discipline_id : current.disciplineId;
+  if (!state.disciplines.some((d) => d.id === disciplineId)) return req.send(404, { detail: EV_MSG.disciplineMissing });
+  const name = typeof body.name === "string" ? body.name.trim() : current.name;
+  const uom = typeof body.uom === "string" ? body.uom.trim() : current.uom;
+  if (evCatalogTaken(state, disciplineId, name, uom, id)) return req.send(409, { detail: EV_MSG.catalogTaken });
+  const rate = body.standard_unit_mhr === undefined || body.standard_unit_mhr === null
+    ? current.standardUnitMhr
+    : evDec(Number(body.standard_unit_mhr));
+  const updated: EvCatalogEntry = {
+    ...current,
+    disciplineId,
+    name,
+    uom,
+    standardUnitMhr: rate,
+    // `standard_updated_at` YALNIZ oran değişince ilerler (ajan B mutasyonu 7).
+    standardUpdatedAt: Number(rate) === Number(current.standardUnitMhr) ? current.standardUpdatedAt : EV_NOW,
+    ...(typeof body.default_contractor_type === "string"
+      ? { defaultContractorType: body.default_contractor_type as EvContractor }
+      : {}),
+    ...("description" in body ? { description: typeof body.description === "string" ? body.description : null } : {}),
+  };
+  state.catalog = state.catalog.map((entry) => (entry.id === id ? updated : entry));
+  req.send(200, evCatalogOut(state, updated));
+}
+
+/* ---- şantiye: ayarlar ---- */
+
+function evSettingsRoute(state: EvState, req: EvRequest, site: { id: string; status: string }): boolean {
+  if (req.method === "GET") {
+    req.send(200, evSettingsOf(state, site.id));
+    return true;
+  }
+  if (req.method !== "PUT") return evMethodNotAllowed(req);
+  req.readBody((body) => {
+    // §3.10 F0-8: tamamlanmış şantiye yetkiden bağımsız salt okunur.
+    if (site.status === "completed") return req.send(409, { detail: EV_MSG.settingsCompleted });
+    const violation = evSettingsViolation(body);
+    if (violation !== null) return req.send(422, violation);
+    const rule = evSettingsRuleViolation(body);
+    if (rule !== null) return req.send(422, { detail: rule });
+    const saved = evSettingsFromBody(state, body);
+    state.settings.set(site.id, saved);
+    req.send(200, saved);
+  });
+  return true;
+}
+
+function evSettingsViolation(body: EvBody): EvViolationBody | null {
+  const top = bodySchemaViolation(EV_BODY.settingsSave, body) as EvViolationBody | null;
+  if (top !== null) return top;
+  const off = evArrayViolation(body.weekly_off_days, ["weekly_off_days"], EV_ARRAYS.settingsSave.get("weekly_off_days"));
+  if (off !== null) return off;
+  for (const [index, day] of (body.weekly_off_days as unknown[]).entries()) {
+    if (!Number.isInteger(day) || (day as number) < 0 || (day as number) > 6) {
+      return evViolation("less_than_equal", ["weekly_off_days", index], "Input should be less than or equal to 6", day);
+    }
+  }
+  const bands = evNestedViolation(EV_BODY.pfBands, body.pf_bands, ["pf_bands"]);
+  if (bands !== null) return bands;
+  const pf = body.pf_bands as EvBody;
+  const daily = evNestedViolation(EV_BODY.dailyBands, pf.daily, ["pf_bands", "daily"]);
+  if (daily !== null) return daily;
+  const weekly = evNestedViolation(EV_BODY.weeklyBands, pf.weekly, ["pf_bands", "weekly"]);
+  if (weekly !== null) return weekly;
+  for (const field of ["holidays", "composite_metrics"] as const) {
+    const list = evArrayViolation(body[field], [field], EV_ARRAYS.settingsSave.get(field));
+    if (list !== null) return list;
+  }
+  const holidays = evEachViolation((body.holidays as unknown[] | undefined) ?? [], EV_BODY.holiday, "holidays");
+  if (holidays !== null) return holidays;
+  const metrics = (body.composite_metrics as unknown[] | undefined) ?? [];
+  const metric = evEachViolation(metrics, EV_BODY.metric, "composite_metrics");
+  if (metric !== null) return metric;
+  for (const [index, entry] of metrics.entries()) {
+    const ids = evArrayViolation(
+      (entry as EvBody).numerator_item_ids,
+      ["composite_metrics", index, "numerator_item_ids"],
+      EV_ARRAYS.metric.get("numerator_item_ids"),
+    );
+    if (ids !== null) return ids;
+  }
+  return null;
+}
+
+/** Backend `settings_service` iş kuralları — metinleri `guards.py`den. */
+function evSettingsRuleViolation(body: EvBody): string | null {
+  const pf = body.pf_bands as { daily: EvBody; weekly: EvBody };
+  const [red, green, high] = [pf.daily.red_below, pf.daily.green_from, pf.daily.high_above].map(Number);
+  if (!(red <= green && green <= high)) return EV_MSG.dailyBandsOrder;
+  if (!(Number(pf.weekly.red_below) <= Number(pf.weekly.green_from))) return EV_MSG.weeklyBandsOrder;
+  const holidays = ((body.holidays as EvBody[] | undefined) ?? [])
+    .map((h) => ({ from: String(h.date_from), to: String(h.date_to) }))
+    .sort((a, b) => a.from.localeCompare(b.from));
+  if (holidays.some((h) => h.to < h.from)) return EV_MSG.holidayRangeInvalid;
+  if (holidays.some((h, i) => i > 0 && h.from <= holidays[i - 1].to)) return EV_MSG.holidayRangeOverlap;
+  const boqIds = new Set(BOQ_FIXTURE.flatMap((group) => group.items.map((item) => item.id)));
+  const metrics = (body.composite_metrics as EvBody[] | undefined) ?? [];
+  const foreign = metrics.some(
+    (m) => !boqIds.has(String(m.denominator_item_id)) || (m.numerator_item_ids as unknown[]).some((id) => !boqIds.has(String(id))),
+  );
+  if (foreign) return EV_MSG.compositeForeign;
+  if (new Set(body.weekly_off_days as number[]).size >= 7) return EV_MSG.allDaysOff;
+  return null;
+}
+
+function evSettingsFromBody(state: EvState, body: EvBody): EvSchemas["SettingsRead"] {
+  const pf = body.pf_bands as { daily: EvBody; weekly: EvBody };
+  return {
+    week_start_dow: Number(body.week_start_dow),
+    weekly_off_days: [...new Set(body.weekly_off_days as number[])].sort((a, b) => a - b),
+    standard_daily_hours: evScale(body.standard_daily_hours, 2),
+    tolerance_points: evScale(body.tolerance_points, 2),
+    pf_bands: {
+      daily: {
+        red_below: evScale(pf.daily.red_below, 3),
+        green_from: evScale(pf.daily.green_from, 3),
+        high_above: evScale(pf.daily.high_above, 3),
+      },
+      weekly: { red_below: evScale(pf.weekly.red_below, 3), green_from: evScale(pf.weekly.green_from, 3) },
+    },
+    // B1 sapma 7: tatil/paçal satırları `id` TAŞIMAZ; her PUT yeni kimlik üretir.
+    holidays: ((body.holidays as EvBody[] | undefined) ?? [])
+      .map((h) => ({
+        id: evNextId(state),
+        date_from: String(h.date_from),
+        date_to: String(h.date_to),
+        note: typeof h.note === "string" ? h.note : "",
+      }))
+      .sort((a, b) => a.date_from.localeCompare(b.date_from)),
+    composite_metrics: ((body.composite_metrics as EvBody[] | undefined) ?? []).map((m) => ({
+      id: evNextId(state),
+      name: String(m.name),
+      measure: m.measure as EvSchemas["CompositeMeasure"],
+      numerator_item_ids: (m.numerator_item_ids as unknown[]).map(String),
+      denominator_item_id: String(m.denominator_item_id),
+    })),
+    is_default: false,
+    updated_at: EV_NOW,
+    updated_by: EV_ACTOR,
+  };
+}
+
+/* ---- şantiye: bütçe ---- */
+
+function evRevisionsOf(state: EvState, siteId: string): EvRevisionRecord[] {
+  return state.revisions.get(siteId) ?? [];
+}
+
+/** Ekranın varsayılan revizyonu: taslak › aktif › yok (B1-5). */
+function evCurrentRevision(state: EvState, siteId: string): EvRevisionRecord | null {
+  const revisions = evRevisionsOf(state, siteId);
+  return revisions.find((r) => r.out.status === "draft") ?? revisions.find((r) => r.out.status === "active") ?? null;
+}
+
+/** `?revision_id` / gövde `revision_id` çözümü; bulunamazsa `undefined` (→ 404). */
+function evResolveRevision(state: EvState, siteId: string, revisionId: string | null): EvRevisionRecord | null | undefined {
+  if (revisionId === null || revisionId === "") return evCurrentRevision(state, siteId);
+  return evRevisionsOf(state, siteId).find((r) => r.out.id === revisionId);
+}
+
+/**
+ * Yazma hedefi (backend `_draft_for_write`): tamamlanmış şantiye 409 · taslak
+ * varsa o · hiç revizyon yoksa Rev 0 taslağı AÇILIR · aksi hâlde 409 NO_DRAFT.
+ */
+function evDraftForWrite(state: EvState, req: EvRequest, site: { id: string; status: string }): EvRevisionRecord | null {
+  if (site.status === "completed") {
+    req.send(409, { detail: EV_MSG.budgetCompleted });
+    return null;
+  }
+  const revisions = evRevisionsOf(state, site.id);
+  const draft = revisions.find((r) => r.out.status === "draft");
+  if (draft !== undefined) return draft;
+  if (revisions.length > 0) {
+    req.send(409, { detail: EV_MSG.noDraft });
+    return null;
+  }
+  const created: EvRevisionRecord = {
+    out: {
+      id: evNextId(state),
+      number: 0,
+      status: "draft",
+      name: null,
+      description: null,
+      frozen_at: null,
+      frozen_by: null,
+      created_at: EV_NOW,
+      last_edited_at: EV_NOW,
+    },
+    inputs: EV_EMPTY_INPUTS,
+    snapshot: null,
+  };
+  state.revisions.set(site.id, [created]);
+  return created;
+}
+
+/** Taslağın girdilerini DEĞİŞTİRİR (yeni nesne) ve "son düzenleme"yi ilerletir. */
+function evWriteDraft(state: EvState, siteId: string, draft: EvRevisionRecord, inputs: EvInputs): EvRevisionRecord {
+  const updated: EvRevisionRecord = { ...draft, inputs, out: { ...draft.out, last_edited_at: EV_NOW } };
+  state.revisions.set(
+    siteId,
+    evRevisionsOf(state, siteId).map((r) => (r.out.id === draft.out.id ? updated : r)),
+  );
+  return updated;
+}
+
+function evBudgetRoute(state: EvState, req: EvRequest, site: { id: string; status: string }, rest: string): boolean {
+  const { method } = req;
+  const sub = rest.slice("budget".length);
+  if (sub === "") {
+    if (method !== "GET") return evMethodNotAllowed(req);
+    const revision = evResolveRevision(state, site.id, req.query.get("revision_id"));
+    if (revision === undefined) req.send(404, { detail: EV_MSG.revisionMissing });
+    else req.send(200, evBudgetView(state, site.id, revision));
+    return true;
+  }
+  if (sub === "/revisions") {
+    if (method === "GET") {
+      req.send(200, [...evRevisionsOf(state, site.id)].sort((a, b) => b.out.number - a.out.number).map((r) => r.out));
+      return true;
+    }
+    if (method !== "POST") return evMethodNotAllowed(req);
+    evOpenDraft(state, req, site);
+    return true;
+  }
+  const revision = /^\/revisions\/([^/]+)(\/diff)?$/.exec(sub);
+  if (revision !== null) return evRevisionRoute(state, req, site, revision[1], revision[2] !== undefined);
+  const suggestions = /^\/items\/([^/]+)\/suggestions$/.exec(sub);
+  if (suggestions !== null) {
+    if (method !== "GET") return evMethodNotAllowed(req);
+    evSuggestions(state, req, site.id, suggestions[1]);
+    return true;
+  }
+  const item = /^\/items\/([^/]+)$/.exec(sub);
+  if (item !== null) {
+    if (method !== "PATCH") return evMethodNotAllowed(req);
+    req.readBody((body) => evPatchItem(state, req, site, item[1], body));
+    return true;
+  }
+  return evBudgetWriteRoute(state, req, site, sub);
+}
+
+function evOpenDraft(state: EvState, req: EvRequest, site: { id: string; status: string }): void {
+  if (site.status === "completed") return req.send(409, { detail: EV_MSG.budgetCompleted });
+  const revisions = evRevisionsOf(state, site.id);
+  if (revisions.some((r) => r.out.status === "draft")) return req.send(409, { detail: EV_MSG.draftExists });
+  const active = revisions.find((r) => r.out.status === "active");
+  const created: EvRevisionRecord = {
+    out: {
+      id: evNextId(state),
+      number: Math.max(-1, ...revisions.map((r) => r.out.number)) + 1,
+      status: "draft",
+      name: null,
+      description: null,
+      frozen_at: null,
+      frozen_by: null,
+      created_at: EV_NOW,
+      last_edited_at: EV_NOW,
+    },
+    // Aktifin düzenlenebilir girdileri kopyalanır; miktarlar CANLI BOQ'dan okunur.
+    inputs: active?.inputs ?? EV_EMPTY_INPUTS,
+    snapshot: null,
+  };
+  state.revisions.set(site.id, [...revisions, created]);
+  req.send(201, created.out);
+}
+
+function evRevisionRoute(
+  state: EvState,
+  req: EvRequest,
+  site: { id: string; status: string },
+  revisionId: string,
+  isDiff: boolean,
+): boolean {
+  const found = evRevisionsOf(state, site.id).find((r) => r.out.id === revisionId);
+  if (isDiff) {
+    if (req.method !== "GET") return evMethodNotAllowed(req);
+    if (found === undefined) req.send(404, { detail: EV_MSG.revisionMissing });
+    else req.send(200, evDiffOut(state, site.id, found));
+    return true;
+  }
+  if (req.method !== "DELETE") return evMethodNotAllowed(req);
+  if (site.status === "completed") req.send(409, { detail: EV_MSG.budgetCompleted });
+  else if (found === undefined) req.send(404, { detail: EV_MSG.revisionMissing });
+  else if (found.out.status !== "draft") req.send(409, { detail: EV_MSG.notDraft });
+  else {
+    state.revisions.set(site.id, evRevisionsOf(state, site.id).filter((r) => r.out.id !== revisionId));
+    req.send(204);
+  }
+  return true;
+}
+
+function evSuggestions(state: EvState, req: EvRequest, siteId: string, itemId: string): void {
+  const found = evFindItem(evBuildTree(state, siteId, evCurrentRevision(state, siteId)), itemId);
+  if (found === null) return req.send(422, { detail: EV_MSG.itemForeign });
+  const body: EvSchemas["SuggestionsOut"] = {
+    catalog: evCandidates(state, found.item, found.disciplineId).map((c) => c.out),
+    // K4 "son 3 şantiye" — B1'de gerçekleşen YOK; B3 dolduracak.
+    history: [],
+  };
+  req.send(200, body);
+}
+
+function evSiteItemIds(state: EvState, siteId: string): Set<string> {
+  return new Set((state.boq.get(siteId)?.groups ?? []).flatMap((g) => g.items.map((i) => i.id)));
+}
+
+function evPatchItem(state: EvState, req: EvRequest, site: { id: string; status: string }, itemId: string, body: EvBody): void {
+  const violation = bodySchemaViolation(EV_BODY.itemPatch, body);
+  if (violation !== null) return req.send(422, violation);
+  if (!evSiteItemIds(state, site.id).has(itemId)) return req.send(422, { detail: EV_MSG.itemForeign });
+  if (typeof body.catalog_item_id === "string" && !state.catalog.some((c) => c.id === body.catalog_item_id)) {
+    return req.send(404, { detail: EV_MSG.catalogMissing });
+  }
+  const draft = evDraftForWrite(state, req, site);
+  if (draft === null) return;
+  const current = draft.inputs.items[itemId] ?? {};
+  // Gövdedeki `null` = ezmeyi KALDIR (kalıtıma dön); alan yoksa dokunma.
+  const next: EvItemInput = {
+    ...current,
+    ...("contractor_type" in body ? { contractorType: (body.contractor_type as EvContractor | null) ?? undefined } : {}),
+    ...("is_direct" in body ? { isDirect: (body.is_direct as boolean | null) ?? undefined } : {}),
+    ...("catalog_item_id" in body ? { catalogItemId: (body.catalog_item_id as string | null) ?? undefined } : {}),
+  };
+  const saved = evWriteDraft(state, site.id, draft, { ...draft.inputs, items: { ...draft.inputs.items, [itemId]: next } });
+  req.send(200, evBudgetView(state, site.id, saved));
+}
+
+function evBudgetWriteRoute(state: EvState, req: EvRequest, site: { id: string; status: string }, sub: string): boolean {
+  const routes: Record<string, { method: string; run: (body: EvBody) => void }> = {
+    "/group-disciplines": { method: "PUT", run: (body) => evPutGroupDisciplines(state, req, site, body) },
+    "/leaves": { method: "PATCH", run: (body) => evPatchLeaves(state, req, site, body) },
+    "/distributions": { method: "PUT", run: (body) => evPutDistributions(state, req, site, body) },
+    "/windows": { method: "PUT", run: (body) => evPutWindows(state, req, site, body) },
+    "/fill-from-catalog": { method: "POST", run: () => evFillFromCatalog(state, req, site) },
+    "/schedule": { method: "GET", run: () => evSchedule(state, req, site.id) },
+    "/preview": { method: "POST", run: (body) => evPreview(state, req, site.id, body) },
+    "/freeze": { method: "POST", run: (body) => evFreeze(state, req, site, body) },
+  };
+  const route = routes[sub];
+  if (route === undefined) return false;
+  if (req.method !== route.method) return evMethodNotAllowed(req);
+  if (req.method === "GET") route.run({});
+  else req.readBody(route.run);
+  return true;
+}
+
+function evPutGroupDisciplines(state: EvState, req: EvRequest, site: { id: string; status: string }, body: EvBody): void {
+  const violation =
+    (bodySchemaViolation(EV_BODY.groupDisciplines, body) as EvViolationBody | null) ??
+    evArrayViolation(body.items, ["items"], EV_ARRAYS.groupDisciplines.get("items")) ??
+    evEachViolation(body.items as unknown[], EV_BODY.groupPair, "items");
+  if (violation !== null) return req.send(422, violation);
+  const pairs = body.items as { boq_group_id: string; discipline_id: string | null }[];
+  const groupIds = new Set((state.boq.get(site.id)?.groups ?? []).map((g) => g.id));
+  if (pairs.some((p) => !groupIds.has(p.boq_group_id))) return req.send(422, { detail: EV_MSG.groupForeign });
+  if (pairs.some((p) => p.discipline_id !== null && !state.disciplines.some((d) => d.id === p.discipline_id))) {
+    return req.send(404, { detail: EV_MSG.disciplineMissing });
+  }
+  const draft = evDraftForWrite(state, req, site);
+  if (draft === null) return;
+  // KISMİ: gövdede olmayan grup dokunulmaz; `null` eşlemeyi kaldırır.
+  const mapping: Record<string, string> = { ...draft.inputs.groupDisciplines };
+  for (const pair of pairs) {
+    if (pair.discipline_id === null) delete mapping[pair.boq_group_id];
+    else mapping[pair.boq_group_id] = pair.discipline_id;
+  }
+  const saved = evWriteDraft(state, site.id, draft, { ...draft.inputs, groupDisciplines: mapping });
+  req.send(200, evBudgetView(state, site.id, saved));
+}
+
+function evPatchLeaves(state: EvState, req: EvRequest, site: { id: string; status: string }, body: EvBody): void {
+  const violation =
+    (bodySchemaViolation(EV_BODY.leavesPatch, body) as EvViolationBody | null) ??
+    evArrayViolation(body.leaves, ["leaves"], EV_ARRAYS.leavesPatch.get("leaves")) ??
+    evEachViolation(body.leaves as unknown[], EV_BODY.leafPatch, "leaves");
+  if (violation !== null) return req.send(422, violation);
+  const boq = state.boq.get(site.id) ?? evEmptyBoq();
+  const leafKeys = new Set(boq.groups.flatMap((g) => g.items.flatMap((i) => i.leaves.map((lf) => evLeafKey(i.id, lf.sectionId)))));
+  const sectionIds = new Set(boq.sections.map((s) => s.id));
+  const itemIds = evSiteItemIds(state, site.id);
+  const patches = body.leaves as EvBody[];
+  for (const patch of patches) {
+    const sectionId = (patch.section_id as string | null | undefined) ?? null;
+    if (!itemIds.has(String(patch.boq_item_id))) return req.send(422, { detail: EV_MSG.itemForeign });
+    if (sectionId !== null && !sectionIds.has(sectionId)) return req.send(422, { detail: EV_MSG.sectionForeign });
+    if (!leafKeys.has(evLeafKey(String(patch.boq_item_id), sectionId))) return req.send(422, { detail: EV_MSG.leafMissing });
+  }
+  const draft = evDraftForWrite(state, req, site);
+  if (draft === null) return;
+  const leaves: Record<string, EvLeafInput> = { ...draft.inputs.leaves };
+  for (const patch of patches) {
+    const key = evLeafKey(String(patch.boq_item_id), (patch.section_id as string | null | undefined) ?? null);
+    leaves[key] = evMergeLeafPatch(leaves[key] ?? {}, patch);
+  }
+  const saved = evWriteDraft(state, site.id, draft, { ...draft.inputs, leaves });
+  req.send(200, evBudgetView(state, site.id, saved));
+}
+
+/** Oran verilip kaynak verilmezse `manual`; oran `null` → kaynak da düşer (backend `_normalize_rate`). */
+function evMergeLeafPatch(current: EvLeafInput, patch: EvBody): EvLeafInput {
+  const next: EvLeafInput = { ...current };
+  if ("unit_mhr" in patch) {
+    const raw = patch.unit_mhr;
+    next.unitMhr = raw === null || raw === undefined ? null : evDec(Number(raw), 4);
+    next.rateSource = next.unitMhr === null ? null : ((patch.rate_source as EvRateSource | null | undefined) ?? "manual");
+  } else if ("rate_source" in patch && current.unitMhr != null) {
+    next.rateSource = (patch.rate_source as EvRateSource | null) ?? "manual";
+  }
+  if ("contractor_type" in patch) next.contractorType = (patch.contractor_type as EvContractor | null) ?? undefined;
+  if ("is_direct" in patch) next.isDirect = (patch.is_direct as boolean | null) ?? undefined;
+  return next;
+}
+
+function evPutDistributions(state: EvState, req: EvRequest, site: { id: string; status: string }, body: EvBody): void {
+  const violation =
+    (bodySchemaViolation(EV_BODY.distributions, body) as EvViolationBody | null) ??
+    evArrayViolation(body.items, ["items"], EV_ARRAYS.distributions.get("items")) ??
+    evEachViolation(body.items as unknown[], EV_BODY.distributionPair, "items");
+  if (violation !== null) return req.send(422, violation);
+  const pairs = body.items as { discipline_id: string; distribution: EvDistribution }[];
+  if (pairs.some((p) => !state.disciplines.some((d) => d.id === p.discipline_id))) {
+    return req.send(404, { detail: EV_MSG.disciplineMissing });
+  }
+  const draft = evDraftForWrite(state, req, site);
+  if (draft === null) return;
+  const distributions = { ...draft.inputs.distributions };
+  for (const pair of pairs) distributions[pair.discipline_id] = pair.distribution;
+  const saved = evWriteDraft(state, site.id, draft, { ...draft.inputs, distributions });
+  req.send(200, evBudgetView(state, site.id, saved));
+}
+
+/** Pencere listesinin doğrulaması + haritası; ihlalde `EvViolationBody` ya da iş kuralı metni. */
+function evWindowsFrom(
+  state: EvState,
+  siteId: string,
+  list: unknown,
+  field: string,
+  bounds: EvArrayBounds | undefined,
+): { windows: Record<string, EvWindowInput> } | { violation: unknown; status: number } {
+  const shape = evArrayViolation(list, [field], bounds) ?? evEachViolation((list as unknown[] | undefined) ?? [], EV_BODY.window, field);
+  if (shape !== null) return { violation: shape, status: 422 };
+  const sectionIds = new Set((state.boq.get(siteId)?.sections ?? []).map((s) => s.id));
+  const windows: Record<string, EvWindowInput> = {};
+  for (const entry of (list as EvBody[] | undefined) ?? []) {
+    const sectionId = (entry.section_id as string | null | undefined) ?? null;
+    if (!state.disciplines.some((d) => d.id === entry.discipline_id)) {
+      return { violation: { detail: EV_MSG.disciplineMissing }, status: 404 };
+    }
+    if (sectionId !== null && !sectionIds.has(sectionId)) return { violation: { detail: EV_MSG.sectionForeign }, status: 422 };
+    if (String(entry.end_date) < String(entry.start_date)) return { violation: { detail: EV_MSG.windowRangeInvalid }, status: 422 };
+    windows[evWindowKey(String(entry.discipline_id), sectionId)] = { start: String(entry.start_date), end: String(entry.end_date) };
+  }
+  return { windows };
+}
+
+function evPutWindows(state: EvState, req: EvRequest, site: { id: string; status: string }, body: EvBody): void {
+  const top = bodySchemaViolation(EV_BODY.windows, body);
+  if (top !== null) return req.send(422, top);
+  const parsed = evWindowsFrom(state, site.id, body.windows, "windows", EV_ARRAYS.windows.get("windows"));
+  if ("violation" in parsed) return req.send(parsed.status, parsed.violation);
+  const draft = evDraftForWrite(state, req, site);
+  if (draft === null) return;
+  // TAM DEĞİŞTİRME: gövdede olmayan ezme silinir.
+  const saved = evWriteDraft(state, site.id, draft, { ...draft.inputs, windows: parsed.windows });
+  req.send(200, evBudgetView(state, site.id, saved));
+}
+
+function evFillFromCatalog(state: EvState, req: EvRequest, site: { id: string; status: string }): void {
+  if (site.status === "completed") return req.send(409, { detail: EV_MSG.budgetCompleted });
+  const tree = evBuildTree(state, site.id, evCurrentRevision(state, site.id));
+  const plan: { item: EvItemNode; entry: EvCatalogEntry }[] = [];
+  const ambiguous: EvSchemas["AmbiguousItemOut"][] = [];
+  let unmatched = 0;
+  for (const node of tree.disciplines) {
+    for (const item of node.groups.flatMap((g) => g.items)) {
+      // B1 sapma 8: yalnız oranı BOŞ (None) yaprak doldurulur; açık 0 bir karardır.
+      if (!item.leaves.some((lf) => lf.unitMhr === null)) continue;
+      const candidates = evCandidates(state, item, node.discipline?.id ?? null);
+      const linked = candidates.filter((c) => c.out.match === "linked");
+      const exact = candidates.filter((c) => c.out.match === "exact");
+      if (linked.length > 0) plan.push({ item, entry: linked[0].entry });
+      else if (exact.length === 1) plan.push({ item, entry: exact[0].entry });
+      else if (exact.length > 1) {
+        ambiguous.push({ boq_item_id: item.tpl.id, code: item.tpl.code, description: item.tpl.description, candidates: exact.map((c) => c.out) });
+      } else unmatched += 1;
+    }
+  }
+  let leafCount = 0;
+  if (plan.length > 0) {
+    const draft = evDraftForWrite(state, req, site);
+    if (draft === null) return;
+    const items = { ...draft.inputs.items };
+    const leaves = { ...draft.inputs.leaves };
+    for (const { item, entry } of plan) {
+      items[item.tpl.id] = { ...items[item.tpl.id], catalogItemId: entry.id };
+      for (const leaf of item.leaves.filter((lf) => lf.unitMhr === null)) {
+        leaves[leaf.key] = { ...leaves[leaf.key], unitMhr: entry.standardUnitMhr, rateSource: "catalog" };
+        leafCount += 1;
+      }
+    }
+    evWriteDraft(state, site.id, draft, { ...draft.inputs, items, leaves });
+  }
+  const out: EvSchemas["FillOut"] = {
+    filled_item_count: plan.length,
+    filled_leaf_count: leafCount,
+    ambiguous_count: ambiguous.length,
+    unmatched_count: unmatched,
+    ambiguous,
+  };
+  req.send(200, out);
+}
+
+function evSchedule(state: EvState, req: EvRequest, siteId: string): void {
+  const revision = evResolveRevision(state, siteId, req.query.get("revision_id"));
+  if (revision === undefined) return req.send(404, { detail: EV_MSG.revisionMissing });
+  req.send(200, evScheduleOut(state, siteId, revision));
+}
+
+function evPreview(state: EvState, req: EvRequest, siteId: string, body: EvBody): void {
+  const top =
+    (bodySchemaViolation(EV_BODY.preview, body) as EvViolationBody | null) ??
+    evArrayViolation(body.distributions, ["distributions"], EV_ARRAYS.preview.get("distributions")) ??
+    evEachViolation((body.distributions as unknown[] | undefined) ?? [], EV_BODY.distributionPair, "distributions");
+  if (top !== null) return req.send(422, top);
+  const parsed = evWindowsFrom(state, siteId, body.windows, "windows", EV_ARRAYS.preview.get("windows"));
+  if ("violation" in parsed) return req.send(parsed.status, parsed.violation);
+  const revisionId = typeof body.revision_id === "string" ? body.revision_id : null;
+  const revision = evResolveRevision(state, siteId, revisionId);
+  if (revision === undefined) return req.send(404, { detail: EV_MSG.revisionMissing });
+  const distributions: Record<string, EvDistribution> = {};
+  for (const pair of (body.distributions as { discipline_id: string; distribution: EvDistribution }[] | undefined) ?? []) {
+    distributions[pair.discipline_id] = pair.distribution;
+  }
+  // KALICI DEĞİL: ezmeler yalnız bu yanıtın hesabına girer.
+  req.send(200, evPreviewOut(state, siteId, revision, { distributions, windows: parsed.windows }));
+}
+
+function evFreeze(state: EvState, req: EvRequest, site: { id: string; status: string }, body: EvBody): void {
+  const violation = bodySchemaViolation(EV_BODY.freeze, body);
+  if (violation !== null) return req.send(422, violation);
+  if (site.status === "completed") return req.send(409, { detail: EV_MSG.budgetCompleted });
+  const revisions = evRevisionsOf(state, site.id);
+  const draft = revisions.find((r) => r.out.status === "draft");
+  if (draft === undefined) return req.send(409, { detail: EV_MSG.noDraft });
+  const tree = evBuildTree(state, site.id, draft);
+  if (tree.blockers.length > 0) {
+    const codes = tree.blockers.map((b) => `${b.code} (${b.count})`).join(", ");
+    return req.send(422, { detail: `${EV_MSG.freezeBlocked}: ${codes}` });
+  }
+  const frozen: EvRevisionRecord = {
+    inputs: draft.inputs,
+    // O günkü BOQ olduğu gibi dondurulur (fark yok = boş anlık görüntü farkı).
+    snapshot: { qty: {}, absentLeaves: [], absentGroups: [] },
+    out: {
+      ...draft.out,
+      status: "active",
+      frozen_at: EV_NOW,
+      frozen_by: EV_ACTOR,
+      last_edited_at: EV_NOW,
+      ...(typeof body.name === "string" ? { name: body.name } : {}),
+      ...(typeof body.description === "string" ? { description: body.description } : {}),
+    },
+  };
+  state.revisions.set(
+    site.id,
+    revisions.map((r) => {
+      if (r.out.id === draft.out.id) return frozen;
+      return r.out.status === "active" ? { ...r, out: { ...r.out, status: "archived" as const } } : r;
+    }),
+  );
+  req.send(200, frozen.out);
 }
