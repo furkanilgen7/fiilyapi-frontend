@@ -18,6 +18,50 @@
   border-color: var(--color-warning-border, #fcd34d);
   background: var(--color-warning-surface, #fef3c7);
 }
+
+/*
+ * 🔴 PLN-F3.6b LİDER PLANI §1.1: "KPI 2 Küm. PF (kart zemini bant)" — Küm.
+ * PF / Bu hafta PF kartlarının ZEMİNİ bant rengine döner (`pf-band-cell.css`
+ * TOKENLERİYLE AYNI — hücre boyaması ile kart boyaması AYNI paletten).
+ * `none`/`high` modifikatörü BİLEREK BOŞ: veri yoksa ya da üst kademe
+ * (küm./hafta PF ayarında tanımsız) varsayılan kart zemini kalır.
+ */
+.ev-panel-kpi__card--band-red {
+  border-color: var(--color-danger-strong);
+  background: var(--color-danger-soft);
+}
+.ev-panel-kpi__card--band-amber {
+  border-color: var(--color-warning-body-text);
+  background: var(--color-warning-soft);
+}
+.ev-panel-kpi__card--band-green {
+  border-color: var(--color-success-deep);
+  background: var(--color-success-soft);
+}
+.ev-panel-kpi__band-desc {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+.ev-panel-kpi__band-desc::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+.ev-panel-kpi__card--band-red .ev-panel-kpi__band-desc {
+  color: var(--color-danger-strong);
+}
+.ev-panel-kpi__card--band-amber .ev-panel-kpi__band-desc {
+  color: var(--color-warning-body-text);
+}
+.ev-panel-kpi__card--band-green .ev-panel-kpi__band-desc {
+  color: var(--color-success-deep);
+}
 .ev-panel-kpi__label {
   font-size: var(--text-xs);
   font-weight: 600;
@@ -61,6 +105,17 @@
 .ev-panel-kpi__dev {
   font-family: var(--font-mono);
   font-weight: 600;
+}
+/*
+ * LİDER DENETİMİ KUSURU (2. tur) — KPI 1 "Sapma" SABİT gri basıyordu;
+ * mockup Panel:513/524 `devFg` eşiği ±2 puan (bkz. `panel-kpi-format.ts
+ * varianceTone`, AYNI eşik disiplin tablosunun Sapma kolonuyla PAYLAŞILIR).
+ */
+.ev-panel-kpi__dev--negative {
+  color: var(--color-danger-strong);
+}
+.ev-panel-kpi__dev--positive {
+  color: var(--color-success-deep);
 }
 .ev-panel-kpi__ratio {
   display: flex;

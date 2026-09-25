@@ -5,35 +5,36 @@ import { PanelKpiRow } from "./PanelKpiRow";
 import { panelReportFixture } from "./panel-fixtures";
 
 const KPI = panelReportFixture().kpi!;
+const PF_RANGE = { redBelow: "0.95", greenFrom: "1.00" };
 
 describe("PanelKpiRow", () => {
   it("6 kart basar (role=listitem)", () => {
-    render(<PanelKpiRow kpi={KPI} weekNo={21} distributeHref="/gunluk-kayit" canDistribute />);
+    render(<PanelKpiRow kpi={KPI} weekNo={21} distributeHref="/gunluk-kayit" canDistribute pfRange={PF_RANGE} reportDay="2026-09-24" />);
     expect(screen.getAllByRole("listitem")).toHaveLength(6);
   });
 
   it("kpi null ise HİÇBİR ŞEY basmaz (uydurma veri yok)", () => {
-    const { container } = render(<PanelKpiRow kpi={null} weekNo={21} distributeHref="/gunluk-kayit" canDistribute />);
+    const { container } = render(<PanelKpiRow kpi={null} weekNo={21} distributeHref="/gunluk-kayit" canDistribute pfRange={PF_RANGE} reportDay="2026-09-24" />);
     expect(container).toBeEmptyDOMElement();
   });
 
   it("Kümülatif PF bandı bant sınıfını taşır", () => {
-    render(<PanelKpiRow kpi={KPI} weekNo={21} distributeHref="/gunluk-kayit" canDistribute />);
-    expect(screen.getByText("1,03")).toHaveClass(`pf-band-cell--${KPI.pf_cum_band}`);
+    render(<PanelKpiRow kpi={KPI} weekNo={21} distributeHref="/gunluk-kayit" canDistribute pfRange={PF_RANGE} reportDay="2026-09-24" />);
+    expect(screen.getByText("0,97")).toHaveClass(`pf-band-cell--${KPI.pf_cum_band}`);
   });
 
   it("hafta numarası başlığa eklenir", () => {
-    render(<PanelKpiRow kpi={KPI} weekNo={21} distributeHref="/gunluk-kayit" canDistribute />);
+    render(<PanelKpiRow kpi={KPI} weekNo={21} distributeHref="/gunluk-kayit" canDistribute pfRange={PF_RANGE} reportDay="2026-09-24" />);
     expect(screen.getByText("Bu hafta PF · H21")).toBeInTheDocument();
   });
 
   it("canDistribute=false → 'Dağıt →' bağlantısı BASILMAZ (salt okunur varyant)", () => {
-    render(<PanelKpiRow kpi={KPI} weekNo={21} distributeHref="/gunluk-kayit" canDistribute={false} />);
+    render(<PanelKpiRow kpi={KPI} weekNo={21} distributeHref="/gunluk-kayit" canDistribute={false} pfRange={PF_RANGE} reportDay="2026-09-24" />);
     expect(screen.queryByRole("link", { name: /Dağıt/ })).toBeNull();
   });
 
   it("canDistribute=true → 'Dağıt →' bağlantısı verilen href'e gider", () => {
-    render(<PanelKpiRow kpi={KPI} weekNo={21} distributeHref="/projeler/p/santiyeler/s/gunluk-kayit?tarih=2026-09-24" canDistribute />);
+    render(<PanelKpiRow kpi={KPI} weekNo={21} distributeHref="/projeler/p/santiyeler/s/gunluk-kayit?tarih=2026-09-24" canDistribute pfRange={PF_RANGE} reportDay="2026-09-24" />);
     expect(screen.getByRole("link", { name: /Dağıt/ })).toHaveAttribute(
       "href",
       "/projeler/p/santiyeler/s/gunluk-kayit?tarih=2026-09-24",
@@ -41,8 +42,35 @@ describe("PanelKpiRow", () => {
   });
 
   it("Durum rozeti geride (▼) glifini INLINE SVG ile basar (çıplak glif YOK)", () => {
-    render(<PanelKpiRow kpi={KPI} weekNo={21} distributeHref="/gunluk-kayit" canDistribute />);
+    render(<PanelKpiRow kpi={KPI} weekNo={21} distributeHref="/gunluk-kayit" canDistribute pfRange={PF_RANGE} reportDay="2026-09-24" />);
     expect(screen.getByText("Geride")).toBeInTheDocument();
+  });
+
+  /**
+   * 🔴 LİDER DENETİMİ KUSURU (P3, 2026-09-26, mockup Panel:181 ölçümü) —
+   * "Dağıtılmamış saat" alt satırı tarihi EKSİK basıyordu ("puantajı · tüm
+   * şantiye"); mockup "24.09 puantajı · tüm şantiye" der.
+   */
+  it("Dağıtılmamış saat alt satırı tarihi içerir: '24.09 puantajı · tüm şantiye'", () => {
+    render(<PanelKpiRow kpi={KPI} weekNo={21} distributeHref="/gunluk-kayit" canDistribute pfRange={PF_RANGE} reportDay="2026-09-24" />);
+    expect(screen.getByText("24.09 puantajı · tüm şantiye")).toBeInTheDocument();
+  });
+
+  /**
+   * PLN-F3.6b LİDER PLANI §1.1 · "KPI 2 Küm. PF (kart zemini bant) +
+   * 'Sarı bant · 0,95–1,00'" — kartın KENDİSİ bant rengini taşır (yalnız
+   * değer metni DEĞİL), alt satırda bant adı + eşik aralığı basılır.
+   */
+  it("Küm. PF kartı bant rengini TAŞIR + eşik aralığını basar (fikstür amber, 0,97)", () => {
+    render(<PanelKpiRow kpi={KPI} weekNo={21} distributeHref="/gunluk-kayit" canDistribute pfRange={PF_RANGE} reportDay="2026-09-24" />);
+    expect(screen.getByText("0,97").closest(".ev-panel-kpi__card")).toHaveClass("ev-panel-kpi__card--band-amber");
+    expect(screen.getByText("Sarı bant · 0,95–1,00")).toBeInTheDocument();
+  });
+
+  it("Bu hafta PF kartı da bant rengini + eşik aralığını basar (fikstür green, 1,03)", () => {
+    render(<PanelKpiRow kpi={KPI} weekNo={21} distributeHref="/gunluk-kayit" canDistribute pfRange={PF_RANGE} reportDay="2026-09-24" />);
+    expect(screen.getByText("1,03").closest(".ev-panel-kpi__card")).toHaveClass("ev-panel-kpi__card--band-green");
+    expect(screen.getByText("Yeşil bant · 1,00 ve üstü")).toBeInTheDocument();
   });
 });
 
@@ -109,7 +137,7 @@ describe("PanelKpiRow · TABLO GÜDÜMLÜ biçim denetimi (F3.3-ek)", () => {
   }
 
   it.each(CASES)("$label → ekranda '$expected' basılır (ham virgül DEĞİL)", (testCase) => {
-    render(<PanelKpiRow kpi={DISTINCT_KPI} weekNo={21} distributeHref="/gunluk-kayit" canDistribute />);
+    render(<PanelKpiRow kpi={DISTINCT_KPI} weekNo={21} distributeHref="/gunluk-kayit" canDistribute pfRange={PF_RANGE} reportDay="2026-09-24" />);
     // Kendi kendini denetler: beklenen değer KAYNAK (API) alanının ham hâliyle
     // AYNI OLAMAZ — aksi hâlde bu satır biçimleyiciyi gerçekten sınamaz,
     // yalnız tesadüfen eşleşir (raw API her zaman nokta ondalıklı ASCII string'dir).
@@ -118,7 +146,7 @@ describe("PanelKpiRow · TABLO GÜDÜMLÜ biçim denetimi (F3.3-ek)", () => {
   });
 
   it("tüm değer alanları TEK render'da bir arada doğru basılır (kartlar birbirine karışmaz)", () => {
-    render(<PanelKpiRow kpi={DISTINCT_KPI} weekNo={21} distributeHref="/gunluk-kayit" canDistribute />);
+    render(<PanelKpiRow kpi={DISTINCT_KPI} weekNo={21} distributeHref="/gunluk-kayit" canDistribute pfRange={PF_RANGE} reportDay="2026-09-24" />);
     for (const testCase of CASES) {
       assertShown(testCase);
     }

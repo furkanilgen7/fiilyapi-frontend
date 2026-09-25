@@ -72,16 +72,21 @@ beforeEach(() => {
 });
 
 describe("PanelScreen · başlık", () => {
-  it("başlığı ve firma · proje · şantiye kırıntısını basar", () => {
+  it("başlığı basar", () => {
     vi.mocked(usePanelMocked).mockReturnValue(queryStub());
     render(<PanelScreen {...baseProps()} />);
     expect(screen.getByRole("heading", { name: "Planlama Paneli" })).toBeInTheDocument();
-    expect(screen.getByText("FİİL Yapı · Güneşkent Konut · A-Blok Şantiyesi")).toBeInTheDocument();
   });
 
-  it("bilinmeyen alanlar boşsa kırıntı basılmaz", () => {
+  /**
+   * 🔴 PLN-F3.6b LİDER DENETİMİ KUSURU: mockup'ta başlık altında firma ·
+   * proje · şantiye alt satırı YOK (kırıntı kabuğun işi) — POZİTİF KONTROL:
+   * `companyName`/`projectName`/`siteName` doluyken bile bu metin BASILMAZ.
+   */
+  it("firma · proje · şantiye alt satırı HİÇ BASILMAZ (kırıntı zaten taşır)", () => {
     vi.mocked(usePanelMocked).mockReturnValue(queryStub());
-    render(<PanelScreen {...baseProps({ siteName: "", companyName: "", projectName: "" })} />);
+    render(<PanelScreen {...baseProps()} />);
+    expect(screen.queryByText("FİİL Yapı · Güneşkent Konut · A-Blok Şantiyesi")).toBeNull();
     expect(screen.queryByText(/·/)).toBeNull();
   });
 
@@ -150,6 +155,18 @@ describe("PanelScreen · hâl dalları", () => {
     expect(screen.getByRole("table", { name: "Disiplin tablosu" })).toBeInTheDocument();
     expect(screen.getByText("Uyarılar")).toBeInTheDocument();
   });
+
+  /**
+   * LİDER TALEBİ (2026-09-26, S32 turu) — mockup Panel:542 `bt: '1.5px
+   * dashed #cbd5e1'`: `non_direct` satırı `rowClassName` ile ayırt edici
+   * sınıf alır (kesikli üst kenarlık CSS'te — `panel-screen.css`).
+   */
+  it("non_direct satırı kesikli-kenarlık sınıfını taşır (mockup Panel:542)", () => {
+    vi.mocked(usePanelMocked).mockReturnValue(queryStub({ data: panelReportFixture() }));
+    render(<PanelScreen {...baseProps()} />);
+    const nonDirectRow = screen.getByText("Genel / Dolaylı · bütçe dışı").closest("tr");
+    expect(nonDirectRow?.className).toContain("ev-panel-table__row--non-direct");
+  });
 });
 
 describe("PanelScreen · filtre çubuğu ve baseline çipi", () => {
@@ -161,6 +178,36 @@ describe("PanelScreen · filtre çubuğu ve baseline çipi", () => {
     expect(screen.getByRole("combobox", { name: "Disiplin" })).toBeInTheDocument();
     expect(screen.getByRole("group", { name: "Kendi / Taşeron" })).toBeInTheDocument();
     expect(document.querySelector(".ev-panel__baseline-chip")?.textContent).toMatch(/Rev 1/);
+  });
+
+  /**
+   * LİDER TALEBİ (2026-09-26, S32 turu) — mockup Panel:353-355 İKİ satırlı:
+   * 1. satır gezgin+aralık+disiplin, 2. satır Kendi/Taşeron/Hepsi (sol) +
+   * Baseline çipi (sağ) AYNI satırda. Önceki tur yalnız "sarmıyor mu"
+   * bekçiledi — bu test SATIR GRUPLAMASINI doğrudan sınar.
+   */
+  it("araç çubuğu İKİ satır: gezgin 1. satırda, Kendi/Taşeron + Baseline AYNI 2. satırda (mockup Panel:353-355)", () => {
+    vi.mocked(usePanelMocked).mockReturnValue(queryStub({ data: panelReportFixture() }));
+    render(<PanelScreen {...baseProps()} />);
+    const rows = document.querySelectorAll(".ev-panel__toolbar-row");
+    expect(rows).toHaveLength(2);
+    expect(rows[0]!.querySelector('nav[aria-label="Gün gezgini"]')).not.toBeNull();
+    expect(rows[0]!.textContent).not.toContain("Baseline");
+    expect(rows[1]!.querySelector(".ev-panel__baseline-chip")).not.toBeNull();
+    expect(rows[1]!.textContent).toContain("Kendi");
+    expect(rows[1]!.textContent).toContain("Baseline");
+  });
+
+  /**
+   * LİDER DENETİMİ KUSURU (3. tur, mockup Panel:117 ölçümü) — disiplin
+   * seçicisi kutu İÇİNDE küçük gri büyük harf "DİSİPLİN" öneki taşır
+   * (CSS `text-transform:uppercase`, metin içeriği "Disiplin").
+   */
+  it("disiplin seçici kutusu 'Disiplin' görsel önekini taşır (mockup Panel:117)", () => {
+    vi.mocked(usePanelMocked).mockReturnValue(queryStub({ data: panelReportFixture() }));
+    render(<PanelScreen {...baseProps()} />);
+    const box = screen.getByRole("combobox", { name: "Disiplin" }).closest(".ev-panel__toolbar-select");
+    expect(box?.querySelector(".ev-panel__toolbar-select-label")?.textContent).toBe("Disiplin");
   });
 
   it("disiplin seçenekleri report.disciplines'ten gelir", () => {

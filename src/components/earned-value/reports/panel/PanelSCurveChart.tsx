@@ -8,13 +8,22 @@ import { formatPercent01, formatVariancePoints } from "@/lib/earned-value";
 import type { EvPanelReport } from "@/lib/api/models";
 
 import { indexAt } from "../charts/scale";
-import { S_BASE, S_LEFT, S_RIGHT, S_TOP, S_VIEW_H, S_VIEW_W, sCurveGeometry } from "../charts/s-curve-geometry";
-import { useChartViewScale, toChartViewX } from "./panel-chart-hooks";
+import { S_BASE, S_LEFT, S_RIGHT, S_TOP, S_VIEW_H, S_VIEW_W, sCurveGeometry, type SCurveScaleRange } from "../charts/s-curve-geometry";
+import { useChartViewScale, toChartViewX } from "../charts/use-chart-view-scale";
 import "./panel-charts.css";
 
 export interface PanelSCurveChartProps {
   sCurve: EvPanelReport["s_curve"];
   revisionNumber: number | null;
+  /** Rapor gününün proje günü (`report.day_no`) — ipucunun "Gün N"ini TÜRETMEK için. */
+  dayNo: number | null;
+  /**
+   * S32 (KULLANICI, 2026-09-26) — seçili tarih aralığı (`?aralik=`,
+   * `PanelRange` ile AYNI kümedir; buradan yeniden tanımlanmaz — bkz.
+   * `SCurveScaleRange` yorumu). Y ekseninin DİNAMİK daralmasını sürer
+   * (mockup Panel.dc.html:537-539).
+   */
+  range: SCurveScaleRange;
 }
 
 /**
@@ -22,8 +31,8 @@ export interface PanelSCurveChartProps {
  * ve viewBox mockup'la BİREBİR. İpucu: fare üstündeyse o gün, değilse
  * DURAĞAN "Bugün" (emsal `budget/PreviewCharts.tsx SCurveChart`, CEO n).
  */
-export function PanelSCurveChart({ sCurve, revisionNumber }: PanelSCurveChartProps) {
-  const geo = sCurveGeometry(sCurve, (day) => formatDateDots(day).slice(0, 5));
+export function PanelSCurveChart({ sCurve, revisionNumber, dayNo, range }: PanelSCurveChartProps) {
+  const geo = sCurveGeometry(sCurve, (day) => formatDateDots(day).slice(0, 5), range);
   const { ref, scale } = useChartViewScale(S_VIEW_W);
   const [hover, setHover] = useState<number | null>(null);
 
@@ -34,6 +43,19 @@ export function PanelSCurveChart({ sCurve, revisionNumber }: PanelSCurveChartPro
   const shownIndex = hover ?? (geo.today ? geo.today.index : null);
   const shownPoint = shownIndex !== null ? geo.points[shownIndex] : undefined;
   const shownRaw = shownIndex !== null ? sCurve[shownIndex] : undefined;
+  /**
+   * 🔴 PLN-F3.6b LİDER DENETİMİ KUSURU (yan yana ölçümde bulundu): ipucu
+   * "Gün {index+1}" basıyordu — `sCurve` dizisindeki YEREL sıra numarası
+   * (1..4), rapor gününün GERÇEK proje günü (142) DEĞİL. `geo.today` HANGİ
+   * noktanın "bugün" olduğunu ZATEN bilir (`is_future===false` son nokta) —
+   * proje günü `dayNo`dan (report.day_no) bu ÇAPA noktaya göre GÖRECELİ
+   * ofsetlenir (dizinin SON elemanı "bugün" SAYILMAZ; `geo.today` dizinin
+   * ortasında da olabilir, ör. sonrasında gelecek bir nokta varsa). `dayNo`
+   * ya da çapa YOKSA "Gün N" HİÇ basılmaz — uydurma sayı YOK.
+   */
+  const todayIndex = geo.today ? geo.today.index : null;
+  const shownDayNo =
+    dayNo !== null && todayIndex !== null && shownIndex !== null ? dayNo - (todayIndex - shownIndex) : null;
 
   return (
     <div className="ev-panel-chart-head">
@@ -109,7 +131,7 @@ export function PanelSCurveChart({ sCurve, revisionNumber }: PanelSCurveChartPro
           <ChartTooltip
             x={Math.round(shownPoint.x * scale)}
             y={Math.round((shownPoint.actualY ?? shownPoint.plannedY) * scale)}
-            title={`${formatDateLong(shownRaw.day)} · Gün ${shownPoint.index + 1}`}
+            title={shownDayNo === null ? formatDateLong(shownRaw.day) : `${formatDateLong(shownRaw.day)} · Gün ${shownDayNo}`}
             rows={[
               { label: "Planlı", value: shownRaw.planned_pct_cum === null ? "" : formatPercent01(shownRaw.planned_pct_cum) },
               { label: "Gerçek", value: shownRaw.progress_pct_cum === null ? "" : formatPercent01(shownRaw.progress_pct_cum) },

@@ -44,8 +44,14 @@ export interface PfTrendGeometry {
   rollingPath: string;
   bandZones: PfBandZone[];
   yTicks: { y: number; label: string }[];
-  xTicks: { x: number; label: string }[];
-  today: { day: string; x: number; y: number | null; rolling: number | null } | null;
+  /**
+   * LİDER DENETİMİ KUSURU (P2, 2026-09-26) — sağdaki SON tık `PF_RIGHT`e
+   * (viewBox kenarına) oturur; `text-anchor="middle"` metnin YARISINI
+   * viewBox DIŞINA taşırıp KIRPTIRIYORDU ("28.09" → "28.0" görünüyordu).
+   * Yalnız SON tık `"end"` hizalanır (metin sola doğru büyür, kırpılmaz).
+   */
+  xTicks: { x: number; label: string; align: "middle" | "end" }[];
+  today: { index: number; day: string; x: number; y: number | null; rolling: number | null } | null;
 }
 
 function num(v: string | null): number | null {
@@ -71,10 +77,21 @@ export function pfBandZones(thresholds: DailyPfThresholds): PfBandZone[] {
   return zones.filter((zone) => zone.height > 0);
 }
 
+/**
+ * LİDER DENETİMİ KUSURU (P2, 2026-09-26) — `PfPoint` şemasında `is_future`
+ * YOK (yalnız `day`/`pf_day`/`pf_rolling`); "Bugün" ÖNCEDEN dizinin SON
+ * elemanıydı — fikstür/backend `pf_trend`e GELECEK günleri de eklerse
+ * (S-eğrisi/GİR ile AYNI pencere) ipucu yanlış günü "Bugün" diye basıyor,
+ * nokta da gelecek güne ÇİZİLİYORDU. `reportDay` (`report.day`, ISO)
+ * karşılaştırma ÇAPASI: `day > reportDay` → GELECEK, ne nokta ne de "Bugün"
+ * o günü GÖSTERİR. ISO `YYYY-MM-DD` sözlüksel karşılaştırma TARİH sırasıyla
+ * AYNIDIR (`Date` ARİTMETİĞİ YOK — ürün kodu tarih envanteri kuralı).
+ */
 export function pfTrendGeometry(
   points: readonly PfPoint[],
   thresholds: DailyPfThresholds,
   labelForDay: (day: string) => string,
+  reportDay: string,
 ): PfTrendGeometry {
   const n = points.length;
   if (n === 0) {
@@ -82,13 +99,14 @@ export function pfTrendGeometry(
   }
 
   const xs = points.map((_, i) => indexScale(i, n, PF_LEFT, PF_RIGHT));
+  const isFuture = (day: string) => day > reportDay;
   const scaled: PfTrendPoint[] = points.map((p, i) => {
     const v = num(p.pf_day);
-    return { day: p.day, x: xs[i]!, y: v === null ? null : y(v) };
+    return { day: p.day, x: xs[i]!, y: v === null || isFuture(p.day) ? null : y(v) };
   });
 
   const rollingKnown = points
-    .map((p, i) => ({ x: xs[i]!, v: num(p.pf_rolling) }))
+    .map((p, i) => ({ x: xs[i]!, v: isFuture(p.day) ? null : num(p.pf_rolling) }))
     .filter((p): p is { x: number; v: number } => p.v !== null);
   const rollingPath = rollingKnown.map((p, i) => `${i === 0 ? "M" : "L"}${p.x} ${y(p.v)}`).join("");
 
@@ -99,16 +117,34 @@ export function pfTrendGeometry(
     { value: PF_Y_MIN, label: "0,80" },
   ].map((t) => ({ y: y(t.value), label: t.label }));
 
-  const xTicks = tickIndices(n, MAX_X_TICKS).map((i) => ({ x: xs[i]!, label: labelForDay(points[i]!.day) }));
+  const xTickIndices = tickIndices(n, MAX_X_TICKS);
+  const lastTickIndex = xTickIndices[xTickIndices.length - 1];
+  const xTicks = xTickIndices.map((i) => ({
+    x: xs[i]!,
+    label: labelForDay(points[i]!.day),
+    align: (i === lastTickIndex ? "end" : "middle") as "middle" | "end",
+  }));
 
-  const lastIndex = n - 1;
-  const lastPoint = points[lastIndex]!;
-  const today = {
-    day: lastPoint.day,
-    x: xs[lastIndex]!,
-    y: scaled[lastIndex]!.y,
-    rolling: num(lastPoint.pf_rolling),
-  };
+  // "Bugün" = rapor günü — dizideki SON GELECEK-OLMAYAN nokta (dizi
+  // GELECEĞE uzanıyorsa bile, ÖNCEKİ kusurun tersi: dizinin SON elemanı
+  // DEĞİL).
+  let todayIndex: number | null = null;
+  for (let i = points.length - 1; i >= 0; i -= 1) {
+    if (!isFuture(points[i]!.day)) {
+      todayIndex = i;
+      break;
+    }
+  }
+  const today =
+    todayIndex === null
+      ? null
+      : {
+          index: todayIndex,
+          day: points[todayIndex]!.day,
+          x: xs[todayIndex]!,
+          y: scaled[todayIndex]!.y,
+          rolling: num(points[todayIndex]!.pf_rolling),
+        };
 
   return { points: scaled, rollingPath, bandZones: pfBandZones(thresholds), yTicks, xTicks, today };
 }

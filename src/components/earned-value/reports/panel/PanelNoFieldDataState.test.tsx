@@ -7,7 +7,7 @@ import type { EvPanelReport } from "@/lib/api/models";
 type CurvePoint = EvPanelReport["s_curve"][number];
 
 function point(overrides: Partial<CurvePoint> = {}): CurvePoint {
-  return { day: "2026-09-24", is_future: false, planned_pct_cum: "48.5", progress_pct_cum: null, status: null, variance: null, ...overrides };
+  return { day: "2026-09-24", is_future: false, planned_pct_cum: "0.485", progress_pct_cum: null, status: null, variance: null, ...overrides };
 }
 
 describe("PanelNoFieldDataState (b)", () => {

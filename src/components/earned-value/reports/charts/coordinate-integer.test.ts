@@ -54,8 +54,8 @@ describe("sCurveGeometry — tam piksel", () => {
     const points: EvPanelReport["s_curve"] = Array.from({ length: 7 }, (_, i) => ({
       day: `2026-09-${String(i + 1).padStart(2, "0")}`,
       is_future: false,
-      planned_pct_cum: String((i + 1) * 11.111),
-      progress_pct_cum: String((i + 1) * 7.777),
+      planned_pct_cum: String((i + 1) * 0.11111),
+      progress_pct_cum: String((i + 1) * 0.07777),
       status: "normal",
       variance: "0",
     }));
@@ -101,7 +101,7 @@ describe("pfTrendGeometry — tam piksel", () => {
       pf_day: String(0.87 + i * 0.013),
       pf_rolling: String(0.91 + i * 0.011),
     }));
-    const geo = pfTrendGeometry(points, thresholds, (d) => d);
+    const geo = pfTrendGeometry(points, thresholds, (d) => d, "2026-09-11");
     for (const p of geo.points) expectAllIntegers(`point ${p.day}`, [p.x, ...(p.y === null ? [] : [p.y])]);
     expectAllIntegers("rollingPath", extractNumbers(geo.rollingPath));
     for (const zone of geo.bandZones) expectAllIntegers(`zone ${zone.color}`, [zone.y, zone.height]);

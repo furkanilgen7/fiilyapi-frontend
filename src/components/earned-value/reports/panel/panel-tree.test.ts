@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { buildPanelTree, panelRowNodeId } from "./panel-tree";
+import { buildPanelTree, panelDefaultExpanded, panelRowNodeId } from "./panel-tree";
 import type { EvPanelRow } from "./panel-tree";
 
 function row(overrides: Partial<EvPanelRow>): EvPanelRow {
@@ -80,5 +80,34 @@ describe("buildPanelTree", () => {
     ];
     const tree = buildPanelTree(rows);
     expect(tree[0]!.children!.map((c) => c.id)).toEqual(["d:B", "d:A"]);
+  });
+});
+
+/**
+ * PLN-F3.6b LİDER DÜZELTMESİ (Panel.dc.html:454 `open: { KAB: true }`) —
+ * disiplin süzgeci yoksa SIRADAKİ İLK disiplin açık gelir, süzgeç varsa
+ * SEÇİLİ disiplin açık gelir.
+ */
+describe("panelDefaultExpanded", () => {
+  const DISCIPLINE_ROWS = [
+    row({ node_id: "genel", parent_id: null, scope: "overall" }),
+    row({ node_id: "d:KAB", parent_id: null, scope: "discipline", name: "Kaba İnşaat" }),
+    row({ node_id: "d:DUV", parent_id: null, scope: "discipline", name: "Duvar & Sıva" }),
+  ];
+
+  it("süzgeç yok → SIRADAKİ İLK disiplin açık gelir", () => {
+    expect(panelDefaultExpanded(DISCIPLINE_ROWS, null)).toEqual(["d:KAB"]);
+  });
+
+  it("süzgeç VAR → SEÇİLİ disiplin açık gelir (ilk disiplin DEĞİL)", () => {
+    expect(panelDefaultExpanded(DISCIPLINE_ROWS, "d:DUV")).toEqual(["d:DUV"]);
+  });
+
+  it("seçili disiplin satırlarda YOKSA boş küme döner (çökmez)", () => {
+    expect(panelDefaultExpanded(DISCIPLINE_ROWS, "d:YOK")).toEqual([]);
+  });
+
+  it("hiç disiplin satırı yoksa (yalnız Genel) boş küme döner", () => {
+    expect(panelDefaultExpanded([row({ node_id: "genel", parent_id: null, scope: "overall" })], null)).toEqual([]);
   });
 });

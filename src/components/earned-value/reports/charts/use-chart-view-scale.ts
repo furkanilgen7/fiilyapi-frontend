@@ -3,9 +3,16 @@
 import { useLayoutEffect, useRef, useState } from "react";
 
 /**
- * PLN-F3.3 · Grafik SVG'lerinin ORTAK viewBox↔CSS-piksel ölçek kancası —
- * emsal `budget/PreviewCharts.tsx useViewScale`/`toViewX` (KOPYALANMADI,
- * panel kapsamına TAŞINDI, dört grafik ortak kullanır).
+ * PLN-F3.3 · Grafik SVG'lerinin ORTAK viewBox↔CSS-piksel ölçek kancası.
+ *
+ * LİDER DRY TALEBİ (2026-09-26) — ÖNCEDEN `reports/panel/panel-chart-hooks.ts`
+ * altındaydı (yalnız Panel'in dört grafiği kullanıyordu); GİR (Günlük
+ * İlerleme Raporu) trend ipucu AYNI ölçeği `useTrendChartScale` adıyla
+ * KOPYALAMIŞTI (`reports/daily/DailyReportScreen.tsx`, sabit `viewWidth=420`
+ * ile). Bu dosya `reports/charts/` ORTAK katmanına taşındı — iki ekran da
+ * BURADAN alır, kopya SİLİNİR (C kendi kopyasını kaldırır). Davranış
+ * DEĞİŞMEDİ: `useChartViewScale(viewWidth)` parametreli — GİR tarafı
+ * `useChartViewScale(TREND_VIEW_WIDTH)` çağırarak AYNI sonucu üretir.
  *
  * Durağan varsayılan ipucu (fare grafikte değilken) pencere boyu
  * değiştiğinde de doğru konumlanmalı — bu yüzden ölçek `resize`te de

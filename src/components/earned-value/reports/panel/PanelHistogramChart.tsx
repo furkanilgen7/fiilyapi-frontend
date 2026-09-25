@@ -8,7 +8,7 @@ import type { EvPanelReport } from "@/lib/api/models";
 
 import { bandIndexAt } from "../charts/scale";
 import { HG_BASE, HG_LEFT, HG_RIGHT, HG_TOP, HG_VIEW_H, HG_VIEW_W, histogramGeometry } from "../charts/histogram-geometry";
-import { useChartViewScale, toChartViewX } from "./panel-chart-hooks";
+import { useChartViewScale, toChartViewX } from "../charts/use-chart-view-scale";
 import "./panel-charts.css";
 
 export interface PanelHistogramChartProps {

@@ -12,7 +12,7 @@
 import type { EvPanelReport } from "@/lib/api/models";
 import { compareDecimalStrings } from "@/lib/earned-value";
 
-import { bandScale, bandWidth, tickIndices, valueScale } from "./scale";
+import { bandScale, bandWidth, niceAxisMax, tickIndices, valueScale } from "./scale";
 
 export const HG_VIEW_W = 460;
 export const HG_VIEW_H = 196;
@@ -71,7 +71,10 @@ export function histogramGeometry(
   }
 
   const values = weeks.flatMap((w) => [num(w.planned_people), num(w.actual_people)]);
-  const yMax = Math.max(HG_MIN_MAX, Math.ceil(Math.max(0, ...values) / 10) * 10);
+  // LİDER TALEBİ (P1) — günlük çubuk grafiğiyle ORTAK "güzel sayı" üretici
+  // (`niceAxisMax`, charts/scale.ts); önceki `ceil/10*10` küçük değerlerde
+  // TESADÜFEN nizami çıkıyordu, artık iki grafik de AYNI kuralı paylaşır.
+  const yMax = niceAxisMax(Math.max(0, ...values), Y_TICK_COUNT, HG_MIN_MAX);
   const slot = bandWidth(n, HG_LEFT, HG_RIGHT);
   const barWidth = Math.round(Math.max(1, slot * BAR_RATIO));
 

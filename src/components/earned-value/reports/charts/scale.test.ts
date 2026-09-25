@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { bandIndexAt, bandScale, bandWidth, fillSplit, indexAt, indexScale, tickIndices, valueScale } from "./scale";
+import { bandIndexAt, bandScale, bandWidth, fillSplit, indexAt, indexScale, niceAxisMax, niceTickStep, tickIndices, valueScale } from "./scale";
 
 describe("indexScale", () => {
   it("ilk indeks left'e, son indeks right'a düşer", () => {
@@ -144,5 +144,42 @@ describe("fillSplit — iki eğrinin İLERİDE/GERİDE dolgusu", () => {
   it("< 2 noktada boş dizi döner (çökmez)", () => {
     expect(fillSplit([0], [1], [1])).toEqual({ ahead: "", behind: "" });
     expect(fillSplit([], [], [])).toEqual({ ahead: "", behind: "" });
+  });
+});
+
+/**
+ * LİDER TALEBİ (P1, 2026-09-26) — "güzel sayı" tık üretici, mockup
+ * Panel:271 SABİT "400/300/200/100/0" ile ölçüldü (günlük çubuk fikstürü
+ * maksimum ~345 üretir → 5 nokta/4 aralıkla üst sınır 400 olmalı).
+ */
+describe("niceTickStep", () => {
+  it("86,25 (345/4) → 100 (1-2-2,5-5 merdiveninde 8,625 normalize → 10)", () => {
+    expect(niceTickStep(86.25)).toBe(100);
+  });
+
+  it("0 ya da negatif → 1 (çökmez)", () => {
+    expect(niceTickStep(0)).toBe(1);
+    expect(niceTickStep(-5)).toBe(1);
+  });
+
+  it("normalize 1-2-2,5-5 basamaklarını sırayla verir", () => {
+    expect(niceTickStep(0.9)).toBe(1);
+    expect(niceTickStep(1.5)).toBe(2);
+    expect(niceTickStep(2.2)).toBe(2.5);
+    expect(niceTickStep(4)).toBe(5);
+  });
+});
+
+describe("niceAxisMax", () => {
+  it("maksimum 345, 5 nokta (4 aralık) → 400 (mockup Panel:271 birebir)", () => {
+    expect(niceAxisMax(345, 5)).toBe(400);
+  });
+
+  it("floor'un ALTINA DÜŞMEZ (ör. veri yok/az → taban değeri korunur)", () => {
+    expect(niceAxisMax(5, 5, 40)).toBe(40);
+  });
+
+  it("maksimum 0 → floor'a düşer (negatif/çökme yok)", () => {
+    expect(niceAxisMax(0, 5, 40)).toBe(40);
   });
 });

@@ -12,7 +12,7 @@
 import type { EvPanelReport } from "@/lib/api/models";
 import { compareDecimalStrings } from "@/lib/earned-value";
 
-import { bandScale, bandWidth, tickIndices, valueScale } from "./scale";
+import { bandScale, bandWidth, niceAxisMax, tickIndices, valueScale } from "./scale";
 
 export const D_VIEW_W = 460;
 export const D_VIEW_H = 196;
@@ -73,7 +73,9 @@ export function dailyBarsGeometry(points: readonly BarPoint[], labelForDay: (day
   }
 
   const values = points.flatMap((p) => [num(p.earned_day), num(p.spent_day)]);
-  const yMax = Math.max(D_MIN_MAX, Math.ceil(Math.max(0, ...values) / 10) * 10);
+  // LİDER TALEBİ (P1) — "çirkin" ceil/10*10 KALDIRILDI, ortak `niceAxisMax`
+  // (charts/scale.ts) 1-2-2,5-5 × 10^n merdiveniyle yuvarlar.
+  const yMax = niceAxisMax(Math.max(0, ...values), Y_TICK_COUNT, D_MIN_MAX);
   const slot = bandWidth(n, D_LEFT, D_RIGHT);
   const barWidth = Math.round(Math.max(1, slot * BAR_RATIO));
 

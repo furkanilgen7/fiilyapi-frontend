@@ -61,10 +61,16 @@ describe("dailyBarsGeometry", () => {
     expect(geo.today?.day).toBe("2026-09-24");
   });
 
-  it("yMax en az D_MIN_MAX (40); büyük değerlerde 10'a yuvarlanarak büyür", () => {
+  /**
+   * LİDER TALEBİ (P1, 2026-09-26) — ÖNCEDEN `ceil(max/10)*10` KULLANIYORDU
+   * ("355" → 360, 4'e bölününce 90/180/270/360 gibi ÇİRKİN aralıklar). Artık
+   * ORTAK `niceAxisMax` (charts/scale.ts) 1-2-2,5-5×10^n merdiveniyle
+   * yuvarlar — mockup Panel:271 SABİT "400/300/200/100/0" ile ÖLÇÜLDÜ.
+   */
+  it("yMax en az D_MIN_MAX (40); büyük değerlerde 'güzel sayı' merdivenine yuvarlanır", () => {
     const geoSmall = dailyBarsGeometry([bar({ earned_day: "5", spent_day: "5" })], label);
     expect(geoSmall.yMax).toBe(40);
     const geoBig = dailyBarsGeometry([bar({ earned_day: "355", spent_day: "10" })], label);
-    expect(geoBig.yMax).toBe(360);
+    expect(geoBig.yMax).toBe(400);
   });
 });

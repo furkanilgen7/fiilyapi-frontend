@@ -10,6 +10,36 @@
  * baseline'ı oynatır.
  */
 
+/**
+ * LİDER TALEBİ (P1, 2026-09-26) — "güzel sayı" eksen tık üreticisi: D3
+ * `nice-ticks` emsali, 1-2-2,5-5 × 10^n merdiveni. Günlük çift-çubuk grafiği
+ * ÖNCEDEN `ceil(max/10)*10` sonra 4 EŞİT PARÇAya bölüyordu — bu, maksimum
+ * değer (ör. 345) 4'e TAM BÖLÜNMEYEN bir sayıya yuvarlanınca "88/175/263/350"
+ * gibi ÇİRKİN aralıklar üretiyordu (mockup Panel:271 SABİT "400/300/200/
+ * 100/0" basar). Histogram (`histogram-geometry.ts`) küçük değerlerde
+ * (ör. 40) TESADÜFEN zaten "güzel" çıkıyordu — ikisi de BURADAN paylaşır.
+ */
+const NICE_TICK_STEPS = [1, 2, 2.5, 5, 10] as const;
+
+/** Kaba bir adım büyüklüğünü en yakın "güzel" adıma yuvarlar (yukarı). */
+export function niceTickStep(roughStep: number): number {
+  if (roughStep <= 0) return 1;
+  const magnitude = 10 ** Math.floor(Math.log10(roughStep));
+  const normalized = roughStep / magnitude;
+  const step = NICE_TICK_STEPS.find((s) => normalized <= s) ?? 10;
+  return step * magnitude;
+}
+
+/**
+ * Eksen üst sınırı — `tickCount` eşit "güzel" adımla `maxValue`i (ve
+ * `floor`u) KAPSAR. `tickCount` eksendeki NOKTA sayısıdır (5 → 4 aralık).
+ */
+export function niceAxisMax(maxValue: number, tickCount: number, floor = 0): number {
+  const clamped = Math.max(0, maxValue);
+  const step = niceTickStep(clamped / Math.max(1, tickCount - 1));
+  return Math.max(floor, step * (tickCount - 1));
+}
+
 /** Eşit aralıklı bir dizi indeksini `[left, right]` aralığına eşler. */
 export function indexScale(index: number, count: number, left: number, right: number): number {
   if (count <= 1) return Math.round(left);

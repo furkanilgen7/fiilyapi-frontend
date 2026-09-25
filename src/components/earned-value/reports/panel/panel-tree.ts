@@ -10,7 +10,17 @@
 import type { TreeNode } from "../../common/tree-table/tree-rows";
 import type { EvPanelReport } from "@/lib/api/models";
 
-export type EvPanelRow = EvPanelReport["rows"][number];
+/**
+ * S32 (KULLANICI, 2026-09-26): `non_direct` satırının alt etiketi (dolaylı
+ * kalem adları) backend'de EV-BORC-9 olarak açılacak — alan adı HENÜZ BELLİ
+ * DEĞİL. `indirect_item_names` YEREL bir tip genişletmesidir, openapi
+ * şemasının PARÇASI DEĞİL: backend alan adını netleştirince bu satır TEK
+ * NOKTADAN openapi türüne bağlanır (istemci ŞİMDİ türetmez — plan §S32).
+ * Alan yoksa (`undefined`) alt etiket HİÇ BASILMAZ.
+ */
+export type EvPanelRow = EvPanelReport["rows"][number] & {
+  readonly indirect_item_names?: readonly string[];
+};
 
 /**
  * `PanelRow.node_id` toplama satırlarında (Genel, Genel–Kendi, Genel–Taşeron,
@@ -46,4 +56,29 @@ export function buildPanelTree(rows: readonly EvPanelRow[]): TreeNode<EvPanelRow
     });
 
   return build(null);
+}
+
+/**
+ * PLN-F3.6b LİDER DÜZELTMESİ (Panel.dc.html:454 `open: { KAB: true }`) ·
+ * TreeTable'ın başlangıç açıklık kümesi — disiplin satırları (`scope ===
+ * "discipline"`) her zaman ÜST DÜZEYDİR (bu dosyadaki `buildPanelTree`
+ * `parent_id: null` verir), yalnız BİRİNİN iş tipi çocukları başlangıçta
+ * AÇIKTIR:
+ *   - Disiplin süzgeci SEÇİLİYSE (`?disiplin=`) → o disiplin açık gelir
+ *     (mockup'ta filtre "tek disiplin gösteriyor").
+ *   - Süzgeç YOKSA → satır SIRASINDAKİ İLK disiplin açılır (mockup'ta KAB).
+ * Seçilen/ilk kimlik satırlarda YOKSA (ör. filtre satırları boşalttıysa) boş
+ * küme döner — TreeTable tamamen kapalı başlar, çökmez.
+ */
+export function panelDefaultExpanded(
+  rows: readonly EvPanelRow[],
+  disciplineId: string | null,
+): readonly string[] {
+  if (disciplineId !== null) {
+    return rows.some((row) => row.scope === "discipline" && row.node_id === disciplineId)
+      ? [disciplineId]
+      : [];
+  }
+  const first = rows.find((row) => row.scope === "discipline" && row.node_id !== null);
+  return first?.node_id ? [first.node_id] : [];
 }

@@ -3,6 +3,7 @@ import { describe, it, expect } from "vitest";
 import { EMPTY_CELL, formatWindKmh as generalFormatWindKmh } from "@/lib/format";
 
 import {
+  formatFixedDecimal,
   formatPercent01,
   formatPf,
   formatUnitRate,
@@ -80,6 +81,24 @@ describe("formatVariancePoints — 0–1 sapma → işaretli puan (Panel:470 `sg
   it("veri yok → boş hücre", () => {
     expect(formatVariancePoints(undefined)).toBe(EMPTY_CELL);
   });
+
+  /**
+   * PLN-F3.6b LİDER TALEBİ (C'nin GİR trend "Fark (puan)" satırı için) —
+   * `digits` opsiyonel parametresi. VARSAYILANI DEĞİŞMEZ (geriye uyumlu,
+   * yukarıdaki 1-hane testleri AYNEN geçer); verilirse hem YUVARLAMA hem
+   * BASILAN ondalık sayısı `digits`e göre olur.
+   */
+  it("digits=2 → iki ondalık yuvarlama ve basım: −0,0256 → '−2,56'", () => {
+    expect(formatVariancePoints("-0.0256", 2)).toBe("−2,56");
+  });
+
+  it("digits=0 → tam sayıya yuvarlanır: +0,164 → '+16'", () => {
+    expect(formatVariancePoints("0.164", 0)).toBe("+16");
+  });
+
+  it("digits verilmezse VARSAYILAN (1 hane) DEĞİŞMEZ", () => {
+    expect(formatVariancePoints("-0.026")).toBe("−2,6");
+  });
 });
 
 describe("formatUnitRate — a-s/birim: ≥ 10 → 1 ondalık, aksi 2 (KAT:410 · Q:318-321)", () => {
@@ -110,5 +129,47 @@ describe("formatWindKmh — genel `lib/format`tan YENİDEN İHRAÇ (PLN-F2.1)", 
   it("`@/lib/earned-value` üzerinden gelen fonksiyon genel olanın AYNISIDIR", () => {
     expect(formatWindKmh).toBe(generalFormatWindKmh);
     expect(formatWindKmh("5")).toBe("18 km/sa");
+  });
+});
+
+/**
+ * LİDER TALEBİ (ORTAK, 2026-09-26) — sabit basamaklı ondalık biçimleyici;
+ * B'nin `qurr formatFixedQuantity`si ve C'nin tolerans etiketi BURADAN
+ * çağıracak. `formatPf`in AYNI `roundHalfUp` + `formatFixed` deseni,
+ * genel `digits` parametresiyle.
+ */
+describe("formatFixedDecimal — sabit basamaklı ondalık (ORTAK)", () => {
+  it("'2.0' basamak=1 → '2,0'", () => {
+    expect(formatFixedDecimal("2.0", 1)).toBe("2,0");
+  });
+
+  it("'520' basamak=1 → '520,0' (sondaki sıfır EKLENİR)", () => {
+    expect(formatFixedDecimal("520", 1)).toBe("520,0");
+  });
+
+  it("basamak=0 → tam sayıya yuvarlanır: '2.6' → '3'", () => {
+    expect(formatFixedDecimal("2.6", 0)).toBe("3");
+  });
+
+  it("basamak=2 → '1' → '1,00'", () => {
+    expect(formatFixedDecimal("1", 2)).toBe("1,00");
+  });
+
+  it("tam yarım yukarı (ROUND_HALF_UP): '0.45' basamak=1 → '0,5'", () => {
+    expect(formatFixedDecimal("0.45", 1)).toBe("0,5");
+  });
+
+  it("negatif değer: '-3.14' basamak=1 → '-3,1'", () => {
+    expect(formatFixedDecimal("-3.14", 1)).toBe("-3,1");
+  });
+
+  it("null/geçersiz → EMPTY_CELL", () => {
+    expect(formatFixedDecimal(null, 1)).toBe(EMPTY_CELL);
+    expect(formatFixedDecimal(undefined, 1)).toBe(EMPTY_CELL);
+    expect(formatFixedDecimal("abc", 1)).toBe(EMPTY_CELL);
+  });
+
+  it("binlik ayraç basar: '12345.6' basamak=1 → '12.345,6'", () => {
+    expect(formatFixedDecimal("12345.6", 1)).toBe("12.345,6");
   });
 });

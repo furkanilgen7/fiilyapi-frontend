@@ -8,7 +8,7 @@ import type { EvPanelReport } from "@/lib/api/models";
 
 import { bandIndexAt } from "../charts/scale";
 import { D_BASE, D_LEFT, D_RIGHT, D_TOP, D_VIEW_H, D_VIEW_W, dailyBarsGeometry } from "../charts/daily-bars-geometry";
-import { useChartViewScale, toChartViewX } from "./panel-chart-hooks";
+import { useChartViewScale, toChartViewX } from "../charts/use-chart-view-scale";
 import "./panel-charts.css";
 
 export interface PanelDailyBarsChartProps {

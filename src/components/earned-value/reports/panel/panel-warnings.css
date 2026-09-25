@@ -42,12 +42,21 @@
   gap: var(--space-2);
   align-items: flex-start;
   color: inherit;
+  /* 🔴 LİDER DENETİMİ KUSURU: `<a>`nın tarayıcı VARSAYILAN alt çizgisi
+     mockup'ta YOK — satırın TAMAMI tıklanır, düz metin gibi görünür. */
+  text-decoration: none;
 }
 .ev-panel-warnings__row:last-child {
   border-bottom: none;
 }
 .ev-panel-warnings__row--link:hover {
   background: var(--color-surface-hover, #f8fafc);
+}
+/* 🔴 LİDER DENETİMİ KUSURU: SAAT (Dağıtılmamış saat) satırı mockup'ta amber
+   zeminle VURGULU — yalnız rozet DEĞİL, satırın TAMAMI. */
+.ev-panel-warnings__row--warning,
+.ev-panel-warnings__row--warning.ev-panel-warnings__row--link:hover {
+  background: var(--color-warning-surface, #fef3c7);
 }
 .ev-panel-warnings__badge {
   flex-shrink: 0;

@@ -16,7 +16,8 @@
  */
 import type { EvPanelRow } from "./panel-tree";
 import type { EvWarning } from "@/lib/api/models";
-import { warningMeta, type WarningDestination } from "@/lib/earned-value";
+import { formatPf, warningMeta, type WarningDestination } from "@/lib/earned-value";
+import { EMPTY_CELL, formatDateDots, formatWeekdayShort } from "@/lib/format";
 
 import type { ReportLinks } from "../kit/report-screen";
 
@@ -74,3 +75,80 @@ export function panelWarningHref(warning: EvWarning, links: ReportLinks): string
       return null;
   }
 }
+
+export interface PfOutOfBandGroup {
+  readonly message: string;
+  readonly detail: string;
+  readonly count: number;
+  readonly href: string | null;
+}
+
+/** Uyarının kalem ADI — `rows[node_id === target_id]` BİRLEŞİMİ (lider planı §1.1); eşleşme yoksa `item_name` yedeği. */
+function pfWarningName(warning: EvWarning, rows: readonly EvPanelRow[]): string {
+  const row = warning.target_id === null ? undefined : rows.find((r) => r.node_id === warning.target_id);
+  return row?.name ?? warning.item_name ?? "";
+}
+
+/**
+ * PLN-F3.6b LİDER PLANI §1.1 + §4 · Backend her bant dışı kalem için AYRI
+ * bir `pf_out_of_band` uyarısı üretir ("PF uyarı SAYISI = backend
+ * listesinin uzunluğu"); PANEL bunları TEK karta TOPLAR: başlık "N kalem PF
+ * bant dışı (< eşik)", alt satır "Ad değer · Ad değer · …". Girdi S8
+ * SÜZGECİNDEN SONRA verilir (`filterPanelWarnings` çıktısı) — görünmeyen bir
+ * kalemin PF uyarısı gruba KARIŞMAZ. Hiç `pf_out_of_band` yoksa `null` (kart
+ * BASILMAZ, uydurma "0 kalem" YOK).
+ */
+export function groupPfOutOfBandWarnings(
+  visibleWarnings: readonly EvWarning[],
+  rows: readonly EvPanelRow[],
+  redBelow: string,
+  links: ReportLinks,
+): PfOutOfBandGroup | null {
+  const pf = visibleWarnings.filter((w) => w.code === "pf_out_of_band");
+  if (pf.length === 0) return null;
+  const detail = pf
+    .map((w) => `${pfWarningName(w, rows)} ${w.value === null ? EMPTY_CELL : formatPf(w.value)}`)
+    .join(" · ");
+  return {
+    message: `${pf.length} kalem PF bant dışı (< ${formatPf(redBelow)})`,
+    detail,
+    count: pf.length,
+    href: panelWarningHref(pf[0], links),
+  };
+}
+
+export interface MissingDiaryGroup {
+  readonly message: string;
+  readonly detail: string;
+  readonly count: number;
+  readonly href: string | null;
+}
+
+/**
+ * PLN-F3.6b LİDER DENETİMİ · `pf_out_of_band` İLE AYNI DESEN: backend her
+ * gönderilmemiş GÜN için AYRI bir `missing_diary` uyarısı üretir (`target:
+ * "day"`), Panel bunları TEK karta toplar: "N günlük gönderilmedi" + alt
+ * satır "gg.aa.yyyy Kıs · gg.aa.yyyy Kıs — gün kilitlenmedi". Gün hedefli
+ * olduğu için S8 süzgeci ZATEN uygulanmaz (`filterPanelWarnings`), bu
+ * fonksiyon yalnız GRUPLAR.
+ */
+export function groupMissingDiaryWarnings(visibleWarnings: readonly EvWarning[], links: ReportLinks): MissingDiaryGroup | null {
+  const missing = visibleWarnings.filter((w) => w.code === "missing_diary" && w.target_id !== null);
+  if (missing.length === 0) return null;
+  const detail = `${missing.map((w) => `${formatDateDots(w.target_id!)} ${formatWeekdayShort(w.target_id!)}`).join(" · ")} — gün kilitlenmedi`;
+  return {
+    message: `${missing.length} günlük gönderilmedi`,
+    detail,
+    count: missing.length,
+    href: panelWarningHref(missing[0], links),
+  };
+}
+
+/**
+ * PLN-F3.6b LİDER DENETİMİ · ORAN (`empty_rate`) uyarısının sabit açıklama
+ * kuyruğu — mockup "Buat/priz montajı · Çatı — bütçe ve kazanılmış
+ * hesaplanamıyor". Kuyruk KODA bağlıdır (her `empty_rate` uyarısı için AYNI
+ * cümle — `meta.label`in "ORAN" sabit rozet metniyle AYNI sınıf), TEK bir
+ * kalemin verisinden TÜRETİLMEZ; bu yüzden uydurma SAYI/AD İÇERMEZ.
+ */
+export const EMPTY_RATE_SUFFIX = "bütçe ve kazanılmış hesaplanamıyor";

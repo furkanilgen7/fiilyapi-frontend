@@ -11,6 +11,7 @@ import { TreeTable } from "../../common/tree-table/TreeTable";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
 import { usePanel, type ContractorFilter, type PanelRange } from "@/lib/api/hooks/useEvReports";
 import { isForbidden } from "@/lib/api/unwrap";
+import { bandsFromReport, DEFAULT_PF_BANDS } from "@/lib/earned-value";
 import { EMPTY_CELL, formatDateDots, formatDecimal } from "@/lib/format";
 import type { ReportScreenProps } from "../kit/report-screen";
 
@@ -26,7 +27,7 @@ import { PanelDailyBarsChart } from "./PanelDailyBarsChart";
 import { PanelPfTrendChart } from "./PanelPfTrendChart";
 import { PanelHistogramChart } from "./PanelHistogramChart";
 import { PANEL_COLUMNS } from "./panel-columns";
-import { buildPanelTree } from "./panel-tree";
+import { buildPanelTree, panelDefaultExpanded } from "./panel-tree";
 import "./panel-screen.css";
 
 const RANGE_OPTIONS: readonly SegmentedOption<PanelRange>[] = [
@@ -52,7 +53,10 @@ const OWNER_LABEL: Record<OwnerValue, string> = { own: "Kendi", subcon: "Taşero
  * gider (`usePanel`) — istemci hiçbir satırı/uyarıyı KENDİSİ süzmez, S8
  * görünürlük süzgeci BİLE zaten-filtrelenmiş `report.rows`e göre çalışır.
  */
-export function PanelScreen({ siteId, siteName, companyName, projectName, siteCompleted, links, picker }: ReportScreenProps) {
+// 🔴 `siteName`/`companyName`/`projectName` KULLANILMAZ: `ReportScreenProps`
+// ortak sözleşmesinin parçası (GİR/QURR eyebrow'unda TÜKETİLİR), Panel
+// mockup'ta o alt satırı BASMAZ — kırıntı zaten aynı bilgiyi taşır.
+export function PanelScreen({ siteId, siteCompleted, links, picker }: ReportScreenProps) {
   const permission = useModulePermission("earned_value");
   const url = usePanelUrlState();
   const report = usePanel(siteId, {
@@ -62,7 +66,6 @@ export function PanelScreen({ siteId, siteName, companyName, projectName, siteCo
     contractorType: url.contractorType,
   });
 
-  const breadcrumb = [companyName, projectName, siteName].filter((part) => part !== "").join(" · ");
   const state = panelScreenState({
     siteId,
     isForbidden: isForbidden(report.error),
@@ -74,14 +77,20 @@ export function PanelScreen({ siteId, siteName, companyName, projectName, siteCo
 
   const ownerValue: OwnerValue = url.contractorType ?? "all";
   const canDistribute = permission.canWrite && !siteCompleted;
+  // Küm./hafta PF (KPI 2/3 + uyarılar kartı) AYNI eşik kümesini paylaşır —
+  // `bandsFromReport` API'nin `cumulative` alanını kod tarafının `weekly`
+  // anahtarına eşler (bkz. `bands-adapter.ts`); tek kaynaktan hesaplanır.
+  const pfRange = bandsFromReport(report.data?.pf_bands ?? null)?.weekly ?? DEFAULT_PF_BANDS.weekly;
 
   return (
     <div className="ev-panel">
+      {/*
+       * 🔴 PLN-F3.6b LİDER DENETİMİ KUSURU: mockup'ta başlığın altında firma ·
+       * proje · şantiye alt satırı YOK — bu bilgiyi kabuğun ÜST kırıntısı
+       * (breadcrumb) zaten taşır, ekran onu TEKRAR ETMEZ.
+       */}
       <div className="ev-panel__head">
-        <div>
-          <h1 className="ev-panel__title">Planlama Paneli</h1>
-          {breadcrumb !== "" && <p className="ev-panel__subtitle">{breadcrumb}</p>}
-        </div>
+        <h1 className="ev-panel__title">Planlama Paneli</h1>
         {picker}
       </div>
 
@@ -89,44 +98,73 @@ export function PanelScreen({ siteId, siteName, companyName, projectName, siteCo
         <ReadOnlyStrip variant="compact">Görüntüleyici · yalnız okuma</ReadOnlyStrip>
       )}
 
+      {/*
+       * LİDER TALEBİ (2026-09-26, S32 turu) — mockup Panel.dc.html:353-355
+       * TEK satır DEĞİL, İKİ satırlı bir düzen: 1. satır gezgin + aralık +
+       * disiplin; 2. satır Kendi/Taşeron/Hepsi solda, Baseline çipi sağda.
+       * Önceki tur (F3.6b 8-madde) yalnız "sarmıyor mu" bekçiledi, satır
+       * SAYISINI DEĞİL — bu ayrım (i) kod kusuru sayıldı, aşağıda düzeltildi.
+       */}
       {state === "site" ? null : (
         <div className="ev-panel__toolbar">
-          <ReportDateNav
-            mode="day"
-            day={url.date}
-            dayNo={report.data?.day_no ?? null}
-            weekNo={report.data?.week_no ?? null}
-            min={report.data?.calendar_start ?? null}
-            max={report.data?.calendar_end ?? null}
-            onChange={url.setDate}
-          />
-          <Segmented aria-label="Zaman aralığı" options={RANGE_OPTIONS} value={url.range} onChange={url.setRange} />
-          <Select
-            aria-label="Disiplin"
-            value={url.disciplineId ?? ""}
-            onChange={(event) => url.setDisciplineId(event.target.value === "" ? null : event.target.value)}
-          >
-            <option value="">Tüm disiplinler</option>
-            {(report.data?.disciplines ?? []).map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.name}
-              </option>
-            ))}
-          </Select>
-          <Segmented
-            aria-label="Kendi / Taşeron"
-            options={OWNER_OPTIONS}
-            value={ownerValue}
-            onChange={(value) => url.setContractorType(value === "all" ? null : value)}
-          />
-          {report.data?.revision && (
-            <span className="ev-panel__baseline-chip">
-              Baseline: <b>Rev {report.data.revision.number}</b>
-              {report.data.revision.frozen_at !== null && (
-                <span className="ev-panel__baseline-chip-date">{formatDateDots(report.data.revision.frozen_at.slice(0, 10))}</span>
-              )}
-            </span>
-          )}
+          <div className="ev-panel__toolbar-row">
+            <ReportDateNav
+              mode="day"
+              day={url.date}
+              dayNo={report.data?.day_no ?? null}
+              weekNo={report.data?.week_no ?? null}
+              min={report.data?.calendar_start ?? null}
+              max={report.data?.calendar_end ?? null}
+              onChange={url.setDate}
+            />
+            <Segmented aria-label="Zaman aralığı" options={RANGE_OPTIONS} value={url.range} onChange={url.setRange} />
+            {/*
+             * 🔴 LİDER DENETİMİ KUSURU: `Select` gövdesi (`select-wrap`)
+             * `width:100%` TAŞIR (form alanı varsayılanı) — flex satırda bu,
+             * kalan TÜM genişliği yutar. Mockup kompakt bir açılır liste
+             * gösterir; sarmalayıcı DAR bir genişlik verir (primitive'in
+             * KENDİSİ değiştirilmedi — başka yüzeylerde `width:100%` DOĞRU
+             * varsayılandır).
+             * LİDER DENETİMİ KUSURU (3. tur) — mockup Panel:117 "DİSİPLİN"
+             * küçük gri büyük harf öneki kutu İÇİNDE basar; `<span
+             * aria-hidden>` GÖRSEL öneki taşır (erişilebilir isim `Select`in
+             * `aria-label`inden ZATEN gelir, öneki EKRAN OKUYUCUYA TEKRAR
+             * ETMEZ).
+             */}
+            <div className="ev-panel__toolbar-select">
+              <span className="ev-panel__toolbar-select-label" aria-hidden="true">
+                Disiplin
+              </span>
+              <Select
+                aria-label="Disiplin"
+                value={url.disciplineId ?? ""}
+                onChange={(event) => url.setDisciplineId(event.target.value === "" ? null : event.target.value)}
+              >
+                <option value="">Tüm disiplinler</option>
+                {(report.data?.disciplines ?? []).map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.name}
+                  </option>
+                ))}
+              </Select>
+            </div>
+          </div>
+          <div className="ev-panel__toolbar-row">
+            <Segmented
+              aria-label="Kendi / Taşeron"
+              options={OWNER_OPTIONS}
+              value={ownerValue}
+              onChange={(value) => url.setContractorType(value === "all" ? null : value)}
+            />
+            {report.data?.revision && (
+              <span className="ev-panel__baseline-chip">
+                Baseline: <b>Rev {report.data.revision.number}</b>
+                {report.data.revision.frozen_at !== null && (
+                  <span className="ev-panel__baseline-chip-date">{formatDateDots(report.data.revision.frozen_at.slice(0, 10))}</span>
+                )}
+              </span>
+            )}
+          </div>
         </div>
       )}
 
@@ -141,16 +179,39 @@ export function PanelScreen({ siteId, siteName, companyName, projectName, siteCo
 
       {state === "loaded" && report.data && (
         <>
-          <PanelKpiRow kpi={report.data.kpi} weekNo={report.data.week_no} distributeHref={links.diary(report.data.day)} canDistribute={canDistribute} />
+          <PanelKpiRow
+            kpi={report.data.kpi}
+            weekNo={report.data.week_no}
+            distributeHref={links.diary(report.data.day)}
+            canDistribute={canDistribute}
+            pfRange={pfRange}
+            reportDay={report.data.day}
+          />
 
           <div className="ev-panel__row">
-            <PanelSCurveChart sCurve={report.data.s_curve} revisionNumber={report.data.revision?.number ?? null} />
-            <PanelWarningsCard warnings={report.data.warnings} visibleRows={report.data.rows} links={links} />
+            <PanelSCurveChart
+              sCurve={report.data.s_curve}
+              revisionNumber={report.data.revision?.number ?? null}
+              dayNo={report.data.day_no}
+              range={url.range}
+            />
+            <PanelWarningsCard
+              warnings={report.data.warnings}
+              visibleRows={report.data.rows}
+              links={links}
+              pfRedBelow={pfRange.redBelow}
+              kpi={report.data.kpi}
+            />
           </div>
 
           <div className="ev-panel__charts-grid">
             <PanelDailyBarsChart bars={report.data.bars} />
-            <PanelPfTrendChart pfTrend={report.data.pf_trend} pfBands={report.data.pf_bands ?? null} rangeLabel={RANGE_LABEL[url.range]} />
+            <PanelPfTrendChart
+              pfTrend={report.data.pf_trend}
+              pfBands={report.data.pf_bands ?? null}
+              rangeLabel={RANGE_LABEL[url.range]}
+              reportDay={report.data.day}
+            />
             <PanelHistogramChart histogram={report.data.histogram} rangeLabel={RANGE_LABEL[url.range]} actualBasis={report.data.actual_basis} />
           </div>
 
@@ -164,7 +225,21 @@ export function PanelScreen({ siteId, siteName, companyName, projectName, siteCo
                 Günlük İlerleme Raporu →
               </Link>
             </div>
+            {/*
+             * 🔴 PLN-F3.6b LİDER DÜZELTMESİ (Panel.dc.html:454
+             * `open: { KAB: true }` — görsel spec turunda ölçüldü):
+             * `defaultExpanded` HİÇ verilmiyordu → TreeTable'ın varsayılanı
+             * "none", disiplin/iş tipi satırlarının TAMAMI kapalı
+             * başlıyordu. Mockup yalnız İLK disiplinin (süzgeç yoksa) ya da
+             * SEÇİLİ disiplinin (süzgeç varsa) iş tiplerini açık basar —
+             * `panelDefaultExpanded` bu kuralı hesaplar. `key` disiplin
+             * süzgeci değiştiğinde tabloyu YENİDEN MONTE eder: TreeTable
+             * `defaultExpanded`i yalnız İLK render'da okur (kontrolsüz
+             * durum), `key` olmadan süzgeç değişince açıklık kümesi
+             * BAYATLARDI. `collapsible` KALDI (kullanıcı isterse kapatır).
+             */}
             <TreeTable
+              key={url.disciplineId ?? "all"}
               nodes={buildPanelTree(report.data.rows)}
               columns={PANEL_COLUMNS}
               getLabel={(node) => node.data.name}
@@ -172,6 +247,11 @@ export function PanelScreen({ siteId, siteName, companyName, projectName, siteCo
               ariaLabel="Disiplin tablosu"
               emptyText={`Seçilen filtrede kalem yok · ${url.disciplineId === null ? "Tüm disiplinler" : ((report.data.disciplines ?? []).find((d) => d.id === url.disciplineId)?.name ?? "")} disiplini ${OWNER_LABEL[ownerValue]} ile yapılmıyor.`}
               collapsible
+              defaultExpanded={panelDefaultExpanded(report.data.rows, url.disciplineId)}
+              // LİDER TALEBİ (2026-09-26, S32 turu) — mockup Panel:542
+              // `bt: '1.5px dashed #cbd5e1'`: `non_direct` satırının ÜST
+              // kenarlığı kesikli (diğer satırlar düz `1px solid`).
+              rowClassName={(node) => (node.data.scope === "non_direct" ? "ev-panel-table__row--non-direct" : undefined)}
             />
           </div>
         </>
