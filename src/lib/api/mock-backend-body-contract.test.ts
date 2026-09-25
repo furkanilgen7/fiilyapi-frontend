@@ -27,6 +27,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { EV_DAY_SCENARIO_DAYS, TIMESHEET_LOCK_SCENARIOS, startMockBackend } from "../../../e2e/mock-backend";
 
 import { fieldSchema } from "./form-limits.contract";
+import type { components } from "./schema";
 
 interface Violation {
   readonly type: string;
@@ -694,5 +695,174 @@ describe("🔴 test ikizi ↔ puantaj KİLİDİ (EV gün kilidi TEK kaynak)", ()
     expect(openWeek.day_locks).toEqual([]);
     const written = await send("PUT", WEEK(40), { cells: [...weekCells(openWeek), newCell] });
     expect(written.status, "kilit açıldıktan sonra yazma serbest").toBe(200);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DET-1.1m · günlük DETAY BAĞLAMI + bölüm günlüğü (backend DET-1.B)
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// GEREKÇE: salt okunur günlük detayı (DET-1) TEK istekte kurulur — adlar, gün
+// kilidi, bölüm bağlamında önceki/sonraki. İkiz bunları uydursaydı ya da Kural
+// A'nın SATIR kolunu (başlığı başka bölüm ama bu bölüme miktar yazılmış gün)
+// atlasaydı, istemcinin komşu gezintisi ve bölüm listesi hiçbir kapıyı
+// kırmadan canlıdan ayrışırdı. Kaynak: backend `site_diary/{repository,
+// detail_context,read}.py` (`origin/det-1`).
+//
+// 🔒 AYRI İKİZ: bu blok kayıt YAZAR (başlık bölümü değişir, gönder/geri al,
+// kilit açma) — dosyanın paylaşılan ikizini kirletmemek için kendi örneğini
+// kaldırır.
+
+type DiaryDetail = components["schemas"]["SiteDiaryEntryDetail"];
+type DiaryList = components["schemas"]["SiteDiaryEntryListResponse"];
+
+describe("🔴 test ikizi ↔ günlük detay bağlamı + Kural A (DET-1.B)", () => {
+  let detBase = "";
+  let detClose: () => Promise<void>;
+
+  beforeAll(async () => {
+    const started = startMockBackend(0);
+    detClose = started.close;
+    await new Promise<void>((resolve) => {
+      started.server.once("listening", () => resolve());
+    });
+    const address = started.server.address();
+    if (address === null || typeof address === "string") throw new Error("ikiz port alamadı");
+    detBase = `http://127.0.0.1:${address.port}`;
+  });
+
+  afterAll(async () => {
+    await detClose();
+  });
+
+  async function call<T>(method: string, route: string, body?: unknown): Promise<{ status: number; json: T }> {
+    const response = await fetch(`${detBase}${route}`, {
+      method,
+      headers: { authorization: "Bearer t", "content-type": "application/json" },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    const text = await response.text();
+    return { status: response.status, json: (text === "" ? {} : JSON.parse(text)) as T };
+  }
+
+  async function detail(entryId: string, sectionId?: string): Promise<DiaryDetail> {
+    const query = sectionId === undefined ? "" : `?section_id=${sectionId}`;
+    const { status, json } = await call<DiaryDetail>("GET", `/diary/${entryId}${query}`);
+    expect(status, `GET /diary/${entryId}${query}`).toBe(200);
+    return json;
+  }
+
+  async function list(query: string): Promise<DiaryList> {
+    const { status, json } = await call<DiaryList>("GET", `/sites/s-1/diary?${query}`);
+    expect(status, `GET /sites/s-1/diary?${query}`).toBe(200);
+    return json;
+  }
+
+  const OCT = "year=2026&month=10";
+
+  it("adlar: şantiye/proje/başlık bölümü/oluşturan/gönderen — gönderilmiş kayıtta dolu, taslakta null", async () => {
+    const submitted = await detail("d-1");
+    expect(submitted).toMatchObject({
+      site_name: "A-Blok Şantiyesi",
+      project_name: "Kule A",
+      section_name: "Kat 6–10 Kaba İnşaat",
+      created_by_name: "Sercan Öztürk",
+      submitted_by: "u-2",
+      submitted_by_name: "Sercan Öztürk",
+    });
+    const draft = await detail("d-2");
+    expect(draft).toMatchObject({ section_name: "Zemin Kat Kaba İnşaat", submitted_by: null, submitted_by_name: null });
+    // Başlıksız (şantiye geneli) kayıt: bölüm adı null.
+    expect((await detail("d-3")).section_name).toBeNull();
+  });
+
+  it("satır `section_name` (Bölümsüz → null) · firma satırı `subcontractor_name` (firmasız → null)", async () => {
+    const locked = await detail("d-4");
+    const byKey = new Map(locked.lines.map((line) => [`${line.boq_item_id}:${line.section_id ?? "none"}`, line.section_name]));
+    expect(byKey.get("bi-3:sec-1")).toBe("Kat 6–10 Kaba İnşaat");
+    expect(byKey.get("bi-5:none")).toBeNull();
+    expect(locked.worker_counts.map((row) => [row.subcontractor_id, row.subcontractor_name])).toEqual([
+      ["sub-2", "Çelik İnşaat Taah."],
+    ]);
+    // Bölüm taşımayan iskelet satırı + firmasız işçi satırı.
+    const skeleton = await detail("d-1");
+    expect(skeleton.lines.every((line) => line.section_name === null)).toBe(true);
+    expect(skeleton.worker_counts.every((row) => row.subcontractor_name === null)).toBe(true);
+  });
+
+  it("Kural A · BAŞLIK kolu: sec-1 (Ekim) = başlığı sec-1 olan altı gün, en yeni önce", async () => {
+    const page = await list(`${OCT}&section_id=sec-1`);
+    expect(page.total).toBe(6);
+    expect(page.items.map((item) => item.id)).toEqual(["d-8", "d-7", "d-6", "d-5", "d-4", "d-9"]);
+    // Başka bölüm SÜZÜLÜR (d-2 sec-2 · Temmuz).
+    const july = await list("year=2026&month=7&section_id=sec-1");
+    expect(july.items.map((item) => item.id)).toEqual(["d-1"]);
+  });
+
+  it("Kural A · sayfalama: `total` süzülmüş küme, `offset/limit` aynı sıralamayla dilimler", async () => {
+    const page = await list(`${OCT}&section_id=sec-1&limit=2&offset=2`);
+    expect(page).toMatchObject({ total: 6, limit: 2, offset: 2 });
+    expect(page.items.map((item) => item.id)).toEqual(["d-6", "d-5"]);
+  });
+
+  it("başka şantiyenin / olmayan bölüm → 422 (sessizce boş liste DEĞİL) · liste ve detay", async () => {
+    const foreign = await call<{ detail: string }>("GET", "/sites/s-2/diary?section_id=sec-1");
+    expect(foreign).toEqual({ status: 422, json: { detail: "Seçilen bölüm bu şantiyeye ait değil" } });
+    const missing = await call<{ detail: string }>("GET", "/diary/d-1?section_id=sec-yok");
+    expect(missing.status).toBe(422);
+  });
+
+  it("önceki/sonraki: bağlamsız = şantiye · `?section_id=` = bölümün Kural A kümesi · uçlarda null", async () => {
+    const site = await detail("d-1");
+    expect(site).toMatchObject({ prev_id: null, prev_entry_date: null, next_id: "d-2", next_entry_date: "2026-07-16" });
+    // sec-1 bağlamında d-2 (sec-2) ATLANIR.
+    const section = await detail("d-1", "sec-1");
+    expect(section).toMatchObject({ prev_id: null, prev_entry_date: null, next_id: "d-9", next_entry_date: "2026-10-02" });
+    // Son gün: sonraki yok.
+    expect(await detail("d-8", "sec-1")).toMatchObject({ prev_id: "d-7", next_id: null, next_entry_date: null });
+  });
+
+  it("gün kilidi = EV gün kilidi (TEK kaynak): kilitli, kilitsiz, kilit açılınca", async () => {
+    expect(await detail("d-4")).toMatchObject({ locked: true, lock_report_date: "2026-10-05" });
+    expect(await detail("d-1")).toMatchObject({ locked: false, lock_report_date: null });
+    for (const entryId of ["d-4", "d-5", "d-6", "d-7", "d-8", "d-9"]) {
+      const entry = await detail(entryId);
+      const { json: day } = await call<DayViewLike>("GET", `/sites/s-1/earned-value/days/${entry.entry_date}`);
+      expect(entry.locked, `${entryId} kilidi EV gününden ayrıştı`).toBe(day.lock.locked);
+      expect(entry.lock_report_date, entryId).toBe(day.lock.locked ? day.lock.report_date : null);
+    }
+    const unlockDay = EV_DAY_SCENARIO_DAYS.unlockTarget;
+    expect(await detail("d-9")).toMatchObject({ entry_date: unlockDay, locked: true, lock_report_date: "2026-10-02" });
+    const opened = await call("POST", `/sites/s-1/earned-value/days/${unlockDay}/unlock`, { reason: "Günlük düzeltmesi" });
+    expect(opened.status).toBe(200);
+    expect(await detail("d-9")).toMatchObject({ locked: false, lock_report_date: null });
+  });
+
+  it("gönder/geri al: gönderen damgası `submitted_at` ile birlikte yazılır ve temizlenir", async () => {
+    const reopened = await call<DiaryDetail>("POST", "/diary/d-1/reopen");
+    expect(reopened.json).toMatchObject({ status: "draft", submitted_by: null, submitted_by_name: null });
+    const resubmitted = await call<DiaryDetail>("POST", "/diary/d-1/submit");
+    expect(resubmitted.json).toMatchObject({ status: "submitted", submitted_by: "u-1", submitted_by_name: "Ahmet Yılmaz" });
+  });
+
+  it("Kural A · SATIR kolu: başlığı başka bölüm ama bu bölüme miktar satırı olan gün listeye ve komşulara girer (bir kez)", async () => {
+    // d-8: satırı bi-3 × sec-1. Başlığı sec-2'ye taşınınca YALNIZ satır koluyla sec-1'dedir.
+    const moved = await call<DiaryDetail>("PATCH", "/diary/d-8", { section_id: "sec-2" });
+    expect(moved.status).toBe(200);
+    expect(moved.json.section_name).toBe("Zemin Kat Kaba İnşaat");
+
+    const sec1 = await list(`${OCT}&section_id=sec-1`);
+    expect(sec1.total).toBe(6);
+    expect(sec1.items.map((item) => item.id)).toContain("d-8");
+    // Başlık kolu da işler: sec-2 artık d-8'i başlıktan görür.
+    const sec2 = await list(`${OCT}&section_id=sec-2`);
+    expect(sec2.items.map((item) => item.id)).toEqual(["d-8"]);
+    // İki kol birden tutan gün (d-4: başlık sec-1 + satır sec-1) TEK kez.
+    expect(sec1.items.filter((item) => item.id === "d-4")).toHaveLength(1);
+
+    // Komşu da aynı kümeden: d-7'nin sec-1 bağlamında sonrakisi satır kolundaki d-8.
+    expect(await detail("d-7", "sec-1")).toMatchObject({ next_id: "d-8", next_entry_date: "2026-10-09" });
+    // sec-3'te ne başlık ne satır → komşu yok.
+    expect(await detail("d-8", "sec-3")).toMatchObject({ prev_id: null, next_id: null });
   });
 });
