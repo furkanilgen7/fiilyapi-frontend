@@ -11,10 +11,13 @@ const SECTIONS = [
   { id: "sec-k15", name: "Kat 1–5" },
 ];
 
+/** Saf işlev `Pick<…, "section_id" | "section_name" | "section_line_count">` alır; fikstür TAM o dilim. */
+type LinkageItem = Pick<SiteDiaryEntryListItem, "section_id" | "section_name" | "section_line_count">;
+
 const item = (
   sectionId: string | null,
-  extra: Partial<Pick<SiteDiaryEntryListItem, "section_name" | "section_line_count">> = {},
-) => ({ section_id: sectionId, section_name: null, section_line_count: null, ...extra }) as SiteDiaryEntryListItem;
+  extra: Partial<Pick<LinkageItem, "section_name" | "section_line_count">> = {},
+): LinkageItem => ({ section_id: sectionId, section_name: null, section_line_count: null, ...extra }) satisfies LinkageItem;
 
 describe("sectionDiaryRowLinkage", () => {
   it("başlığı BU bölüm olan gün işaretlenmez (null)", () => {

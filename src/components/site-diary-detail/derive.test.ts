@@ -13,11 +13,47 @@ import {
 
 const CURRENT = { id: "sec-k610", name: "Kat 6–10 Kaba İnşaat" };
 
+const SECTION_NAMES: Readonly<Record<string, string>> = {
+  [CURRENT.id]: CURRENT.name,
+  "sec-k15": "Kat 1–5 İnce İşler",
+};
+
 function line(sectionId: string | null): SiteDiaryLineRead {
-  return { id: `l-${sectionId}`, section_id: sectionId } as SiteDiaryLineRead;
+  return {
+    id: `l-${sectionId}`,
+    boq_item_id: "bi-1",
+    code: "03.001",
+    description: "C25/30 Beton",
+    unit: "m³",
+    unit_price: "1520.00",
+    quantity: "12.000",
+    cumulative_quantity: "120.000",
+    line_amount: "18240.00",
+    section_id: sectionId,
+    section_name: sectionId === null ? null : (SECTION_NAMES[sectionId] ?? null),
+  } satisfies SiteDiaryLineRead;
 }
 
-function entry(overrides: Partial<SiteDiaryEntryDetail> = {}): SiteDiaryEntryDetail {
+/**
+ * Saf türevler `Pick<SiteDiaryEntryDetail, …>` alır; fikstür de TAM bu dilimi
+ * `satisfies` ile kurar (tam detay zarfı bu dosyanın konusu değil — cast yok,
+ * dilimdeki her zorunlu alan tsc bekçisinde).
+ */
+type DerivedEntry = Pick<
+  SiteDiaryEntryDetail,
+  | "section_id"
+  | "section_name"
+  | "lines"
+  | "status"
+  | "created_at"
+  | "created_by_name"
+  | "submitted_at"
+  | "submitted_by_name"
+  | "locked"
+  | "lock_report_date"
+>;
+
+function entry(overrides: Partial<DerivedEntry> = {}): DerivedEntry {
   return {
     section_id: CURRENT.id,
     section_name: CURRENT.name,
@@ -30,7 +66,7 @@ function entry(overrides: Partial<SiteDiaryEntryDetail> = {}): SiteDiaryEntryDet
     lock_report_date: null,
     lines: [],
     ...overrides,
-  } as SiteDiaryEntryDetail;
+  } satisfies DerivedEntry;
 }
 
 describe("formatDayMonthDots", () => {

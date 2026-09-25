@@ -14,6 +14,7 @@ import {
   SITE_DIARY_ENTRIES_QUERY_KEY,
   SITE_DIARY_ENTRY_QUERY_KEY,
   SITE_DIARY_SUMMARY_QUERY_KEY,
+  type SiteDiaryEntryDetail,
 } from "./useSiteDiary";
 import { backendClient } from "@/lib/api/client";
 import { submitBlockedReasons } from "@/lib/api/error-message";
@@ -27,7 +28,44 @@ vi.mock("@/lib/api/client", () => ({
 
 const SITE_ID = "s-1";
 const ENTRY_ID = "d-1";
-const DETAIL = { id: ENTRY_ID, site_id: SITE_ID, status: "draft" };
+/** Yazma uçlarının yanıtı TAM detaydır (hook yalnız `id` + `site_id` okur). */
+const DETAIL = {
+  id: ENTRY_ID,
+  site_id: SITE_ID,
+  project_id: "p-1",
+  entry_date: "2026-07-15",
+  section_id: null,
+  weather: "sunny",
+  temperature_c: null,
+  work_done: null,
+  chief_note: null,
+  safety_meeting_held: false,
+  ppe_checked: false,
+  has_incident: false,
+  incident_note: null,
+  status: "draft",
+  submitted_at: null,
+  created_by: "u-2",
+  created_at: "2026-07-15T08:00:00Z",
+  updated_at: "2026-07-15T09:00:00Z",
+  lines: [],
+  worker_counts: [],
+  lines_total: "0.00",
+  worker_total: 0,
+  // DET-1.B salt-okunur detay alanları — başlıksız taslak: gönderen yok, kilit yok.
+  site_name: "A-Blok Şantiyesi",
+  project_name: "Güneşkent",
+  section_name: null,
+  created_by_name: "Mehmet Demir",
+  submitted_by: null,
+  submitted_by_name: null,
+  locked: false,
+  lock_report_date: null,
+  prev_id: null,
+  next_id: null,
+  prev_entry_date: null,
+  next_entry_date: null,
+} satisfies SiteDiaryEntryDetail;
 
 function spyOnInvalidate(queryClient: QueryClient) {
   return vi.spyOn(queryClient, "invalidateQueries");

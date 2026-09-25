@@ -54,9 +54,20 @@ function entry(overrides: Partial<SiteDiaryEntryDetail> = {}): SiteDiaryEntryDet
     status: "submitted",
     created_at: "2026-09-24T05:12:00Z",
     created_by: "u-1",
+    updated_at: "2026-09-24T15:40:00Z",
+    // İskelet testi: kartların içeriği bu dosyanın konusu değil — boş/kapalı gün.
+    weather: null,
+    temperature_c: null,
+    work_done: null,
+    chief_note: null,
+    safety_meeting_held: false,
+    ppe_checked: false,
+    has_incident: false,
+    incident_note: null,
     lines: [],
     lines_total: "0.00",
     worker_counts: [],
+    worker_total: 0,
     // DET-1.1 sözleşmesi (backend det-1 adc8226)
     site_name: "A-Blok Şantiyesi",
     project_name: "Güneşkent Konut",
@@ -72,7 +83,7 @@ function entry(overrides: Partial<SiteDiaryEntryDetail> = {}): SiteDiaryEntryDet
     next_id: "e-25",
     next_entry_date: "2026-09-25",
     ...overrides,
-  } as SiteDiaryEntryDetail;
+  } satisfies SiteDiaryEntryDetail;
 }
 
 function mockSession(siteDiaryLevel?: string) {

@@ -98,7 +98,7 @@ function entry(overrides: Partial<SiteDiaryEntryDetail> = {}): SiteDiaryEntryDet
     ],
     worker_total: 15,
     ...overrides,
-  } as SiteDiaryEntryDetail;
+  } satisfies SiteDiaryEntryDetail;
 }
 
 function mockSession(permissions: Record<string, string>) {
@@ -120,6 +120,8 @@ function mockEntry(data: SiteDiaryEntryDetail) {
 
 /** S10 · tutar backend'den MASKELİ (null) gelmiş kayıt — gizleme veriye bağlı. */
 function mockMaskedEntry() {
+  // Kasıtlı tip dışı değer: şema `lines_total: string` der, alan maskesi ise `null`
+  // döndürür — sözleşmenin DIŞINDAKİ gerçek yanıt ancak cast ile kurulur.
   mockEntry(entry({ lines_total: null as unknown as string }));
 }
 

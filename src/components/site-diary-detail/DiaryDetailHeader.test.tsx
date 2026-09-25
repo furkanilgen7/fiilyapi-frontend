@@ -1,26 +1,56 @@
 import { describe, it, expect } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 
-import type { SiteDiaryEntryDetail } from "@/lib/api/hooks/useSiteDiary";
+import type { SiteDiaryEntryDetail, SiteDiaryLineRead } from "@/lib/api/hooks/useSiteDiary";
 
 import { DiaryDetailHeader, type DiaryDetailHeaderProps } from "./DiaryDetailHeader";
 
 // DET-1.2 · başlık kartı (mockup D:54-96 + İ:112 + HÖ:89-93 uyarlaması) — sunum.
 
 const CURRENT = { id: "sec-k610", name: "Kat 6–10 Kaba İnşaat" };
+const K15 = { id: "sec-k15", name: "Kat 1–5 İnce İşler" };
+
+function line(id: string, section: { id: string; name: string }): SiteDiaryLineRead {
+  return {
+    id,
+    boq_item_id: `bi-${id}`,
+    code: "03.001",
+    description: "C25/30 Beton",
+    unit: "m³",
+    unit_price: "1520.00",
+    quantity: "12.000",
+    cumulative_quantity: "120.000",
+    line_amount: "18240.00",
+    section_id: section.id,
+    section_name: section.name,
+  } satisfies SiteDiaryLineRead;
+}
 
 function entry(overrides: Partial<SiteDiaryEntryDetail> = {}): SiteDiaryEntryDetail {
   return {
     id: "e-24",
+    site_id: "s-1",
+    project_id: "p-1",
     entry_date: "2026-09-24",
     status: "submitted",
+    weather: "sunny",
+    temperature_c: null,
+    work_done: "6. kat döşeme betonu döküldü.",
+    chief_note: null,
+    safety_meeting_held: true,
+    ppe_checked: true,
+    has_incident: false,
+    incident_note: null,
     section_id: CURRENT.id,
     section_name: CURRENT.name,
     site_name: "A-Blok Şantiyesi",
     project_name: "Güneşkent Konut",
+    created_by: "u-hasan",
     created_at: "2026-09-24T05:12:00Z",
+    updated_at: "2026-09-24T15:40:00Z",
     created_by_name: "Hasan Kaya",
     submitted_at: "2026-09-24T15:40:00Z",
+    submitted_by: "u-sercan",
     submitted_by_name: "Sercan Öztürk",
     locked: false,
     lock_report_date: null,
@@ -29,8 +59,11 @@ function entry(overrides: Partial<SiteDiaryEntryDetail> = {}): SiteDiaryEntryDet
     next_id: "e-25",
     next_entry_date: "2026-09-25",
     lines: [],
+    worker_counts: [],
+    lines_total: "0.00",
+    worker_total: 0,
     ...overrides,
-  } as SiteDiaryEntryDetail;
+  } satisfies SiteDiaryEntryDetail;
 }
 
 function renderHeader(props: Partial<DiaryDetailHeaderProps> = {}) {
@@ -64,7 +97,7 @@ describe("DiaryDetailHeader — meta ve yazar satırı", () => {
 
   it("taslakta 'Henüz gönderilmedi' basılır, Gönderen basılmaz (hâl b)", () => {
     renderHeader({
-      entry: entry({ status: "draft", submitted_at: null, submitted_by_name: null, created_at: "2026-09-25T05:05:00Z" }),
+      entry: entry({ status: "draft", submitted_at: null, submitted_by: null, submitted_by_name: null, created_at: "2026-09-25T05:05:00Z" }),
     });
 
     const author = screen.getByTestId("diary-detail-author");
@@ -79,11 +112,7 @@ describe("DiaryDetailHeader — Kural A 'Satırla bağlı' (hâl liste-b)", () =
       entry: entry({
         section_id: "sec-k15",
         section_name: "Kat 1–5 İnce İşler",
-        lines: [
-          { id: "a", section_id: CURRENT.id },
-          { id: "b", section_id: CURRENT.id },
-          { id: "c", section_id: "sec-k15" },
-        ] as SiteDiaryEntryDetail["lines"],
+        lines: [line("a", CURRENT), line("b", CURRENT), line("c", K15)],
       }),
     });
 

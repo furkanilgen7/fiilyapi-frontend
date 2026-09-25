@@ -47,9 +47,21 @@ const ENTRY = {
   site_name: "A-Blok",
   project_name: "Güneşkent",
   status: "submitted",
+  // Kartların içeriği bu entegrasyonun konusu değil — boş/kapalı gün.
+  weather: null,
+  temperature_c: null,
+  work_done: null,
+  chief_note: null,
+  safety_meeting_held: false,
+  ppe_checked: false,
+  has_incident: false,
+  incident_note: null,
+  created_by: "u-hasan",
   created_at: "2026-09-24T05:12:00Z",
+  updated_at: "2026-09-24T15:40:00Z",
   created_by_name: "Hasan Kaya",
   submitted_at: "2026-09-24T15:40:00Z",
+  submitted_by: "u-sercan",
   submitted_by_name: "Sercan Öztürk",
   locked: false,
   lock_report_date: null,
@@ -76,8 +88,9 @@ const ENTRY = {
   ],
   lines_total: "17205.00",
   worker_counts: [],
+  worker_total: 0,
   own_crew_from_timesheet: [],
-} as unknown as SiteDiaryEntryDetail;
+} satisfies SiteDiaryEntryDetail;
 
 function mockSession(permissions: Record<string, string>) {
   vi.mocked(useSession).mockReturnValue({

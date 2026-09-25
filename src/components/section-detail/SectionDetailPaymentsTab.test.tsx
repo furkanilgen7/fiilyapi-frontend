@@ -10,7 +10,11 @@ import { useBoq } from "@/lib/api/hooks/useBoq";
 import { useSession } from "@/components/shell/SessionProvider";
 import { useTimesheetData } from "@/components/timesheet/useTimesheetData";
 import { buildTimesheetView } from "@/components/timesheet/derive";
-import { useSiteDiaryEntries } from "@/lib/api/hooks/useSiteDiary";
+import {
+  useSiteDiaryEntries,
+  SITE_DIARY_LIST_MAX_LIMIT,
+  type SiteDiaryEntryListResponse,
+} from "@/lib/api/hooks/useSiteDiary";
 import { useSiteSubcontractorPayments } from "@/lib/api/hooks/useSiteSubcontractorPayments";
 import type { SiteSubcontractorPaymentItem } from "@/lib/api/hooks/useSiteSubcontractorPayments";
 import { sectionNav } from "./section-nav.testkit";
@@ -142,7 +146,7 @@ function mockAll(items: SiteSubcontractorPaymentItem[], partial = false) {
     personnelTruncation: { isTruncated: false, shownCount: 0, totalCount: 0 },
   }));
   vi.mocked(useSiteDiaryEntries).mockReturnValue({
-    data: { items: [], total: 0 },
+    data: { items: [], total: 0, limit: SITE_DIARY_LIST_MAX_LIMIT, offset: 0 } satisfies SiteDiaryEntryListResponse,
     isLoading: false,
     isError: false,
     error: null,

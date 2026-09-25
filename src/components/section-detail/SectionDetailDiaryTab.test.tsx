@@ -11,7 +11,7 @@ import { useSession } from "@/components/shell/SessionProvider";
 import { useTimesheetData } from "@/components/timesheet/useTimesheetData";
 import { buildTimesheetView } from "@/components/timesheet/derive";
 import { useSiteDiaryEntries, SITE_DIARY_LIST_MAX_LIMIT } from "@/lib/api/hooks/useSiteDiary";
-import type { SiteDiaryEntryListItem } from "@/lib/api/hooks/useSiteDiary";
+import type { SiteDiaryEntryListItem, SiteDiaryEntryListResponse } from "@/lib/api/hooks/useSiteDiary";
 import { SECTION_NAV_PATHNAME, sectionNav } from "./section-nav.testkit";
 
 // F-BLMSEK · Bölüm Detay › "Günlük Kayıt" sekmesinin EKRAN BAĞLANTISI.
@@ -71,8 +71,11 @@ function listItem(overrides: Partial<SiteDiaryEntryListItem> = {}): SiteDiaryEnt
     lines_total: "182400.00",
     created_by: "u-2",
     created_at: "2026-07-15T08:00:00Z",
+    // DET-1.B (#129): liste `?section_id=` ile istenir → sayım DOLU; başlık bu bölüm.
+    section_name: SECTION_NAME,
+    section_line_count: 3,
     ...overrides,
-  } as SiteDiaryEntryListItem;
+  } satisfies SiteDiaryEntryListItem;
 }
 
 function mockAll(items: SiteDiaryEntryListItem[]) {
@@ -137,7 +140,7 @@ function mockAll(items: SiteDiaryEntryListItem[]) {
     personnelTruncation: { isTruncated: false, shownCount: 0, totalCount: 0 },
   }));
   vi.mocked(useSiteDiaryEntries).mockReturnValue({
-    data: { items, total: items.length },
+    data: { items, total: items.length, limit: SITE_DIARY_LIST_MAX_LIMIT, offset: 0 } satisfies SiteDiaryEntryListResponse,
     isLoading: false,
     isError: false,
     error: null,
@@ -172,7 +175,13 @@ describe("SectionDetailView — Günlük Kayıt sekmesi (F-BLMSEK)", () => {
     // yanıtındaysa listede KALIR — istemci ikinci kez süzmez.
     mockAll([
       listItem({ id: "hedef", entry_date: "2026-07-15" }),
-      listItem({ id: "satirli", section_id: OTHER_SECTION_ID, entry_date: "2026-07-16" }),
+      listItem({
+        id: "satirli",
+        section_id: OTHER_SECTION_ID,
+        section_name: "Peyzaj",
+        section_line_count: 2,
+        entry_date: "2026-07-16",
+      }),
     ]);
     const panel = await openDiaryTab();
 

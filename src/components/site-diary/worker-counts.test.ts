@@ -27,8 +27,10 @@ function entryRow(overrides: Partial<SiteDiaryWorkerCountRead> = {}): SiteDiaryW
     trade: "Kalıpçılar",
     source: "company",
     count: 12,
+    // DET-1.B: firmasız satırda firma adı `null`.
+    subcontractor_name: null,
     ...overrides,
-  } as SiteDiaryWorkerCountRead;
+  } satisfies SiteDiaryWorkerCountRead;
 }
 
 function firmRow(overrides: Partial<SiteDiaryWorkerCountRead> = {}): SiteDiaryWorkerCountRead {
@@ -38,6 +40,7 @@ function firmRow(overrides: Partial<SiteDiaryWorkerCountRead> = {}): SiteDiaryWo
     source: "subcontractor",
     count: 6,
     subcontractor_id: "firm-1",
+    subcontractor_name: "Kaya Duvar",
     hours: "9.0",
     ...overrides,
   });

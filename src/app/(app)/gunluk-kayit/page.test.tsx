@@ -5,7 +5,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import GunlukKayitPage from "./page";
 import { useSession } from "@/components/shell/SessionProvider";
 import { useSiteOptions } from "@/lib/api/hooks/useSiteOptions";
-import { useSiteDiaryEntries, useSiteDiaryEntry } from "@/lib/api/hooks/useSiteDiary";
+import {
+  useSiteDiaryEntries,
+  useSiteDiaryEntry,
+  type SiteDiaryEntryListResponse,
+} from "@/lib/api/hooks/useSiteDiary";
 import { useSitePlanDaySummary } from "@/lib/api/hooks/useSitePlanDaySummary";
 import { useSite } from "@/lib/api/hooks/useSites";
 import { useBoq } from "@/lib/api/hooks/useBoq";
@@ -82,7 +86,7 @@ beforeEach(() => {
     isError: false,
   });
   vi.mocked(useSiteDiaryEntries).mockReturnValue({
-    data: { items: [], total: 0, limit: 50, offset: 0 },
+    data: { items: [], total: 0, limit: 50, offset: 0 } satisfies SiteDiaryEntryListResponse,
     isLoading: false,
     isError: false,
     error: null,

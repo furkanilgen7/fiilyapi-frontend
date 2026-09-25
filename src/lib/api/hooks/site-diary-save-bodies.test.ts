@@ -37,15 +37,24 @@ function line(overrides: Partial<SiteDiaryLineRead>): SiteDiaryLineRead {
     cumulative_quantity: "0.000",
     line_amount: "0.00",
     overrun_reason: null,
+    // DET-1.B: bölümsüz satırda bölüm adı `null` (bölümlü satırlar adı override eder).
+    section_name: null,
     ...overrides,
-  } as SiteDiaryLineRead;
+  } satisfies SiteDiaryLineRead;
 }
 
 /** Üç satır türü: Bölümsüz iskelet · iki bölümlü (biri aşım gerekçeli). */
 const SAVED_LINES: SiteDiaryLineRead[] = [
   line({ id: "l-1", boq_item_id: ITEM_A, section_id: null, quantity: "0.000" }),
-  line({ id: "l-2", boq_item_id: ITEM_A, section_id: SEC_1, quantity: "12.500" }),
-  line({ id: "l-3", boq_item_id: ITEM_B, section_id: SEC_2, quantity: "40.000", overrun_reason: "Ek iş emri" }),
+  line({ id: "l-2", boq_item_id: ITEM_A, section_id: SEC_1, section_name: "Kat 1–5", quantity: "12.500" }),
+  line({
+    id: "l-3",
+    boq_item_id: ITEM_B,
+    section_id: SEC_2,
+    section_name: "Kat 6–10",
+    quantity: "40.000",
+    overrun_reason: "Ek iş emri",
+  }),
 ];
 
 describe("siteDiaryLineKey", () => {
@@ -138,14 +147,24 @@ function worker(overrides: Partial<SiteDiaryWorkerCountRead>): SiteDiaryWorkerCo
     count: 0,
     subcontractor_id: null,
     hours: null,
+    // DET-1.B: firmasız satırda firma adı `null` (firma satırı adı override eder).
+    subcontractor_name: null,
     ...overrides,
-  } as SiteDiaryWorkerCountRead;
+  } satisfies SiteDiaryWorkerCountRead;
 }
 
 /** İki satır türü: kendi ekip (meslek, kaynak) · firma satırı (kişi × saat). */
 const SAVED_WORKERS: SiteDiaryWorkerCountRead[] = [
   worker({ id: "w-1", trade: "Kalıpçılar", source: "company", count: 12 }),
-  worker({ id: "w-2", trade: "Demirciler", source: "subcontractor", count: 8, subcontractor_id: FIRM, hours: "9.0" }),
+  worker({
+    id: "w-2",
+    trade: "Demirciler",
+    source: "subcontractor",
+    count: 8,
+    subcontractor_id: FIRM,
+    subcontractor_name: "Demir Taşeron",
+    hours: "9.0",
+  }),
 ];
 
 describe("siteDiaryWorkerKey", () => {

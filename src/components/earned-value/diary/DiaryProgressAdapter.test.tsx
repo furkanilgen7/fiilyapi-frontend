@@ -14,7 +14,12 @@ import { useSaveDayAllocation, useUnlockDay } from "@/lib/api/hooks/useEvDayMuta
 import { useEvSettings } from "@/lib/api/hooks/useEvSettings";
 import { useEvBudget, useEvBudgetRevisions } from "@/lib/api/hooks/useEvBudget";
 import { useProgressPayments } from "@/lib/api/hooks/useProgressPayments";
-import { useSiteDiaryEntries, useSiteDiaryEntry } from "@/lib/api/hooks/useSiteDiary";
+import {
+  useSiteDiaryEntries,
+  useSiteDiaryEntry,
+  type SiteDiaryEntryDetail,
+  type SiteDiaryEntryListResponse,
+} from "@/lib/api/hooks/useSiteDiary";
 import {
   useCreateSiteDiaryEntry,
   useReopenSiteDiaryEntry,
@@ -109,7 +114,7 @@ function mockSession(permissions: Record<string, string>) {
 }
 
 /** Günün kaydı: bir kalem × bölüm satırı (kalıp · Kat 6–10). */
-function entry() {
+function entry(): SiteDiaryEntryDetail {
   return {
     id: "d-1",
     site_id: "s-1",
@@ -148,19 +153,56 @@ function entry() {
         remaining_quantity: "4027.000",
         overrun_reason: null,
         line_amount: "8835.00",
+        section_name: "Kat 6–10",
       },
     ],
     worker_counts: [],
     lines_total: "8835.00",
     worker_total: 0,
     dropped_orphan_count: 0,
-  };
+    // DET-1.B salt-okunur detay alanları — başlıksız taslak: gönderen yok, kilit yok.
+    site_name: "A-Blok Şantiyesi",
+    project_name: "Güneşkent",
+    section_name: null,
+    created_by_name: "Mühendis",
+    submitted_by: null,
+    submitted_by_name: null,
+    locked: false,
+    lock_report_date: null,
+    prev_id: null,
+    next_id: null,
+    prev_entry_date: null,
+    next_entry_date: null,
+  } satisfies SiteDiaryEntryDetail;
 }
 
 function mockCore() {
   const detail = entry();
   vi.mocked(useSiteDiaryEntries).mockReturnValue(
-    query({ items: [{ id: detail.id, entry_date: TODAY, status: "draft", site_id: "s-1", project_id: "p-1", section_id: null, weather: "sunny", has_incident: false, worker_total: 0, lines_total: "0", created_by: "u-2", created_at: "x" }], total: 1, limit: 50, offset: 0 }),
+    query({
+      items: [
+        {
+          id: detail.id,
+          entry_date: TODAY,
+          status: "draft",
+          site_id: "s-1",
+          project_id: "p-1",
+          section_id: null,
+          // DET-1.B: başlıksız kayıt → ad `null`; dönem listesi süzgeçsiz → sayım `null`.
+          section_name: null,
+          section_line_count: null,
+          weather: "sunny",
+          has_incident: false,
+          worker_total: 0,
+          lines_total: "0",
+          created_by: "u-2",
+          created_at: "x",
+        },
+      ],
+      total: 1,
+      limit: 50,
+      offset: 0,
+    } satisfies SiteDiaryEntryListResponse),
   );
   vi.mocked(useSiteDiaryEntry).mockReturnValue(query(detail));
   vi.mocked(useSite).mockReturnValue(

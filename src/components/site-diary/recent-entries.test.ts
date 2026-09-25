@@ -15,6 +15,9 @@ function listItem(overrides: Partial<SiteDiaryEntryListItem> = {}): SiteDiaryEnt
     project_id: "p-1",
     entry_date: "2026-07-15",
     section_id: null,
+    // DET-1.B: başlıksız kayıtta ad `null`; süzgeçsiz (şantiye) listede sayım `null`.
+    section_name: null,
+    section_line_count: null,
     weather: "sunny",
     has_incident: false,
     status: "submitted",
@@ -23,7 +26,7 @@ function listItem(overrides: Partial<SiteDiaryEntryListItem> = {}): SiteDiaryEnt
     created_by: "u-2",
     created_at: "2026-07-15T08:00:00Z",
     ...overrides,
-  } as SiteDiaryEntryListItem;
+  } satisfies SiteDiaryEntryListItem;
 }
 
 const SECTIONS = [
@@ -123,9 +126,9 @@ describe("buildRecentEntryRows", () => {
 describe("buildRecentEntryRows · PLN-F2.2 ilerleme varyantı (İ:313-327)", () => {
   it("taslak 'Gönderilmedi' basılır, ₺ satırı YOKTUR; varsayılan (GK) varyant değişmez", () => {
     const items = [
-      { id: "a", entry_date: "2026-09-23", status: "draft", weather: null, worker_total: 37, section_id: null, lines_total: "10.00" },
-      { id: "b", entry_date: "2026-09-22", status: "submitted", weather: null, worker_total: 36, section_id: null, lines_total: "5.00" },
-    ] as never;
+      listItem({ id: "a", entry_date: "2026-09-23", status: "draft", weather: null, worker_total: 37, section_id: null, lines_total: "10.00" }),
+      listItem({ id: "b", entry_date: "2026-09-22", status: "submitted", weather: null, worker_total: 36, section_id: null, lines_total: "5.00" }),
+    ];
 
     const progress = buildRecentEntryRows(items, [], 3, "progress");
     const legacy = buildRecentEntryRows(items, [], 3);

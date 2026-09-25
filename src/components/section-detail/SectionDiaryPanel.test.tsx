@@ -30,7 +30,7 @@ function listItem(overrides: Partial<SiteDiaryEntryListItem> = {}): SiteDiaryEnt
     section_name: SECTION_NAME,
     section_line_count: 3,
     ...overrides,
-  } as SiteDiaryEntryListItem;
+  } satisfies SiteDiaryEntryListItem;
 }
 
 /** Detay rotası üreticisinin test ikizi — kimliği yola AYNEN yazar. */
@@ -114,8 +114,8 @@ describe("SectionDiaryPanel", () => {
     renderPanel({
       items: [
         listItem({ id: "hedef", entry_date: "2026-07-15" }),
-        listItem({ id: "satirli", section_id: "sec-other", entry_date: "2026-07-16" }),
-        listItem({ id: "basliksiz", section_id: null, entry_date: "2026-07-17" }),
+        listItem({ id: "satirli", section_id: "sec-other", section_name: "Peyzaj", entry_date: "2026-07-16" }),
+        listItem({ id: "basliksiz", section_id: null, section_name: null, entry_date: "2026-07-17" }),
       ],
     });
 

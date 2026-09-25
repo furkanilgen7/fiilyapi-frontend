@@ -7,7 +7,13 @@ import type { ReactElement } from "react";
 import { SiteDiaryEntryView } from "./SiteDiaryEntryView";
 import { isoDate } from "./derive";
 import type { DiaryCoreActions, DiaryExtension } from "./diary-extension";
-import { useSiteDiaryEntries, useSiteDiaryEntry } from "@/lib/api/hooks/useSiteDiary";
+import {
+  useSiteDiaryEntries,
+  useSiteDiaryEntry,
+  type SiteDiaryEntryDetail,
+  type SiteDiaryEntryListResponse,
+  type SiteDiaryLineRead,
+} from "@/lib/api/hooks/useSiteDiary";
 import {
   useCreateSiteDiaryEntry,
   useReopenSiteDiaryEntry,
@@ -70,7 +76,7 @@ function mockSession(permissions: Record<string, string>) {
   });
 }
 
-function line(overrides: Record<string, unknown> = {}) {
+function line(overrides: Partial<SiteDiaryLineRead> = {}): SiteDiaryLineRead {
   return {
     id: "l-u",
     boq_item_id: "duv",
@@ -86,8 +92,10 @@ function line(overrides: Record<string, unknown> = {}) {
     remaining_quantity: "480.000",
     overrun_reason: null,
     line_amount: "8400.00",
+    // DET-1.B: bölümsüz satırda bölüm adı `null`.
+    section_name: null,
     ...overrides,
-  };
+  } satisfies SiteDiaryLineRead;
 }
 
 const LINES = [
@@ -95,6 +103,7 @@ const LINES = [
   line({
     id: "l-s",
     section_id: "k610",
+    section_name: "Kat 6–10",
     quantity: "52.000",
     leaf_cumulative_quantity: "200.000",
     planned_quantity: "4400.000",
@@ -103,7 +112,7 @@ const LINES = [
   }),
 ];
 
-function entryDetail(overrides: Record<string, unknown> = {}) {
+function entryDetail(overrides: Partial<SiteDiaryEntryDetail> = {}): SiteDiaryEntryDetail {
   return {
     id: "d-1",
     site_id: "s-uuid",
@@ -128,15 +137,36 @@ function entryDetail(overrides: Record<string, unknown> = {}) {
     updated_at: "2026-09-24T09:00:00Z",
     lines: LINES,
     worker_counts: [
-      { id: "w-f", trade: "Kaya Duvar", source: "subcontractor", count: 7, subcontractor_id: "firm-1", hours: "8.0" },
+      {
+        id: "w-f",
+        trade: "Kaya Duvar",
+        source: "subcontractor",
+        count: 7,
+        subcontractor_id: "firm-1",
+        hours: "8.0",
+        subcontractor_name: "Kaya Duvar",
+      },
     ],
     // PLN-F2.1b · G12a — kendi ekip backend'de puantajdan türetilir (salt okunur).
     own_crew_from_timesheet: [{ trade: "Kalıpçı", source: "company", headcount: 1, hours: "9.0" }],
     lines_total: "30240.00",
     worker_total: 7,
     dropped_orphan_count: 0,
+    // DET-1.B salt-okunur detay alanları — başlıksız taslak: gönderen yok, kilit yok.
+    site_name: "A-Blok Şantiyesi",
+    project_name: "Güneşkent",
+    section_name: null,
+    created_by_name: "Mühendis",
+    submitted_by: null,
+    submitted_by_name: null,
+    locked: false,
+    lock_report_date: null,
+    prev_id: null,
+    next_id: null,
+    prev_entry_date: null,
+    next_entry_date: null,
     ...overrides,
-  };
+  } satisfies SiteDiaryEntryDetail;
 }
 
 const createMutate = vi.fn();
@@ -148,7 +178,7 @@ function mockMutation(mutateAsync: ReturnType<typeof vi.fn>) {
   return { mutateAsync, mutate: vi.fn(), isPending: false } as never;
 }
 
-function mockEntry(entry: Record<string, unknown> | undefined) {
+function mockEntry(entry: SiteDiaryEntryDetail | undefined) {
   vi.mocked(useSiteDiaryEntries).mockReturnValue({
     data: {
       items: entry
@@ -159,6 +189,9 @@ function mockEntry(entry: Record<string, unknown> | undefined) {
               project_id: "p-1",
               entry_date: entry.entry_date,
               section_id: null,
+              // DET-1.B: başlıksız kayıt → ad `null`; dönem listesi süzgeçsiz → sayım `null`.
+              section_name: null,
+              section_line_count: null,
               weather: "sunny",
               has_incident: false,
               status: entry.status,
@@ -172,7 +205,7 @@ function mockEntry(entry: Record<string, unknown> | undefined) {
       total: entry ? 1 : 0,
       limit: 50,
       offset: 0,
-    },
+    } satisfies SiteDiaryEntryListResponse,
     isLoading: false,
     isError: false,
     error: null,
@@ -301,7 +334,9 @@ describe("DiaryEntryScreen · uzantı yuvaları (§2.7)", () => {
 
   it("lock: gönderilmiş ve KİLİTLİ günde 'Yeniden Aç' basılmaz (backend geçişi 409 verir; İ:143-149 düğme yok)", () => {
     mockSession({ site_diary: "admin", progress_payments: "view" });
-    mockEntry(entryDetail({ status: "submitted", submitted_at: "2026-09-24T17:00:00Z" }));
+    mockEntry(
+      entryDetail({ status: "submitted", submitted_at: "2026-09-24T17:00:00Z", submitted_by: "u-1", submitted_by_name: "Mühendis" }),
+    );
     const locked: DiaryExtension = { lock: { isLocked: true, banner: <span>kilitli</span> } };
     const { unmount } = renderScreen(<SiteDiaryEntryView extension={locked} />);
     expect(screen.queryByRole("button", { name: "Yeniden Aç" })).not.toBeInTheDocument();

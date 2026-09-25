@@ -6,7 +6,14 @@ import { isoWeekOf } from "@/components/timesheet/iso-week";
 
 import { SiteDiaryEntryView } from "./SiteDiaryEntryView";
 import { isoDate } from "./derive";
-import { useSiteDiaryEntries, useSiteDiaryEntry } from "@/lib/api/hooks/useSiteDiary";
+import {
+  useSiteDiaryEntries,
+  useSiteDiaryEntry,
+  type SiteDiaryEntryDetail,
+  type SiteDiaryEntryListItem,
+  type SiteDiaryEntryListResponse,
+  type SiteDiaryLineRead,
+} from "@/lib/api/hooks/useSiteDiary";
 import {
   useCreateSiteDiaryEntry,
   useReopenSiteDiaryEntry,
@@ -93,9 +100,10 @@ const LINE = {
   quantity: "120.000",
   cumulative_quantity: "900.000",
   line_amount: "182400.00",
-};
+  section_name: null,
+} satisfies SiteDiaryLineRead;
 
-function entryDetail(overrides: Record<string, unknown> = {}) {
+function entryDetail(overrides: Partial<SiteDiaryEntryDetail> = {}): SiteDiaryEntryDetail {
   return {
     id: "d-1",
     site_id: "s-1",
@@ -120,17 +128,33 @@ function entryDetail(overrides: Record<string, unknown> = {}) {
     lines_total: "182400.00",
     worker_total: 0,
     dropped_orphan_count: 0,
+    // DET-1.B salt-okunur detay alanları — başlıksız taslak: gönderen yok, kilit yok.
+    site_name: "A-Blok Şantiyesi",
+    project_name: "Güneşkent",
+    section_name: null,
+    created_by_name: "Mehmet Demir",
+    submitted_by: null,
+    submitted_by_name: null,
+    locked: false,
+    lock_report_date: null,
+    prev_id: null,
+    next_id: null,
+    prev_entry_date: null,
+    next_entry_date: null,
     ...overrides,
-  };
+  } satisfies SiteDiaryEntryDetail;
 }
 
-function listItem(overrides: Record<string, unknown> = {}) {
+function listItem(overrides: Partial<SiteDiaryEntryListItem> = {}): SiteDiaryEntryListItem {
   return {
     id: "d-1",
     site_id: "s-1",
     project_id: "p-1",
     entry_date: TODAY,
     section_id: null,
+    // DET-1.B: başlıksız kayıt → ad `null`; dönem listesi süzgeçsiz → sayım `null`.
+    section_name: null,
+    section_line_count: null,
     weather: "sunny",
     has_incident: false,
     status: "draft",
@@ -139,7 +163,7 @@ function listItem(overrides: Record<string, unknown> = {}) {
     created_by: "u-2",
     created_at: "2026-07-15T08:00:00Z",
     ...overrides,
-  };
+  } satisfies SiteDiaryEntryListItem;
 }
 
 const createMutate = vi.fn();
@@ -157,7 +181,7 @@ function mockMutation(mutateAsync: ReturnType<typeof vi.fn>) {
  * Ekran gün eşlemesini `entries` listesinden yapar; `entry` verilirse liste de
  * o günü içerecek şekilde kurulur (gerçek akışın aynısı).
  */
-function mockScreen(options: { entry?: Record<string, unknown>; entriesError?: unknown } = {}) {
+function mockScreen(options: { entry?: SiteDiaryEntryDetail; entriesError?: unknown } = {}) {
   const entry = options.entry;
   vi.mocked(useSiteDiaryEntries).mockReturnValue({
     data: {
@@ -165,7 +189,7 @@ function mockScreen(options: { entry?: Record<string, unknown>; entriesError?: u
       total: entry ? 1 : 0,
       limit: 50,
       offset: 0,
-    },
+    } satisfies SiteDiaryEntryListResponse,
     isLoading: false,
     isError: options.entriesError !== undefined,
     error: options.entriesError ?? null,
@@ -597,8 +621,8 @@ describe("SiteDiaryEntryView · işçi dağılımı (G12a)", () => {
     const detail = entryDetail({
       entry_date: TODAY,
       worker_counts: [
-        { id: "w-0", trade: "Yardımcı", source: "general", count: 0, subcontractor_id: null, hours: null },
-        { id: "w-1", trade: "Kalıpçılar", source: "company", count: 4, subcontractor_id: null, hours: null },
+        { id: "w-0", trade: "Yardımcı", source: "general", count: 0, subcontractor_id: null, hours: null, subcontractor_name: null },
+        { id: "w-1", trade: "Kalıpçılar", source: "company", count: 4, subcontractor_id: null, hours: null, subcontractor_name: null },
       ],
       own_crew_from_timesheet: [{ trade: "Kalıpçı", source: "company", headcount: 3, hours: "27.0" }],
     });
