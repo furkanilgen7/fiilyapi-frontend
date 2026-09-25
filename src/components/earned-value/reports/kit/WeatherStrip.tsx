@@ -33,6 +33,12 @@ function isKnownWeather(condition: string | null): condition is Weather {
   return condition !== null && WEATHER_ICONS.some((w) => w.value === condition);
 }
 
+/** GİR:159 "Cum 18" — kısa hafta günü + gün numarası (F3.6b lider denetimi: yalnız "Cum" eksikti). */
+function dayLabel(iso: string): string {
+  const day = iso.split("-")[2];
+  return `${formatWeekdayShort(iso)} ${day === undefined ? "" : Number(day)}`;
+}
+
 function tempRange(min: string | null, max: string | null): string {
   if (min === null && max === null) return EMPTY_CELL;
   const lo = min === null ? "?" : String(Math.round(Number(min)));
@@ -56,7 +62,7 @@ export function WeatherStrip({ days, reportDate, className }: WeatherStripProps)
               isReportDay && "ev-weather-strip__day--current",
             )}
           >
-            <span className="ev-weather-strip__weekday">{formatWeekdayShort(day.day)}</span>
+            <span className="ev-weather-strip__weekday">{dayLabel(day.day)}</span>
             <svg width="20" height="20" viewBox="0 0 16 16" fill="none" aria-hidden="true">
               {icon?.parts.map((part, i) => (
                 <path key={i} d={part.d} fill={part.fill} stroke={part.stroke} strokeWidth={1.3} strokeLinecap="round" strokeLinejoin="round" />

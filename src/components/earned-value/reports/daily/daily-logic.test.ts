@@ -1,6 +1,16 @@
 import { describe, expect, it } from "vitest";
 
-import { approveGate, reportEyebrow, reportNoLabel, versionSuffix } from "./daily-logic";
+import {
+  approveGate,
+  formatDayMonthDots,
+  formatReportDateHeader,
+  formatToleranceLabel,
+  formatWeekRangeDots,
+  joinWithVe,
+  reportEyebrow,
+  reportNoLabel,
+  versionSuffix,
+} from "./daily-logic";
 
 describe("approveGate — GİR onay düğmesi (S10, S12)", () => {
   it("APPROVE izni yoksa düğme görünmez", () => {
@@ -89,5 +99,64 @@ describe("reportEyebrow — GİR:148 başlık 'firma · proje · şantiye'", () 
 
   it("yalnız boşluklardan oluşan parça da boş sayılır", () => {
     expect(reportEyebrow("  ", "Güneşkent Konut", "A-Blok Şantiyesi")).toBe("Güneşkent Konut · A-Blok Şantiyesi");
+  });
+});
+
+describe("formatDayMonthDots — 'gg.aa' yılsız (GİR:112,169)", () => {
+  it("2026-09-24 → '24.09'", () => {
+    expect(formatDayMonthDots("2026-09-24")).toBe("24.09");
+  });
+  it("ayrıştırılamayan girdi aynen döner", () => {
+    expect(formatDayMonthDots("bozuk")).toBe("bozuk");
+  });
+});
+
+describe("formatReportDateHeader — GİR:150 'gg.aa.yyyy Haftagünü'", () => {
+  it("2026-09-24 (Perşembe) → '24.09.2026 Perşembe'", () => {
+    expect(formatReportDateHeader("2026-09-24")).toBe("24.09.2026 Perşembe");
+  });
+  it("2026-09-22 (Salı) → '22.09.2026 Salı'", () => {
+    expect(formatReportDateHeader("2026-09-22")).toBe("22.09.2026 Salı");
+  });
+});
+
+describe("formatWeekRangeDots — GİR:150 '18–24.09'", () => {
+  it("aynı ay → 'gg–gg.aa'", () => {
+    expect(formatWeekRangeDots("2026-09-18", "2026-09-24")).toBe("18–24.09");
+  });
+  it("farklı ay → her iki uç kendi 'gg.aa'sı", () => {
+    expect(formatWeekRangeDots("2026-08-30", "2026-09-05")).toBe("30.08–05.09");
+  });
+});
+
+describe("joinWithVe — Türkçe 've' bağlacı (GİR:112)", () => {
+  it("iki öğe → 'X ve Y'", () => {
+    expect(joinWithVe(["21.09", "23.09"])).toBe("21.09 ve 23.09");
+  });
+  it("üç öğe → 'X, Y ve Z'", () => {
+    expect(joinWithVe(["21.09", "22.09", "23.09"])).toBe("21.09, 22.09 ve 23.09");
+  });
+  it("tek öğe → aynen döner", () => {
+    expect(joinWithVe(["21.09"])).toBe("21.09");
+  });
+  it("boş liste → boş dize", () => {
+    expect(joinWithVe([])).toBe("");
+  });
+});
+
+describe("formatToleranceLabel — F3.6b lider denetimi (4. tur): GİR:169 'tolerans ±2,0 puan'", () => {
+  it("PUAN ölçeğinde girer, ×100 YAPILMAZ: '2.0' → '2,0' (formatVariancePoints'in 200,0 hatası burada)", () => {
+    expect(formatToleranceLabel("2.0")).toBe("2,0");
+  });
+  it("tam sayı girse bile 1 ondalık BASILIR: '2' → '2,0'", () => {
+    expect(formatToleranceLabel("2")).toBe("2,0");
+  });
+  it("null → EMPTY_CELL", () => {
+    expect(formatToleranceLabel(null)).toBe("—");
+  });
+  it("Lider denetimi (8. tur) — ondalık kanonu: Number'ın YANILDIĞI sınır — '2.049999999999999999' → '2,0' (eski `Intl.NumberFormat(Number(...))` '2,1' derdi: fazla basamak Number'da 2.05'e yuvarlanır)", () => {
+    // Doğrulandı: eski gövde (Intl.NumberFormat + Number) bu girdide "2,1" üretiyordu
+    // (Number() 19 basamaklı dizeyi en yakın double'a — pratikte 2.05'e — yuvarlıyor).
+    expect(formatToleranceLabel("2.049999999999999999")).toBe("2,0");
   });
 });

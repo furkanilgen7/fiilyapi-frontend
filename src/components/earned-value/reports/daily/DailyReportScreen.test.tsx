@@ -99,6 +99,113 @@ describe("DailyReportScreen — GİR (S10, S11, S12, S30)", () => {
     expect(screen.getByText(/günlüğü yok — rapor üretilemedi/)).toBeInTheDocument();
   });
 
+  it("GİR:121 — üretilemedi kutusunda 28×28 uyarı ikonu (SVG) basılır", () => {
+    vi.mocked(useDailyReportMocked).mockReturnValue(queryStub({ data: DAILY_REPORT_FIXTURE_NOT_GENERATED }));
+    const { container } = render(<DailyReportScreen {...baseProps()} />);
+    const icon = container.querySelector(".ev-daily-empty__icon");
+    expect(icon).not.toBeNull();
+    expect(icon).toHaveAttribute("width", "28");
+    expect(icon).toHaveAttribute("height", "28");
+  });
+
+  it("GİR:234 — miktar tablosu, TreeTable'ın başlık nowrap'ını KIRAN kendi CSS sınıfını taşır", () => {
+    // jsdom `<link>`/import edilen CSS'i UYGULAMAZ (`getComputedStyle` gerçek
+    // kuralı göremez) — bu yüzden davranışın KENDİSİ yerine üretilen DOM'un
+    // override'ı HEDEFLEYEN sınıfı taşıdığını doğruluyoruz; kuralın gerçek
+    // etkisi (metin taşmaz) Playwright görsel spec'te ölçülür.
+    vi.mocked(useDailyReportMocked).mockReturnValue(queryStub({ data: DAILY_REPORT_FIXTURE_DRAFT }));
+    const { container } = render(<DailyReportScreen {...baseProps()} />);
+    const header = container.querySelector(".ev-daily-qty__table th.tree-table__head");
+    expect(header).not.toBeNull();
+  });
+
+  it("Lider denetimi (6. tur, madde 1) — 'Toplam doğrudan' TABLONUN KENDİ satırı, ad hücresi 9 kolonu kaplar", () => {
+    vi.mocked(useDailyReportMocked).mockReturnValue(queryStub({ data: DAILY_REPORT_FIXTURE_DRAFT }));
+    const { container } = render(<DailyReportScreen {...baseProps()} />);
+    const row = container.querySelector("tr.ev-daily-qty__total-row");
+    expect(row).not.toBeNull();
+    // Ad hücresi `TreeTable`nin ağaç kolonu — `<th scope="row">` (renderTreeCell), `<td>` DEĞİL.
+    const nameCell = row!.querySelector("th");
+    expect(nameCell).toHaveAttribute("colspan", "9");
+    expect(row).toHaveTextContent("Toplam doğrudan");
+    // PF/harcanan/ilerleme kendi kolonlarında (3 ayrı `<td>` — flex sarmalayıcı DEĞİL).
+    expect(row!.querySelectorAll("td")).toHaveLength(3);
+  });
+
+  it("Lider denetimi (6. tur, madde 2) — miktar tablosunda BAŞLIK satırları İlerleme % kolonunda DÜZ METİN basar, çubuk YOK", () => {
+    vi.mocked(useDailyReportMocked).mockReturnValue(queryStub({ data: DAILY_REPORT_FIXTURE_DRAFT }));
+    const { container } = render(<DailyReportScreen {...baseProps()} />);
+    // "Toplam doğrudan" da bir başlık satırıdır (uom=null) — mockup `qt.prog` düz metin.
+    const totalCell = container.querySelector("tr.ev-daily-qty__total-row .ev-qty-progress-text");
+    expect(totalCell).not.toBeNull();
+    expect(container.querySelector("tr.ev-daily-qty__total-row .ev-qty-progress")).toBeNull();
+  });
+
+  it("CEO ölçümü (7. tur, madde G1) — yaprak satırda 'Günlük harcanan' TAM SAYI (KPI'nin wholeHours'ıyla AYNI), 3 ondalık miktar DEĞİL", () => {
+    vi.mocked(useDailyReportMocked).mockReturnValue(queryStub({ data: DAILY_REPORT_FIXTURE_DRAFT }));
+    const { container } = render(<DailyReportScreen {...baseProps()} />);
+    const row = Array.from(container.querySelectorAll(".ev-daily-qty__table tbody tr")).find((tr) => tr.textContent?.includes("Kalıp"));
+    expect(row).not.toBeUndefined();
+    expect(row).toHaveTextContent("76"); // spent_day "76.18" → tam sayı
+    expect(row).not.toHaveTextContent("76,18");
+  });
+
+  it("CEO ölçümü (7. tur, madde G2) — yaprak satırda İlerleme % ÇUBUK + METİN İKİSİ DE basılır (kök: madde 1'le AYNI, span display:block)", () => {
+    vi.mocked(useDailyReportMocked).mockReturnValue(queryStub({ data: DAILY_REPORT_FIXTURE_DRAFT }));
+    const { container } = render(<DailyReportScreen {...baseProps()} />);
+    const row = Array.from(container.querySelectorAll(".ev-daily-qty__table tbody tr")).find((tr) => tr.textContent?.includes("Kalıp"));
+    expect(row).not.toBeUndefined();
+    const bar = row!.querySelector(".ev-qty-progress__bar") as HTMLElement | null;
+    expect(bar).not.toBeNull();
+    expect(bar?.style.width).toBe("49.2857%");
+    expect(row).toHaveTextContent("%49,3");
+  });
+
+  it("Lider denetimi (8. tur) — ondalık kanonu: trend 'Fark' hücresi negatif→kırmızı, pozitif→yeşil sınıf taşır (compareDecimalStrings)", () => {
+    const trend = DAILY_REPORT_FIXTURE_DRAFT.trend.map((t, i) => (i === 0 ? { ...t, delta: "0.015" } : t));
+    vi.mocked(useDailyReportMocked).mockReturnValue(queryStub({ data: { ...DAILY_REPORT_FIXTURE_DRAFT, trend } }));
+    const { container } = render(<DailyReportScreen {...baseProps()} />);
+    expect(container.querySelectorAll(".ev-daily-trend__delta--pos")).toHaveLength(1);
+    expect(container.querySelectorAll(".ev-daily-trend__delta--neg").length).toBeGreaterThan(0);
+  });
+
+  it("CEO şartı (7. tur) — BİRİM bekçisi: rüzgâr fikstürü mockup değerini üretir ('Cum 18 · 11 km/sa'), wind_ms çift-dönüşüm YAPMAZ", () => {
+    // dc.html:502 `W=[['sun',18,29,11],...]` — km/sa DOĞRUDAN (dönüşümsüz) basılır;
+    // `wind_ms` (fikstür) bu değerin /3,6'sı OLMALI (formatWindKmh ×3,6 yapar).
+    // Mutant: wind_ms'e km/sa değerini (11) doğrudan yazarsan → "40 km/sa" çıkar, KIRMIZI.
+    vi.mocked(useDailyReportMocked).mockReturnValue(queryStub({ data: DAILY_REPORT_FIXTURE_DRAFT }));
+    render(<DailyReportScreen {...baseProps()} />);
+    expect(screen.getByText("11 km/sa")).toBeInTheDocument();
+    expect(screen.queryByText("40 km/sa")).not.toBeInTheDocument();
+  });
+
+  it("CEO ölçümü (7. tur, madde G3) — oransız giriş çipinde kalem adı · BÖLÜM adı (section_name) basılır, disiplin DEĞİL", () => {
+    vi.mocked(useDailyReportMocked).mockReturnValue(queryStub({ data: DAILY_REPORT_FIXTURE_DRAFT }));
+    render(<DailyReportScreen {...baseProps()} />);
+    expect(screen.getByText(/Buat\/priz montajı · Çatı/)).toBeInTheDocument();
+  });
+
+  it("Lider denetimi (6. tur, madde 5) — PF bant dışı tablosunda hücre TAMAMI DEĞİL, küçük rozet basılır", () => {
+    vi.mocked(useDailyReportMocked).mockReturnValue(queryStub({ data: DAILY_REPORT_FIXTURE_DRAFT }));
+    const { container } = render(<DailyReportScreen {...baseProps()} />);
+    const badge = container.querySelector(".ev-daily-footer__pf-table .pf-band-cell");
+    expect(badge).not.toBeNull();
+    expect(badge?.tagName).toBe("SPAN"); // `as="td"` DEĞİL — hücrenin TAMAMI boyanmaz.
+    expect(badge?.closest("td")).toHaveClass("ev-daily-footer__pf-cell");
+  });
+
+  it("Lider denetimi (6. tur, madde 3) — trend durağan ipucu ortak `ChartTooltip` (koyu kutu), başlık 'gg.aa · rapor günü'", () => {
+    vi.mocked(useDailyReportMocked).mockReturnValue(queryStub({ data: DAILY_REPORT_FIXTURE_DRAFT }));
+    const { container } = render(<DailyReportScreen {...baseProps()} />);
+    const tooltip = container.querySelector(".chart-tooltip");
+    expect(tooltip).not.toBeNull();
+    expect(tooltip).toHaveTextContent("24.09 · rapor günü");
+    expect(tooltip).toHaveTextContent("Planlı");
+    expect(tooltip).toHaveTextContent("Gerçek");
+    // Eski SVG rect+text ipucu kaldırıldı.
+    expect(container.querySelector(".ev-daily-trend__tooltip-box")).toBeNull();
+  });
+
   it("S10: taslak günlük varken Onayla düğmesi PASİF ve neden gösterilir", () => {
     vi.mocked(useDailyReportMocked).mockReturnValue(queryStub({ data: DAILY_REPORT_FIXTURE_DRAFT }));
     render(<DailyReportScreen {...baseProps()} />);
@@ -213,6 +320,15 @@ describe("DailyReportScreen — GİR (S10, S11, S12, S30)", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Raporu göster" }));
     expect(screen.getByText("1 · Disiplin KPI")).toBeInTheDocument();
+  });
+
+  it("F3.6b lider denetimi (5. tur) — arşiv özet kartı RAPORUN KENDİ günündeki (22.09) küm. değerleri basar, taslağın (24.09) DEĞİL", () => {
+    vi.mocked(useDailyReportMocked).mockReturnValue(queryStub({ data: DAILY_REPORT_FIXTURE_APPROVED }));
+    render(<DailyReportScreen {...baseProps()} />);
+    const card = screen.getByText(/raporu · arşiv/).closest(".ev-daily-archive-summary");
+    expect(card).not.toBeNull();
+    expect(card).toHaveTextContent("%47,3"); // Küm. planlı — 22.09 (TREND satırıyla aynı), 24.09'un %48,5'i DEĞİL
+    expect(card).toHaveTextContent("%44,5"); // Küm. gerçek — 22.09
   });
 
   it("boş siteId → ağa çıkmaz, iskelet basar", () => {

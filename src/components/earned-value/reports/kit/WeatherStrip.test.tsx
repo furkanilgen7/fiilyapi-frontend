@@ -17,7 +17,8 @@ describe("WeatherStrip — GİR başlık 7 günlük hava (GİR:157-166)", () => 
   it("7 gün basılır, kısa hafta günü etiketiyle", () => {
     render(<WeatherStrip days={DAYS} reportDate="2026-09-24" />);
     expect(screen.getAllByRole("group")[0]).toBeDefined();
-    expect(screen.getByText("Per")).toBeInTheDocument(); // 24.09.2026 Perşembe
+    // F3.6b lider denetimi (madde 17): yalnız kısaltma DEĞİL, gün numarası da basılır (GİR:159 "Cum 18").
+    expect(screen.getByText("Per 24")).toBeInTheDocument(); // 24.09.2026 Perşembe
   });
 
   it("rüzgâr m/s → km/sa (formatWindKmh, çekirdek)", () => {

@@ -5,8 +5,11 @@ import { useState } from "react";
 import { Modal } from "@/components/settings/Modal";
 import { Button } from "@/components/ui/button";
 import { backendErrorMessage } from "@/lib/api/error-message";
-import { formatDateDots } from "@/lib/format";
+import { compareDecimalStrings } from "@/lib/earned-value";
+import { formatDateDots, formatQuantity } from "@/lib/format";
 import type { useApproveDailyReport } from "@/lib/api/hooks/useEvReports";
+
+import { formatDayMonthDots, joinWithVe } from "./daily-logic";
 
 import "./daily-approve-modal.css";
 
@@ -14,6 +17,8 @@ export interface DailyApproveModalProps {
   reportDate: string;
   /** `missing_diary_dates` — modal YALNIZ bunu taşır (F3-SÖZLEŞME §2, S10). */
   missingDiaryDates: readonly string[];
+  /** GİR:396 ikinci cümle — `footer.undistributed_day` (F3.6b lider denetimi 5. tur, madde eki). */
+  undistributedDay: string | null;
   approve: ReturnType<typeof useApproveDailyReport>;
   onClose: () => void;
   onApproved: () => void;
@@ -25,7 +30,14 @@ export interface DailyApproveModalProps {
  * `approveGate`), modal hiç açılmaz. Bu modal yalnız `missing_diary_dates`
  * (hiç günlük GÖNDERİLMEMİŞ günler) uyarır — onay yine de mümkündür.
  */
-export function DailyApproveModal({ reportDate, missingDiaryDates, approve, onClose, onApproved }: DailyApproveModalProps) {
+export function DailyApproveModal({
+  reportDate,
+  missingDiaryDates,
+  undistributedDay,
+  approve,
+  onClose,
+  onApproved,
+}: DailyApproveModalProps) {
   const [error, setError] = useState<string | null>(null);
 
   async function handleApprove() {
@@ -58,8 +70,11 @@ export function DailyApproveModal({ reportDate, missingDiaryDates, approve, onCl
       </p>
       {missingDiaryDates.length > 0 && (
         <div className="ev-daily-approve-modal__warning" role="note">
-          {missingDiaryDates.map((d) => formatDateDots(d)).join(", ")} günlükleri hiç gönderilmedi; bu günler eksik
+          {joinWithVe(missingDiaryDates.map((d) => formatDayMonthDots(d)))} günlükleri hiç gönderilmedi; bu günler eksik
           veriyle kilitlenir.
+          {undistributedDay !== null && compareDecimalStrings(undistributedDay, "0") > 0 && (
+            <> {formatQuantity(undistributedDay)} a-s dağıtılmamış saat gerekçesiyle kayda geçer.</>
+          )}
         </div>
       )}
       {error !== null && (

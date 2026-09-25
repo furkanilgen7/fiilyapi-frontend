@@ -5,6 +5,14 @@
   gap: 14px;
 }
 
+/* F3.6b lider denetimi madde 13 — sayfa H1'i gezginin ÜSTÜNDE (QURR emsali). */
+.ev-daily-page-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: -0.3px;
+}
+
 .ev-daily-toolbar {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -72,7 +80,15 @@
   color: var(--color-warning-strong);
 }
 
+.ev-daily-missing-band__icon {
+  flex-shrink: 0;
+}
+
 .ev-daily-toolbar__refresh-icon {
+  margin-right: 5px;
+}
+
+.ev-daily-toolbar__lock-icon {
   margin-right: 5px;
 }
 
@@ -296,9 +312,35 @@
   color: var(--color-primary);
 }
 
-.ev-daily-kpi__overall {
+.ev-daily-kpi__caption {
+  font-size: 11px;
+  color: var(--color-text-subtle);
+  margin-bottom: 8px;
+}
+
+/* GİR:462-465 — Genel (fw700, zemin) · Genel–Kendi/Taşeron (fw600, 24px içerlek, zemin) · disiplinler normal. */
+.ev-daily-kpi__row--overall {
   font-weight: 700;
   background: var(--color-surface-muted);
+  border-top: 1.5px solid var(--color-border-strong);
+}
+
+.ev-daily-kpi__row--sub {
+  font-weight: 600;
+  background: var(--color-surface-muted);
+}
+
+.ev-daily-kpi__row--sub .ev-daily-kpi__name {
+  padding-left: 24px !important;
+}
+
+/* GİR:456 `devFg` — sapma tolerans dışı kırmızı/yeşil (K27 `status` üzerinden). */
+.ev-daily-kpi__variance--late {
+  color: var(--color-danger-strong);
+}
+
+.ev-daily-kpi__variance--ahead {
+  color: var(--color-success);
 }
 
 .ev-daily-trend {
@@ -345,12 +387,76 @@
   margin-right: 4px;
 }
 
-.ev-daily-trend__chart {
+.ev-daily-trend__day-label {
+  display: block;
+}
+
+.ev-daily-trend__day-tag {
+  display: block;
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--color-text-subtle);
+  text-transform: none;
+}
+
+.ev-daily-trend__delta--neg {
+  color: var(--color-danger-strong);
+}
+
+.ev-daily-trend__delta--pos {
+  color: var(--color-success);
+}
+
+.ev-daily-trend__chart-wrap {
   flex: 2 1 300px;
   min-width: 0;
   border: 1px solid var(--color-border);
   border-radius: 6px;
-  padding: 6px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Lider denetimi (7. tur, madde 2) — `ChartTooltip`nin KENDİ konumlandırma
+   bağlamı: yalnız SVG'yi sarar, lejandı İÇERMEZ (kök sebep: eskiden ortak
+   `chart-wrap` bağlamdı, ipucu lejandın YÜKSEKLİĞİNİ hesaba katmadan
+   üste sıfırlanıyordu). */
+.ev-daily-trend__svg-wrap {
+  position: relative;
+}
+
+.ev-daily-trend__legend {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+
+.ev-daily-trend__legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.ev-daily-trend__legend-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-warning);
+  display: inline-block;
+}
+
+.ev-daily-trend__chart {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.ev-daily-trend__report-line {
+  stroke: var(--color-text);
+  stroke-dasharray: 3 3;
 }
 
 .ev-daily-trend__line--planned {
@@ -416,10 +522,49 @@
   width: 140px;
 }
 
+/*
+ * GİR:234 başlık satırı `line-height:1.25` taşır ve `white-space` BELİRTMEZ
+ * (varsayılan `normal`) — uzun etiketler ("Gerçek oran gün", "Günlük
+ * miktar") dar sütunda İKİ/ÜÇ satıra KIRILIR, TEK satırda TAŞMAZ. Ortak
+ * `TreeTable`in `.tree-table__head{white-space:nowrap}` kuralı (P:357
+ * emsali, tek satır tablolar için) bu ekranda YANLIŞ: dar sabit genişlikle
+ * (nth-child kuralları yukarıda) birleşince başlık metni komşu hücreye
+ * TAŞIP görsel olarak birleşiyordu (F3.6b lider denetimi). Seçici
+ * `th.tree-table__head` (0,2,1) ortak kuralı (0,2,0) YENER — `TreeTable`e
+ * DOKUNULMADI, yalnız bu ekranın kendi sınıfıyla kapsam daraltıldı.
+ */
+.ev-daily-qty__table th.tree-table__head {
+  white-space: normal;
+  line-height: 1.25;
+}
+
 .ev-qty-name {
   display: flex;
   align-items: center;
   gap: 8px;
+  white-space: nowrap;
+}
+
+/* Lider denetimi (6. tur, madde 2/4) — GİR:240 mockup grid min genişlikleri
+   (`minmax(170px,1.6fr) 50px ... 140px`); `<table>` auto-layout bunları
+   GARANTİ ETMEZ, `min-width` alt sınır olarak zorlar (taşarsa yatay kaydırma
+   — lider kararı: "kolonları sıkıştırma"). */
+.ev-qty-col-name {
+  min-width: 210px;
+}
+
+.ev-qty-col-uom {
+  min-width: 50px;
+}
+
+.ev-qty-col-progress {
+  min-width: 140px;
+}
+
+.ev-qty-progress-text {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-text-secondary);
 }
 
 .ev-qty-chip {
@@ -435,10 +580,12 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 110px;
 }
 
 .ev-qty-progress__track {
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 40px;
   height: 5px;
   background: var(--color-surface-muted);
   border-radius: 3px;
@@ -446,6 +593,12 @@
 }
 
 .ev-qty-progress__bar {
+  /* Lider denetimi (7. tur, madde 1) — KÖK SEBEP: `<span>` VARSAYILAN `inline`,
+     inline (yer değiştirmeyen) elemanlarda `width` YOK SAYILIR (CSS spec) —
+     `style="width:NN%"` sessizce göz ardı ediliyordu, dolgu HER ZAMAN 0px
+     genişlikte render oluyordu (DOM ölçümü: `barInlineWidth` doğruydu,
+     `getBoundingClientRect().width` HER ZAMAN 0). `display:block` çözer. */
+  display: block;
   height: 100%;
   background: var(--color-primary);
   border-radius: 3px;
@@ -455,17 +608,44 @@
   font-family: var(--font-mono);
   font-size: 12px;
   width: 46px;
+  flex-shrink: 0;
   text-align: right;
 }
 
-.ev-daily-qty__total {
-  display: flex;
-  gap: 16px;
-  padding: 8px 12px;
+/* GİR:489 — gerçek oran planlının ÜSTÜNDEYSE kırmızı yazı. */
+.ev-qty-rate--over {
+  color: var(--color-danger-strong);
+}
+
+/*
+ * GİR:242 `q.pf` başlık/yaprak hücrelerinde ARKA PLAN TAMAMI boyalı —
+ * `TreeTable` bu kolonun `<td>`sini kendisi üretir (`PfBandCell` `as="td"`
+ * OLAMAZ, çift `<td>` üretirdi); bunun yerine hücrenin kendi dolgusu
+ * SIFIRLANIR, `PfBandCell` (span) hücreyi TAMAMEN doldurur.
+ */
+.ev-qty-pf-cell {
+  padding: 0 !important;
+}
+
+.ev-qty-pf-cell .pf-band-cell {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 7px 8px;
+  box-sizing: border-box;
+}
+
+/* Lider denetimi (6. tur, madde 1) — "Toplam doğrudan" artık `TreeTable`nin
+   kendi satırı (GİR:263-268 grid'iyle HİZALI): `rowClassName` bu satırı işaretler. */
+.ev-daily-qty__total-row {
   border-top: 1.5px solid var(--color-border-strong);
   background: var(--color-surface-muted);
   font-weight: 700;
   font-size: 13px;
+}
+
+.ev-qty-name--total {
+  font-weight: 700;
 }
 
 .ev-daily-footer {
@@ -485,10 +665,17 @@
 }
 
 .ev-daily-footer__chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   padding: 6px 10px;
   border-radius: 6px;
   font-size: 12px;
   font-weight: 500;
+}
+
+.ev-daily-footer__chip-icon {
+  flex-shrink: 0;
 }
 
 .ev-daily-footer__chip--ok {
