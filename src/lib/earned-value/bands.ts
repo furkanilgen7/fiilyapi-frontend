@@ -32,8 +32,12 @@ export interface PfThresholds {
 }
 
 export interface DailyPfThresholds extends PfThresholds {
-  /** Bu değerin ÜSTÜ "şüpheli yüksek" (bilgi tonu, K19). */
-  highAbove: string;
+  /**
+   * Bu değerin ÜSTÜ "şüpheli yüksek" (bilgi tonu, K19). `null` → "high" bandı
+   * HİÇ üretilmez (PLN-F3.1: rapor `pf_bands.daily.high_above` backend'de
+   * nullable — ayar ekranındaki gibi HER ZAMAN dolu değildir).
+   */
+  highAbove: string | null;
 }
 
 export interface PfBandSettings {
@@ -59,7 +63,12 @@ export function pfBand(value: EvNumber, bands: PfBandSettings, kind: PfBandKind)
   const thresholds = kind === "daily" ? bands.daily : bands.weekly;
   if (compareDecimalStrings(shown, thresholds.redBelow) < 0) return "red";
   if (compareDecimalStrings(shown, thresholds.greenFrom) < 0) return "amber";
-  if (kind === "daily" && compareDecimalStrings(shown, bands.daily.highAbove) > 0) return "high";
+  if (
+    kind === "daily" &&
+    bands.daily.highAbove !== null &&
+    compareDecimalStrings(shown, bands.daily.highAbove) > 0
+  )
+    return "high";
   return "green";
 }
 

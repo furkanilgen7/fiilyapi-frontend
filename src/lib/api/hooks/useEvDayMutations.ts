@@ -6,8 +6,7 @@ import { unwrap } from "@/lib/api/unwrap";
 import type { EvAllocationSave, EvDayLock, EvDayView } from "@/lib/api/models";
 
 import { EV_DAY_KEYS } from "./useEvDay";
-import { SITE_DIARY_ENTRIES_QUERY_KEY, SITE_DIARY_ENTRY_QUERY_KEY } from "./useSiteDiary";
-import { TIMESHEET_QUERY_KEY, TIMESHEET_WEEK_QUERY_KEY } from "./useTimesheet";
+import { invalidateDayLockQueries } from "./ev-day-lock-invalidation";
 
 // PLN-F2.1 · Saha YAZMA uçları (planlama tarafı). Planlama çekirdek anahtarlarını
 // bilebilir (yön planlama → çekirdek); tersi YASAK (spec §2.7).
@@ -55,8 +54,9 @@ export function useSaveDayAllocation(
  * `POST /sites/{id}/earned-value/days/{day}/unlock` — "Kilidi aç (yetkili)",
  * gerekçeli, GÜN düzeyi (approve). Kilit günlüğü VE puantajı bağladığı için
  * başarıda gün görünümü, şantiyenin günlük sorguları ve puantaj sorguları
- * tazelenir. Tekil günlük anahtarı kayıt kimliğiyle kurulduğundan (gün değil)
- * kök önekiyle tazelenir.
+ * tazelenir (`invalidateDayLockQueries` — `useApproveDailyReport` İLE
+ * PAYLAŞILAN TEK liste, PLN-F3.1-ek: onay unlock'un TERSİDİR). Tekil günlük
+ * anahtarı kayıt kimliğiyle kurulduğundan (gün değil) kök önekiyle tazelenir.
  */
 export function useUnlockDay(
   siteId: string,
@@ -73,10 +73,7 @@ export function useUnlockDay(
       ),
     onSuccess: () => {
       void client.invalidateQueries({ queryKey: [EV_DAY_KEYS.day, siteId, day] });
-      void client.invalidateQueries({ queryKey: [SITE_DIARY_ENTRIES_QUERY_KEY, siteId] });
-      void client.invalidateQueries({ queryKey: [SITE_DIARY_ENTRY_QUERY_KEY] });
-      void client.invalidateQueries({ queryKey: [TIMESHEET_WEEK_QUERY_KEY, siteId] });
-      void client.invalidateQueries({ queryKey: [TIMESHEET_QUERY_KEY, siteId] });
+      invalidateDayLockQueries(client, siteId);
     },
   });
 }

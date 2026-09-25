@@ -65,6 +65,15 @@ describe("pfBand — K18: bant GÖSTERİLEN (2 ondalık, ROUND_HALF_UP) değere 
     expect(pfBand("0.97", DEFAULT_PF_BANDS, "daily")).toBe("green");
   });
 
+  it("highAbove null (rapor pf_bands'i taşımıyor) → 'high' HİÇ üretilmez, çok yüksek değer de yeşil kalır (PLN-F3.1-ek)", () => {
+    const bands: PfBandSettings = {
+      daily: { redBelow: "0.95", greenFrom: "0.95", highAbove: null },
+      weekly: { redBelow: "0.95", greenFrom: "1.00" },
+    };
+    expect(pfBand("1.20", bands, "daily")).toBe("green");
+    expect(pfBand("5.00", bands, "daily")).toBe("green");
+  });
+
   it("günlük yeşil eşiği yükseltilirse sarı doğar (F0-1)", () => {
     const bands: PfBandSettings = {
       ...DEFAULT_PF_BANDS,

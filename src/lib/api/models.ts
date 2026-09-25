@@ -74,3 +74,20 @@ export type EvRowPattern = EvSchema["RowPatternOut"];
 export type EvShare = EvSchema["ShareOut"];
 export type EvUnlockBody = EvSchema["UnlockBody"];
 export type EvCodeNode = EvSchema["CodeNodeOut"];
+
+// PLN-F3.1 · Raporlar (Panel/GİR/QURR) — backend B3 `earned_value` rapor uçları.
+export type EvPanelReport = EvSchema["PanelReport"];
+export type EvDailyReport = EvSchema["DailyReport"];
+export type EvQurrReport = EvSchema["QurrReport"];
+export type EvQurrRow = EvSchema["QurrRow"];
+export type EvQurrTotal = EvSchema["QurrTotal"];
+export type EvCompositeCard = EvSchema["CompositeCard"];
+export type EvWarning = EvSchema["WarningOut"];
+export type EvPfBandsOut = EvSchema["PfBandsOut"];
+/** "red"|"amber"|"green"|"high" — istemci `PfBand` bunun üstüne "none" ekler. */
+export type EvApiPfBand = EvSchema["PfBand"];
+export type EvApprovalResult = EvSchema["ApprovalResult"];
+export type EvQtyTreeRow = EvSchema["QtyTreeRow"];
+export type EvKpiPf = EvSchema["KpiPf"];
+/** Şema kayıtlı değeri `"own" | "subcon"`dur (sözleşme taslağındaki `"subcontractor"` DEĞİL). */
+export type EvContractorType = EvSchema["ContractorType"];
