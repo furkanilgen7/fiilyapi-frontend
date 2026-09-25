@@ -160,13 +160,24 @@ describe("buildTrail — günlük kayıt detayı (DET-1.2 · S4)", () => {
     );
   });
 
-  it("tarih gelmeden parça BEKLEMEDE; kayıt okunamazsa yedek etikete düşer", () => {
+  it("tarih gelmeden parça BEKLEMEDE (iskelet; yedek etiket yalnız ekran okuyucuya)", () => {
     const pending = buildTrail(ENTRY, { project: "P", site: "S", section: "B" });
     expect(pending[pending.length - 1]).toMatchObject({ pending: true, label: "Kayıt Detayı" });
     expect(pending.map((c) => c.label).join(" ")).not.toContain("e-24");
+  });
 
-    const failed = buildTrail(ENTRY, { unresolved: new Set(["diaryEntry"] as const) });
-    expect(failed[failed.length - 1]).toMatchObject({ pending: false, label: "Kayıt Detayı" });
+  it("DET-1.3 · kayıt okunamazsa (404/403) son parça HİÇ basılmaz — kırıntı 'Günlük Kayıt'ta kalır (mockup hâl e)", () => {
+    const failed = buildTrail(ENTRY, { project: "P", site: "S", section: "B", unresolved: new Set(["diaryEntry"] as const) });
+
+    expect(failed.map((c) => c.label)).toEqual(["Projeler", "P", "S", "B", "Günlük Kayıt"]);
+    expect(failed.map((c) => c.label)).not.toContain("Kayıt Detayı");
+    // Geri tuşu bir seviye yukarı: bölüm (Günlük Kayıt artık SON parça).
+    expect(backTarget(failed)?.href).toBe("/projeler/p1/santiyeler/s1/bolumler/b1");
+  });
+
+  it("başka düğümlerin çözülemeyen adı yine yedek etikete düşer (yalnız işaretli düğüm atlanır)", () => {
+    const failed = buildTrail(ENTRY, { unresolved: new Set(["section"] as const), diaryEntry: "24.09.2026" });
+    expect(failed[3]).toMatchObject({ pending: false, label: "Bölüm" });
   });
 
   it("`gunluk-kayit` segmentinin KENDİ sayfası yok: çıplak yol 'yakında' kırıntısına düşer", () => {

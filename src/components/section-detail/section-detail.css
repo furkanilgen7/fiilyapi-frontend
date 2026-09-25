@@ -399,12 +399,8 @@
 .section-diary__entry-link:hover .section-diary__entry-arrow {
   color: var(--color-primary);
 }
-/* 517/535 .s-dr — S1: bu listede taslak AMBER (İ:316); şantiye "Son Kayıtlar"
-   kartının nötr rozeti DEĞİŞMEZ (kapsam bu liste). */
-.section-diary__entry-link .diary-recent__badge--draft {
-  background: var(--color-warning-soft);
-  color: var(--color-warning-strong);
-}
+/* 517/535 .s-dr — S1: taslak AMBER (İ:316) artık site-diary.css'in TABAN
+   kuralıdır (DET-1.3 b); bu listede ayrı ezme kuralı yok. */
 /* 553 .s-nt — Kural A "Satırla bağlı" (D:244 "Genel" nötr) */
 .section-diary__linkage-badge {
   background: var(--color-neutral-soft);

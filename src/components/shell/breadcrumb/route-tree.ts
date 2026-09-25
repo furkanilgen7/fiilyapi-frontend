@@ -57,6 +57,7 @@ const SECTION_NODE: TrailNode = {
         node: {
           named: "diaryEntry",
           label: "Kayıt Detayı",
+          omitWhenUnresolved: true,
           href: (k) =>
             routes.projects.sites.sections.diaryEntry({
               projectId: k.projectId,

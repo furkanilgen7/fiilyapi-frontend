@@ -129,6 +129,11 @@ function crumbOf(node: TrailNode, keys: RouteKeys, names: CrumbNames): Crumb {
   };
 }
 
+/** DET-1.3 — adı çözülemeyen ve `omitWhenUnresolved` işaretli düğüm basılmaz. */
+function isOmitted(node: TrailNode, names: CrumbNames): boolean {
+  return node.omitWhenUnresolved === true && node.named !== undefined && (names.unresolved?.has(node.named) ?? false);
+}
+
 /**
  * Yazılmamış rotanın kırıntısı.
  *
@@ -158,6 +163,7 @@ export function buildTrail(pathname: string, names: CrumbNames = {}): Crumb[] {
     if (step === undefined) return comingSoonTrail(segments[0]);
     node = step.node;
     if (step.param !== undefined) keys = { ...keys, [step.param]: safeDecode(segment) };
+    if (isOmitted(node, names)) continue;
     if (node.href !== undefined || node.crumbHref !== undefined) crumbs.push(crumbOf(node, keys, names));
   }
   // 🔴 SON segmentin SAYFASI yoksa o adreste bir sayfa YOKTUR: yol yapısal bir

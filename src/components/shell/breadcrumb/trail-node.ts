@@ -106,6 +106,14 @@ export interface TrailNode {
    * Yol kısmı adresin gerçek önekidir; yalnız sorgu dizesi ekler.
    */
   readonly crumbHref?: (keys: RouteKeys) => string;
+  /**
+   * DET-1.3 · adı ÇÖZÜLEMEYEN (`CrumbNames.unresolved`) bu düğüm kırıntıda
+   * HİÇ basılmaz — yedek etiketine düşmez. Günlük kayıt detayı 404/403'te
+   * mockup (hâl e) kırıntıyı "Günlük Kayıt"ta bırakır: tarih bilinmiyor ve
+   * "Kayıt Detayı" diye bir yüzey yok (ekranda "bulunamadı" kartı var).
+   * Bekleme hâli (iskelet) etkilenmez.
+   */
+  readonly omitWhenUnresolved?: boolean;
   readonly children?: Readonly<Record<string, TrailNode>>;
   /** Statik kardeşi eşleşmeyen segmenti yakalayan dinamik çocuk. */
   readonly dynamic?: DynamicChild;
