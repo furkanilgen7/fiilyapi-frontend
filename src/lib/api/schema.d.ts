@@ -6250,7 +6250,8 @@ export interface paths {
         };
         /**
          * Get Weekly Report
-         * @description Haftalik QURR (B3-2: onaylanmaz, canli).
+         * @description Haftalik QURR (B3-2: onaylanmaz, canli). `week` yoksa bugunun haftasi (takvime
+         *     kirpilir, §3.15 S6). Baseline yok → 409 NO_BASELINE · hafta takvimde yok → 404 NO_WEEK.
          */
         get: operations["get_weekly_report_sites__site_id__earned_value_reports_weekly_get"];
         put?: never;
@@ -9688,6 +9689,8 @@ export interface components {
         CompositeCard: {
             /** Actual */
             actual: string | null;
+            /** Denominator Name */
+            denominator_name?: string | null;
             /** Deviation */
             deviation: string | null;
             /**
@@ -9702,6 +9705,8 @@ export interface components {
             measure: "spent" | "earned" | "budget";
             /** Name */
             name: string;
+            /** Numerator Names */
+            numerator_names?: string[];
             /** Planned */
             planned: string | null;
             /** Unit */
@@ -10036,6 +10041,9 @@ export interface components {
             planned_pct_cum: string | null;
             /** Progress Pct Cum */
             progress_pct_cum: string | null;
+            status?: components["schemas"]["Status"] | null;
+            /** Variance */
+            variance?: string | null;
         };
         /** CustomerCreate */
         CustomerCreate: {
@@ -10145,6 +10153,10 @@ export interface components {
             /** Approved At */
             approved_at: string | null;
             approved_by: components["schemas"]["UserRef"] | null;
+            /** Calendar End */
+            calendar_end?: string | null;
+            /** Calendar Start */
+            calendar_start?: string | null;
             /** Day No */
             day_no: number | null;
             /** Draft Diary Dates */
@@ -10159,6 +10171,7 @@ export interface components {
             kpis: components["schemas"]["KpiRowOut"][];
             /** Missing Diary Dates */
             missing_diary_dates: string[];
+            pf_bands?: components["schemas"]["PfBandsOut"] | null;
             /** Project Start */
             project_start: string | null;
             /** Quantities */
@@ -12061,6 +12074,10 @@ export interface components {
             is_future: boolean;
             /** Planned People */
             planned_people: string | null;
+            /** Week End */
+            week_end?: string | null;
+            /** Week No */
+            week_no?: number | null;
             /**
              * Week Start
              * Format: date
@@ -14252,6 +14269,18 @@ export interface components {
             /** Trade */
             trade: string;
         };
+        /**
+         * PanelDiscipline
+         * @description EV-BORC-3 G1: filtre acilir listesi — `discipline_id` filtresinden BAGIMSIZ, tum kokler.
+         */
+        PanelDiscipline: {
+            /** Contractor Mix */
+            contractor_mix: string | null;
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+        };
         /** PanelKpi */
         PanelKpi: {
             /** Budget Mhr */
@@ -14289,6 +14318,10 @@ export interface components {
             actual_basis: "headcount" | "equivalent";
             /** Bars */
             bars: components["schemas"]["BarPoint"][];
+            /** Calendar End */
+            calendar_end?: string | null;
+            /** Calendar Start */
+            calendar_start?: string | null;
             contractor_type: components["schemas"]["ContractorType"] | null;
             /**
              * Day
@@ -14299,6 +14332,8 @@ export interface components {
             day_no: number | null;
             /** Discipline Id */
             discipline_id: string | null;
+            /** Disciplines */
+            disciplines?: components["schemas"]["PanelDiscipline"][];
             /** Has Baseline */
             has_baseline: boolean;
             /** Has Field Data */
@@ -14306,6 +14341,7 @@ export interface components {
             /** Histogram */
             histogram: components["schemas"]["HistogramWeek"][];
             kpi: components["schemas"]["PanelKpi"] | null;
+            pf_bands?: components["schemas"]["PfBandsOut"] | null;
             /** Pf Trend */
             pf_trend: components["schemas"]["PfPoint"][];
             /**
@@ -15503,6 +15539,15 @@ export interface components {
          * @enum {string}
          */
         PfBand: "red" | "amber" | "green" | "high";
+        /** PfBandOut */
+        PfBandOut: {
+            /** Green From */
+            green_from: string;
+            /** High Above */
+            high_above: string | null;
+            /** Red Below */
+            red_below: string;
+        };
         /** PfBands */
         "PfBands-Input": {
             daily: components["schemas"]["DailyPfBands-Input"];
@@ -15512,6 +15557,15 @@ export interface components {
         "PfBands-Output": {
             daily: components["schemas"]["DailyPfBands-Output"];
             weekly: components["schemas"]["WeeklyPfBands-Output"];
+        };
+        /**
+         * PfBandsOut
+         * @description EV-BORC-3 G2: raporun KULLANDIGI PF esikleri. Haftalik PF kumulatif esigini kullanir
+         *     (motor: `pf_week_band` = cumulative). Gunluk raporda SNAPSHOT'a girer.
+         */
+        PfBandsOut: {
+            cumulative: components["schemas"]["PfBandOut"];
+            daily: components["schemas"]["PfBandOut"];
         };
         /** PfPoint */
         PfPoint: {
@@ -17139,6 +17193,9 @@ export interface components {
             name: string;
             /** Node Id */
             node_id: string;
+            /** Pf Cum */
+            pf_cum?: string | null;
+            pf_cum_band?: components["schemas"]["PfBand"] | null;
             /** Pf Day */
             pf_day: string | null;
             pf_day_band: components["schemas"]["PfBand"] | null;
@@ -17170,12 +17227,23 @@ export interface components {
         QuantitySource: "manual" | "diary";
         /** QurrReport */
         QurrReport: {
+            /** Calendar End */
+            calendar_end?: string | null;
+            /** Calendar Start */
+            calendar_start?: string | null;
             /** Composites */
             composites: components["schemas"]["CompositeCard"][];
             /** Draft Diary Dates */
             draft_diary_dates: string[];
+            /** Generated At */
+            generated_at?: string | null;
+            /** Has Field Data */
+            has_field_data?: boolean | null;
             /** Kpis */
             kpis: components["schemas"]["KpiPf"][];
+            /** Last Week No */
+            last_week_no?: number | null;
+            pf_bands?: components["schemas"]["PfBandsOut"] | null;
             previous_revision: components["schemas"]["RevisionRef"] | null;
             /**
              * Report Date
@@ -17256,6 +17324,8 @@ export interface components {
             o_actual_unit_mhr_cum: string | null;
             /** P Actual Unit Mhr Week */
             p_actual_unit_mhr_week: string | null;
+            /** Parent Id */
+            parent_id?: string | null;
             q_band: components["schemas"]["PfBand"] | null;
             /** Q Pf Cum */
             q_pf_cum: string | null;
@@ -17270,6 +17340,10 @@ export interface components {
          * @description Ara toplam / Σ direct / Σ direct+non-direct — f–l + q, r.
          */
         QurrTotal: {
+            /** Code */
+            code?: string | null;
+            /** Contractor Mix */
+            contractor_mix?: string | null;
             /** F Prev Budget Mhr */
             f_prev_budget_mhr: string | null;
             /** G Budget Mhr */
@@ -17293,8 +17367,12 @@ export interface components {
             name: string;
             /** Node Id */
             node_id: string | null;
+            /** Parent Id */
+            parent_id?: string | null;
+            q_band?: components["schemas"]["PfBand"] | null;
             /** Q Pf Cum */
             q_pf_cum: string | null;
+            r_band?: components["schemas"]["PfBand"] | null;
             /** R Pf Week */
             r_pf_week: string | null;
         };
@@ -21774,6 +21852,16 @@ export interface components {
          * @enum {string}
          */
         TimesheetCode: "leave" | "holiday" | "temporary_duty";
+        /** TimesheetDayLock */
+        TimesheetDayLock: {
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            /** Report Date */
+            report_date: string | null;
+        };
         /**
          * TimesheetDayTotal
          * @description Bir gün sütununun ayak satırı (E5 320-326).
@@ -21881,6 +21969,8 @@ export interface components {
          * @description E5 ekranının tamamı: hafta şeridi + KPI + 7 günlük ızgara + tfoot.
          */
         TimesheetWeek: {
+            /** Day Locks */
+            day_locks?: components["schemas"]["TimesheetDayLock"][];
             /** Day Totals */
             day_totals: components["schemas"]["TimesheetDayTotal"][];
             /**
@@ -23371,9 +23461,17 @@ export interface components {
              * Code
              * @enum {string}
              */
-            code: "pf_out_of_band" | "undistributed_hours" | "qty_overrun" | "missing_diary" | "draft_diary" | "unrated_entry" | "unknown_line";
+            code: "pf_out_of_band" | "undistributed_hours" | "qty_overrun" | "missing_diary" | "draft_diary" | "unrated_entry" | "unknown_line" | "empty_rate";
+            /** Item Name */
+            item_name?: string | null;
             /** Message */
             message: string;
+            /** Planned Qty */
+            planned_qty?: string | null;
+            /** Qty Cum */
+            qty_cum?: string | null;
+            /** Section Name */
+            section_name?: string | null;
             /**
              * Target
              * @enum {string}
@@ -23381,6 +23479,8 @@ export interface components {
             target: "node" | "day" | "leaf";
             /** Target Id */
             target_id: string | null;
+            /** Uom */
+            uom?: string | null;
             /** Value */
             value?: string | null;
         };
@@ -38988,8 +39088,8 @@ export interface operations {
     };
     get_weekly_report_sites__site_id__earned_value_reports_weekly_get: {
         parameters: {
-            query: {
-                week: number;
+            query?: {
+                week?: number | null;
             };
             header?: never;
             path: {
@@ -39035,8 +39135,8 @@ export interface operations {
     };
     export_weekly_report_sites__site_id__earned_value_reports_weekly_xlsx_get: {
         parameters: {
-            query: {
-                week: number;
+            query?: {
+                week?: number | null;
             };
             header?: never;
             path: {
