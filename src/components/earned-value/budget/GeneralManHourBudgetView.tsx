@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { Select } from "@/components/ui/select/Select";
-import { useSiteOptions } from "@/lib/api/hooks/useSiteOptions";
+import { useEvSiteOptions, type EvSiteOption } from "@/lib/api/hooks/useEvSettings";
 import { routes } from "@/lib/routes";
 
 import { BudgetScreen } from "./BudgetScreen";
@@ -14,19 +14,26 @@ const SITE_PARAM = "site";
 /**
  * PLN-F1.6 · Adam-Saat Bütçesi KÖK İKİZİ (`/planlama/adam-saat-butcesi?site=`),
  * kabuk nav'ının Planlama grubu (K21). Emsal `GeneralSiteDiaryView`:
- *   • şantiye seçici `useSiteOptions` (E5 deseni), durum `?site=`de;
+ *   • şantiye seçici `useEvSiteOptions` (E5 etiket deseni), durum `?site=`de;
  *   • çözülemeyen/eksik `?site=` ilk seçeneğe hizalanır (adres ile ekran çelişmez);
  *   • `key` şantiyeye bağlı → şantiye değişince ekran yerel durumu SÖKÜLÜR
  *     (seçim, arama, açık popover başka şantiyeye sızmaz).
- * Seçenekler kanonik UUID taşır → `useSite` geçişi gerekmez.
+ * Seçenekler kanonik UUID taşır → `useSite` geçişi gerekmez. `useEvSiteOptions`
+ * (AYP ile aynı kaynak, önbellek paylaşılır) şantiye DURUMUNU da taşır →
+ * tamamlanmış şantiye salt okunur açılır (B1-12 · PLN-F1.6.2).
  */
 export function GeneralManHourBudgetView() {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const siteOptions = useSiteOptions();
+  const siteOptions = useEvSiteOptions();
   const siteParam = searchParams.get(SITE_PARAM);
-  const selected = siteOptions.options.find((o) => o.siteId === siteParam) ?? siteOptions.options[0];
+  // CEO d (AYP ile aynı): `?site=` yoksa ilk DEVAM EDEN şantiye; hepsi tamamlanmışsa ilk seçenek.
+  // Tamamlanmış şantiye seçicide açıkça seçilebilir kalır (salt okunur açılır).
+  const selected =
+    siteOptions.options.find((o) => o.siteId === siteParam) ??
+    siteOptions.options.find((o) => !o.isCompleted) ??
+    siteOptions.options[0];
 
   function pushSite(siteId: string) {
     // Şantiye değişince revizyon/adım anahtarları o şantiyeye ait değildir — düşer.
@@ -51,6 +58,7 @@ export function GeneralManHourBudgetView() {
   return (
     <BudgetScreen
       key={selected?.siteId ?? ""}
+      siteCompleted={selected?.isCompleted ?? false}
       siteId={selected?.siteId ?? ""}
       picker={picker}
       links={{
@@ -62,8 +70,14 @@ export function GeneralManHourBudgetView() {
   );
 }
 
+/** E5 78 etiketi (proje + şantiye); tamamlanmış şantiye işaretlenir (AYP `SiteSelect` deseni). */
+function optionLabel(option: EvSiteOption): string {
+  const base = `${option.projectName} ${option.siteName}`;
+  return option.isCompleted ? `${base} · tamamlandı` : base;
+}
+
 interface SitePickerProps {
-  state: ReturnType<typeof useSiteOptions>;
+  state: ReturnType<typeof useEvSiteOptions>;
   value: string;
   onChange: (siteId: string) => void;
 }
@@ -77,7 +91,7 @@ function SitePicker({ state, value, onChange }: SitePickerProps) {
         {empty && <option value="">{state.isLoading ? "Yükleniyor…" : "Şantiye yok"}</option>}
         {state.options.map((option) => (
           <option key={option.siteId} value={option.siteId}>
-            {option.label}
+            {optionLabel(option)}
           </option>
         ))}
       </Select>

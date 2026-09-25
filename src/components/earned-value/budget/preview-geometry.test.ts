@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { histogramGeometry, sCurveGeometry, sCurvePoint, S_LEFT, S_RIGHT, S_BASE, S_TOP } from "./preview-geometry";
+import { defaultHistogramIndex, defaultSCurveIndex, histogramGeometry, sCurveGeometry, sCurvePoint, S_LEFT, S_RIGHT, S_BASE, S_TOP } from "./preview-geometry";
 import { previewOut } from "./budget-fixtures";
 
 describe("sCurveGeometry — yığılmış alan (BÜT:699-722)", () => {
@@ -55,5 +55,19 @@ describe("histogramGeometry — gereken işçi (BÜT:723-734, K10)", () => {
     expect(geo.line.startsWith("M")).toBe(true);
     expect(geo.peakIndex).toBe(0);
     expect(geo.ticks.map((t) => t.label)).toEqual(["H1"]);
+  });
+});
+
+describe("durağan başlangıç ipucu (CEO n · BÜT:351-356, 376-381)", () => {
+  it("S-eğrisi: bugün aralıktaysa bugünün dizini, değilse null", () => {
+    const geo = sCurveGeometry(previewOut());
+    expect(defaultSCurveIndex(geo, "2026-05-07")).toBe(3);
+    expect(defaultSCurveIndex(geo, "2026-09-24")).toBeNull();
+  });
+
+  it("histogram: tepe hafta; bütçe 0 (tepe yok) → null", () => {
+    expect(defaultHistogramIndex(histogramGeometry(previewOut()))).toBe(0);
+    const noPeak = { ...previewOut(), total: { ...previewOut().total, peak_week: null } };
+    expect(defaultHistogramIndex(histogramGeometry(noPeak))).toBeNull();
   });
 });

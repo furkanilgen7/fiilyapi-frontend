@@ -262,7 +262,7 @@ function FreezeActions(props: FreezeStepProps & { onAsk: (modal: "freeze" | "del
           Taslağı sil
         </Button>
       )}
-      {canApprove && !state.isViewer && (
+      {canApprove && !state.hideActions && (
         <>
           {blocked && state.mode === "draft" && <span className="ev-budget-freeze__hint">Engeller kapanınca etkinleşir</span>}
           <Button className="ev-budget-freeze__submit" disabled={blocked || !state.canFreeze} onClick={() => onAsk("freeze")}>

@@ -109,6 +109,6 @@ export function fillMessage(out: EvFillOut): string {
   if (out.ambiguous_count > 0) parts.push(`${out.ambiguous_count} kalemde eşleşme belirsiz`);
   if (out.unmatched_count > 0) parts.push(`${out.unmatched_count} kalemde katalog eşleşmesi yok`);
   // Yönlendirme EN SONDA: belirsiz sayısını açıklar, eşleşmesiz sayısının arasına girmez.
-  if (out.ambiguous_count > 0) parts.push("ayrıntı için satırlardaki öneri rozetine bakın");
+  if (out.ambiguous_count > 0) parts.push("ayrıntı için oran hücresindeki önerilere bakın");
   return parts.join(" · ");
 }

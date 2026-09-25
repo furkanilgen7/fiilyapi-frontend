@@ -3,7 +3,7 @@ import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { backendClient } from "@/lib/api/client";
-import { useSiteOptions } from "@/lib/api/hooks/useSiteOptions";
+import { useEvSiteOptions } from "@/lib/api/hooks/useEvSettings";
 
 import { GeneralManHourBudgetView } from "./GeneralManHourBudgetView";
 import { defaultState, mockPermission, renderWithQuery, wireBackend } from "./budget-screen-harness";
@@ -14,7 +14,7 @@ vi.mock("@/lib/api/client", () => ({
   backendClient: { GET: vi.fn(), POST: vi.fn(), PATCH: vi.fn(), PUT: vi.fn(), DELETE: vi.fn() },
 }));
 vi.mock("@/components/shell/SessionProvider", () => ({ useSession: vi.fn() }));
-vi.mock("@/lib/api/hooks/useSiteOptions", () => ({ useSiteOptions: vi.fn() }));
+vi.mock("@/lib/api/hooks/useEvSettings", () => ({ useEvSiteOptions: vi.fn() }));
 
 const replace = vi.fn();
 let searchParams = new URLSearchParams();
@@ -25,15 +25,15 @@ vi.mock("next/navigation", () => ({
 }));
 
 const OPTIONS = [
-  { siteId: "s-1", projectId: "p-1", label: "Güneşkent A-Blok" },
-  { siteId: "s-2", projectId: "p-2", label: "Çelik OSB Fabrika" },
+  { siteId: "s-1", siteName: "A-Blok", projectId: "p-1", projectName: "Güneşkent", isCompleted: false },
+  { siteId: "s-2", siteName: "Fabrika", projectId: "p-2", projectName: "Çelik OSB", isCompleted: true },
 ];
 
 function setup(query: string, options = OPTIONS, loading = false) {
   searchParams = new URLSearchParams(query);
   wireBackend(defaultState());
   mockPermission("draft");
-  vi.mocked(useSiteOptions).mockReturnValue({ options, isLoading: loading, isError: false });
+  vi.mocked(useEvSiteOptions).mockReturnValue({ options, groups: [], isLoading: loading, isError: false });
   return { user: userEvent.setup(), ...renderWithQuery(<GeneralManHourBudgetView />) };
 }
 
@@ -69,5 +69,43 @@ describe("GeneralManHourBudgetView", () => {
       "href",
       "/projeler/p-2/santiyeler/s-2/is-kalemleri",
     );
+  });
+});
+
+describe("GeneralManHourBudgetView — şantiye durumu seçenekten (PLN-F1.6.2)", () => {
+  it("seçenek etiketi proje + şantiye; tamamlanmış şantiye salt okunur açılır", async () => {
+    setup("site=s-2");
+    expect(await screen.findByRole("option", { name: "Çelik OSB Fabrika · tamamlandı" })).toBeInTheDocument();
+    expect(await screen.findByText("Tamamlanmış şantiye · bütçe salt okunur.")).toBeInTheDocument();
+    expect(screen.queryByRole("textbox", { name: /birim oran/ })).not.toBeInTheDocument();
+  });
+
+  it("aktif şantiye düzenlenebilir", async () => {
+    setup("site=s-1");
+    expect(await screen.findByRole("textbox", { name: "Beton döküm · Temel birim oran" })).toBeEnabled();
+    expect(screen.queryByText("Tamamlanmış şantiye · bütçe salt okunur.")).not.toBeInTheDocument();
+  });
+});
+
+describe("GeneralManHourBudgetView — açılış varsayılanı (CEO d, AYP ile tutarlı)", () => {
+  const COMPLETED_FIRST = [
+    { siteId: "s-9", siteName: "Eski Blok", projectId: "p-9", projectName: "Kapanan", isCompleted: true },
+    ...OPTIONS,
+  ];
+
+  it("`?site=` yokken ilk DEVAM EDEN şantiye seçilir (tamamlanmış atlanır)", async () => {
+    setup("", COMPLETED_FIRST);
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/planlama/adam-saat-butcesi?site=s-1", { scroll: false }));
+  });
+
+  it("hepsi tamamlanmışsa ilk seçeneğe düşer", async () => {
+    setup("", [COMPLETED_FIRST[0], { ...OPTIONS[1] }]);
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/planlama/adam-saat-butcesi?site=s-9", { scroll: false }));
+  });
+
+  it("tamamlanmış şantiye `?site=` ile açıkça seçilebilir kalır", async () => {
+    setup("site=s-9", COMPLETED_FIRST);
+    expect(await screen.findByText("Tamamlanmış şantiye · bütçe salt okunur.")).toBeInTheDocument();
+    expect(replace).not.toHaveBeenCalled();
   });
 });

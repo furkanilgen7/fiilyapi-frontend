@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 
 import { ChartTooltip } from "@/components/earned-value/common/chart-tooltip/ChartTooltip";
 import { EMPTY_CELL, formatDateDots } from "@/lib/format";
@@ -19,6 +19,8 @@ import {
   S_TOP,
   S_VIEW_H,
   S_VIEW_W,
+  defaultHistogramIndex,
+  defaultSCurveIndex,
   histogramGeometry,
   sCurveGeometry,
   sCurveIndexAt,
@@ -33,31 +35,61 @@ function yPct(pct: number): number {
   return Math.round(S_BASE - (pct / 100) * (S_BASE - S_TOP));
 }
 
-function toViewX(event: React.MouseEvent<SVGSVGElement>, viewWidth: number): { viewX: number; scale: number } {
-  const rect = event.currentTarget.getBoundingClientRect();
-  const scale = rect.width > 0 ? rect.width / viewWidth : 1;
-  return { viewX: (event.clientX - rect.left) / scale, scale };
+function scaleOf(svg: SVGSVGElement | null, viewWidth: number): number {
+  const width = svg?.getBoundingClientRect().width ?? 0;
+  return width > 0 ? width / viewWidth : 1;
 }
 
-/** Planlı S-eğrisi · disiplin bazında — Adam-Saat Bütçesi.dc.html:334-357. */
-export function SCurveChart({ preview, revisionNumber }: { preview: EvPreviewOut; revisionNumber: number | null }) {
+function toViewX(event: React.MouseEvent<SVGSVGElement>, viewWidth: number): number {
+  const rect = event.currentTarget.getBoundingClientRect();
+  return (event.clientX - rect.left) / scaleOf(event.currentTarget, viewWidth);
+}
+
+/**
+ * viewBox → CSS pikseli ölçeği. Durağan ipucu (CEO n) fare olayı OLMADAN da
+ * konumlanmalı → SVG genişliği açılışta ve pencere boyu değişince ölçülür.
+ */
+function useViewScale(viewWidth: number) {
+  const ref = useRef<SVGSVGElement>(null);
+  const [scale, setScale] = useState(1);
+  useLayoutEffect(() => {
+    const measure = () => setScale(scaleOf(ref.current, viewWidth));
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [viewWidth]);
+  return { ref, scale };
+}
+
+interface SCurveChartProps {
+  preview: EvPreviewOut;
+  revisionNumber: number | null;
+  /** Varsayılan yerel bugün; test edilebilirlik için dışarıdan verilebilir. */
+  todayIso?: string;
+}
+
+/**
+ * Planlı S-eğrisi · disiplin bazında — Adam-Saat Bütçesi.dc.html:334-357.
+ * İpucu: fare üstündeyse o gün, değilse DURAĞAN bugün ipucu (BÜT:351-356, CEO n).
+ */
+export function SCurveChart({ preview, revisionNumber, todayIso = localTodayIso() }: SCurveChartProps) {
   const geo = sCurveGeometry(preview);
-  const [hover, setHover] = useState<{ index: number; scale: number } | null>(null);
-  const todayIndex = geo.days.indexOf(localTodayIso());
-  const point = hover ? sCurvePoint(geo, hover.index) : null;
-  const today = todayIndex >= 0 ? sCurvePoint(geo, todayIndex) : null;
+  const { ref, scale } = useViewScale(S_VIEW_W);
+  const [hover, setHover] = useState<number | null>(null);
+  const todayIndex = defaultSCurveIndex(geo, todayIso);
+  const shownIndex = hover ?? todayIndex;
+  const point = shownIndex !== null ? sCurvePoint(geo, shownIndex) : null;
+  const today = todayIndex !== null ? sCurvePoint(geo, todayIndex) : null;
   if (geo.days.length === 0) return <p className="ev-budget-chart__empty">Eğri için bütçeli ve pencereli yaprak yok.</p>;
   return (
     <div className="ev-budget-chart">
       <svg
+        ref={ref}
         viewBox={`0 0 ${S_VIEW_W} ${S_VIEW_H}`}
         className="ev-budget-chart__svg"
         role="img"
         aria-label="Planlı S-eğrisi"
-        onMouseMove={(event) => {
-          const { viewX, scale } = toViewX(event, S_VIEW_W);
-          setHover({ index: sCurveIndexAt(geo, viewX), scale });
-        }}
+        onMouseMove={(event) => setHover(sCurveIndexAt(geo, toViewX(event, S_VIEW_W)))}
         onMouseLeave={() => setHover(null)}
       >
         <SCurveGrid />
@@ -67,12 +99,12 @@ export function SCurveChart({ preview, revisionNumber }: { preview: EvPreviewOut
         <path d={geo.totalLine} className="ev-chart__total" />
         <XTicks ticks={geo.ticks} y={242} />
         {today && <line x1={today.x} x2={today.x} y1={S_TOP} y2={S_BASE} className="ev-chart__today" />}
-        {(point ?? today) && <circle cx={(point ?? today)!.x} cy={(point ?? today)!.y} r={4} className="ev-chart__dot" />}
+        {point && <circle cx={point.x} cy={point.y} r={4} className="ev-chart__dot" />}
       </svg>
-      {point && hover && (
+      {point && (
         <ChartTooltip
-          x={Math.round(point.x * hover.scale)}
-          y={Math.round(point.y * hover.scale)}
+          x={Math.round(point.x * scale)}
+          y={Math.round(point.y * scale)}
           title={`${formatDateDots(point.day)} · Gün ${point.index + 1}`}
           rows={[
             { label: `Planlı${revisionNumber !== null ? ` (Rev ${revisionNumber})` : ""}`, value: `%${PCT.format(point.pct)}` },
@@ -84,27 +116,29 @@ export function SCurveChart({ preview, revisionNumber }: { preview: EvPreviewOut
   );
 }
 
-/** Gereken işçi · haftalık — Adam-Saat Bütçesi.dc.html:359-383 (K10). */
+/**
+ * Gereken işçi · haftalık — Adam-Saat Bütçesi.dc.html:359-383 (K10).
+ * İpucu: fare üstündeyse o hafta, değilse DURAĞAN tepe hafta ipucu (BÜT:376-381, CEO n).
+ */
 export function WorkerHistogram({ preview }: { preview: EvPreviewOut }) {
   const geo = histogramGeometry(preview);
-  const [hover, setHover] = useState<{ index: number; scale: number } | null>(null);
+  const { ref, scale } = useViewScale(H_VIEW_W);
+  const [hover, setHover] = useState<number | null>(null);
   const weeks = preview.total.weeks;
   if (weeks.length === 0) return <p className="ev-budget-chart__empty">Haftalık dağılım yok.</p>;
-  const index = hover?.index ?? null;
-  const week = index !== null ? weeks[index] : null;
-  const bar = index !== null ? geo.bars[index] : null;
+  const index = hover ?? defaultHistogramIndex(geo);
   return (
     <div className="ev-budget-chart">
       <svg
+        ref={ref}
         viewBox={`0 0 ${H_VIEW_W} ${H_VIEW_H}`}
         className="ev-budget-chart__svg"
         role="img"
         aria-label="Haftalık gereken işçi"
         onMouseMove={(event) => {
-          const { viewX, scale } = toViewX(event, H_VIEW_W);
           const slot = (H_RIGHT - H_LEFT) / weeks.length;
-          const i = Math.min(weeks.length - 1, Math.max(0, Math.floor((viewX - H_LEFT) / slot)));
-          setHover({ index: i, scale });
+          const i = Math.floor((toViewX(event, H_VIEW_W) - H_LEFT) / slot);
+          setHover(Math.min(weeks.length - 1, Math.max(0, i)));
         }}
         onMouseLeave={() => setHover(null)}
       >
@@ -116,18 +150,33 @@ export function WorkerHistogram({ preview }: { preview: EvPreviewOut }) {
         <line x1={H_LEFT} x2={H_RIGHT} y1={H_BASE} y2={H_BASE} className="ev-chart__axis" />
         <XTicks ticks={geo.ticks} y={232} mono />
       </svg>
-      {week && bar && hover && (
-        <ChartTooltip
-          x={Math.round((bar.x + bar.w / 2) * hover.scale)}
-          y={Math.round(bar.y * hover.scale)}
-          title={`H${week.week_no}${index === geo.peakIndex ? " · tepe hafta" : ""}`}
-          rows={[
-            { label: "Gereken", value: `${formatMhr(week.required_people)} kişi` },
-            { label: "Bölüm planı", value: week.planned_people === null ? EMPTY_CELL : `${week.planned_people} kişi`, tone: "negative" },
-          ]}
-        />
-      )}
+      {index !== null && <WeekTooltip preview={preview} geo={geo} index={index} scale={scale} />}
     </div>
+  );
+}
+
+interface WeekTooltipProps {
+  preview: EvPreviewOut;
+  geo: ReturnType<typeof histogramGeometry>;
+  index: number;
+  scale: number;
+}
+
+/** BÜT:376-381 — "H{n} · tepe hafta" / Gereken / Bölüm planı. */
+function WeekTooltip({ preview, geo, index, scale }: WeekTooltipProps) {
+  const week = preview.total.weeks[index];
+  const bar = geo.bars[index];
+  if (!week || !bar) return null;
+  return (
+    <ChartTooltip
+      x={Math.round((bar.x + bar.w / 2) * scale)}
+      y={Math.round(bar.y * scale)}
+      title={`H${week.week_no}${index === geo.peakIndex ? " · tepe hafta" : ""}`}
+      rows={[
+        { label: "Gereken", value: `${formatMhr(week.required_people)} kişi` },
+        { label: "Bölüm planı", value: week.planned_people === null ? EMPTY_CELL : `${week.planned_people} kişi`, tone: "negative" },
+      ]}
+    />
   );
 }
 

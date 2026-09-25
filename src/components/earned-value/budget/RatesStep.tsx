@@ -107,7 +107,7 @@ export function RatesStep(props: RatesStepProps) {
   return (
     <section className="ev-budget-card" aria-label="Adım 1 · Oranlar">
       <RatesToolbar
-        showActions={!state.isViewer}
+        showActions={!state.hideActions}
         editable={state.editable}
         filling={actions.isFilling}
         selectedCount={entries.length}

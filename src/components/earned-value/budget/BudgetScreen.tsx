@@ -42,6 +42,8 @@ export interface BudgetScreenProps {
   links: BudgetLinks;
   /** Kök ikizde şantiye seçici. */
   picker?: ReactNode;
+  /** B1-12: şantiye tamamlanmış → bütçe salt okunur (`BudgetView.editable` bunu yansıtmaz). */
+  siteCompleted: boolean;
 }
 
 /** BÜT:498-505 — içerlekli ağaç iskeleti. */
@@ -54,7 +56,7 @@ function BudgetSkeleton() {
 }
 
 /** Adam-Saat Bütçesi ekranı — veri durumu kapısı (yükleniyor · hata · yüklendi). */
-export function BudgetScreen({ siteId, links, picker }: BudgetScreenProps) {
+export function BudgetScreen({ siteId, links, picker, siteCompleted }: BudgetScreenProps) {
   const url = useBudgetUrlState();
   const budget = useEvBudget(siteId, url.revisionId);
   const revisions = useEvBudgetRevisions(siteId);
@@ -87,6 +89,7 @@ export function BudgetScreen({ siteId, links, picker }: BudgetScreenProps) {
       revisions={revisions.data ?? []}
       links={links}
       picker={picker}
+      siteCompleted={siteCompleted}
       url={url}
     />
   );
@@ -98,6 +101,7 @@ interface LoadedBudgetProps {
   revisions: readonly EvRevisionOut[];
   links: BudgetLinks;
   picker?: ReactNode;
+  siteCompleted: boolean;
   url: ReturnType<typeof useBudgetUrlState>;
 }
 
@@ -107,10 +111,10 @@ function diffAvailableFor(view: EvBudgetView, revisions: readonly EvRevisionOut[
 }
 
 /** Yüklenmiş ekranın türetilmiş durumu + eylemleri (izin, revizyon hâli, fark, önizleme). */
-function useLoadedModel({ siteId, view, revisions, url }: LoadedBudgetProps) {
+function useLoadedModel({ siteId, view, revisions, siteCompleted, url }: LoadedBudgetProps) {
   const permission = useModulePermission("earned_value");
   const access = budgetAccess(permission.level);
-  const state = screenState(view, access, revisions);
+  const state = screenState(view, access, revisions, siteCompleted);
   const actions = useBudgetActions(siteId);
   const [showDiff, setShowDiff] = useState(false);
   const [frozenInfo, setFrozenInfo] = useState<FrozenInfo | null>(null);

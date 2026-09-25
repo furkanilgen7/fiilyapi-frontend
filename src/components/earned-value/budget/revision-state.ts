@@ -28,6 +28,10 @@ export interface ScreenState {
   editable: boolean;
   /** Taslak görüntüleniyor ama kullanıcı yalnız görüntüleyici (V). */
   isViewer: boolean;
+  /** B1-12: tamamlanmış şantiyenin bütçesi salt okunur (backend yazmaları 409). */
+  siteCompleted: boolean;
+  /** Eylem düğmeleri (katalogdan öner, toplu oran, dondur, sil) gizlenir: görüntüleyici YA DA tamamlanmış şantiye. */
+  hideActions: boolean;
   canFreeze: boolean;
   canDeleteDraft: boolean;
   canOpenDraft: boolean;
@@ -55,22 +59,33 @@ export function nextDraftNumber(revisions: readonly EvRevisionOut[]): number {
   return frozen.length === 0 ? 0 : Math.max(...frozen) + 1;
 }
 
+/**
+ * `siteCompleted` (B1-12 · PLN-F1.6.2): backend tamamlanmış şantiyede bütçe
+ * yazmalarını 409 ile reddeder AMA `BudgetView.editable` yalnız revizyon moduna
+ * bakar (taslakta true döner). Bayrağa güvenilse kullanıcı düzenler ve her yazma
+ * 409 alırdı — bu yüzden şantiye durumu burada AYRICA kapıdır (AYP F0-8 deseni).
+ */
 export function screenState(
   view: EvBudgetView,
   access: BudgetAccess,
   revisions: readonly EvRevisionOut[],
+  siteCompleted = false,
 ): ScreenState {
   const mode = revisionMode(view);
   const draft = revisions.find((r) => r.status === "draft") ?? null;
   const active = revisions.find((r) => r.status === "active") ?? null;
   const isWritableMode = mode === "draft" || mode === "none";
+  const writable = !siteCompleted;
+  const isViewer = isWritableMode && !access.canDraft;
   return {
     mode,
-    editable: view.editable && isWritableMode && access.canDraft,
-    isViewer: isWritableMode && !access.canDraft,
-    canFreeze: mode === "draft" && access.canApprove,
-    canDeleteDraft: mode === "draft" && access.canApprove,
-    canOpenDraft: mode !== "draft" && mode !== "none" && draft === null && access.canDraft,
+    editable: writable && view.editable && isWritableMode && access.canDraft,
+    isViewer,
+    siteCompleted,
+    hideActions: isViewer || siteCompleted,
+    canFreeze: writable && mode === "draft" && access.canApprove,
+    canDeleteDraft: writable && mode === "draft" && access.canApprove,
+    canOpenDraft: writable && mode !== "draft" && mode !== "none" && draft === null && access.canDraft,
     draft,
     active,
     nextDraftNumber: nextDraftNumber(revisions),

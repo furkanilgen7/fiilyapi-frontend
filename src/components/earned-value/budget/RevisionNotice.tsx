@@ -5,6 +5,9 @@ import type { EvBudgetView } from "@/lib/api/models";
 
 import { revDative, type ScreenState } from "./revision-state";
 
+/** Ayarlar - Planlama (Ek) F0-8 hâl kartının bütçe karşılığı. */
+export const SITE_COMPLETED_TEXT = "Tamamlanmış şantiye · bütçe salt okunur.";
+
 interface RevisionNoticeProps {
   view: EvBudgetView;
   state: ScreenState;
@@ -20,9 +23,18 @@ interface RevisionNoticeProps {
  *     yoksa Ek Formlar M5 (a) "Rev 1 aktif, taslak yok." + "Taslak aç (Rev 2)".
  *   • taslak + görüntüleyici — BÜT:483 compact "Görüntüleyici · yalnız okuma".
  *   • revizyon yok — Ek Formlar M5 (d) bilgi kutusu.
+ *   • tamamlanmış şantiye (B1-12) — hepsinin önünde, banner.
  */
 export function RevisionNotice(props: RevisionNoticeProps) {
   const { view, state } = props;
+  // B1-12: tamamlanmış şantiye diğer bütün hâllerin ÖNÜNDEDİR (AYP F0-8 şeridiyle tutarlı).
+  if (state.siteCompleted) {
+    return (
+      <ReadOnlyStrip variant="banner" lead="Salt okunur.">
+        {SITE_COMPLETED_TEXT}
+      </ReadOnlyStrip>
+    );
+  }
   if (state.mode === "none") return <NoRevisionNotice />;
   if (state.isViewer) return <ReadOnlyStrip variant="compact">Görüntüleyici · yalnız okuma</ReadOnlyStrip>;
   if (state.mode === "draft" || view.revision === null) return null;

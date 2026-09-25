@@ -30,12 +30,12 @@ vi.mock("next/navigation", () => ({
 const SITE_ID = "99999999-0000-0000-0000-000000000001";
 let state: BackendState;
 
-function setup(over: Partial<BackendState> = {}, level: string | null = "approve", query = "") {
+function setup(over: Partial<BackendState> = {}, level: string | null = "approve", query = "", siteStatus = "active") {
   state = { ...defaultState(), ...over };
   searchParams = new URLSearchParams(query);
   wireBackend(state);
   mockPermission(level);
-  vi.mocked(useSite).mockReturnValue({ data: { id: SITE_ID, project: { id: "p-1" } } } as never);
+  vi.mocked(useSite).mockReturnValue({ data: { id: SITE_ID, project: { id: "p-1" }, status: siteStatus } } as never);
   return { user: userEvent.setup(), ...renderWithQuery(<ManHourBudgetView />) };
 }
 
@@ -240,7 +240,7 @@ describe("Adım 1 · Oranlar", () => {
     await user.click(await screen.findByRole("button", { name: "Katalogdan öner (tümü)" }));
     expect(
       await screen.findByText(
-        "3 boş satır katalogdan dolduruldu · 1 kalemde eşleşme belirsiz · ayrıntı için satırlardaki öneri rozetine bakın",
+        "3 boş satır katalogdan dolduruldu · 1 kalemde eşleşme belirsiz · ayrıntı için oran hücresindeki önerilere bakın",
       ),
     ).toBeInTheDocument();
   });
@@ -472,5 +472,53 @@ describe("taslak revizyon satırı", () => {
     const { user } = setup({ revisions: [revision()] });
     await user.click(await screen.findByRole("button", { name: /Önizleme/ }));
     expect(lastReplace().get("adim")).toBe("3");
+  });
+});
+
+describe("tamamlanmış şantiye (B1-12 · PLN-F1.6.2) — backend editable:true dönse bile salt okunur", () => {
+  it("Adım 1: şerit, oran düz metin, eylem ve seçim yok", async () => {
+    setup({}, "approve", "", "completed");
+    expect(await screen.findByText("Tamamlanmış şantiye · bütçe salt okunur.")).toBeInTheDocument();
+    expect(screen.queryByRole("textbox", { name: /birim oran/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Katalogdan öner (tümü)" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /disiplini:/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Kendi\/Taşeron:/ })).not.toBeInTheDocument();
+  });
+
+  it("revizyon listesinde 'Taslak aç' yok (aktif, taslak yok)", async () => {
+    const { user } = setup({ view: budgetView({ revision: ACTIVE_REV_1, editable: false }), revisions: [ACTIVE_REV_1] }, "approve", "", "completed");
+    await user.click(await screen.findByRole("button", { name: /Revizyon/ }));
+    expect(screen.queryByRole("button", { name: /Taslak aç/ })).not.toBeInTheDocument();
+  });
+
+  it("Adım 2: pencere çubuğu tıklanmaz, dağılım kapalı", async () => {
+    setup({}, "approve", "adim=2", "completed");
+    const group = await screen.findByRole("group", { name: "Kaba İnşaat dağılım tipi" });
+    expect(within(group).getByRole("button", { name: /Çan/ })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: /— düzenle/ })).not.toBeInTheDocument();
+  });
+
+  it("Adım 4: Dondur ve Taslağı sil GÖRÜNMEZ, form kapalı", async () => {
+    setup({ view: budgetView({ freeze_blockers: [] }) }, "approve", "adim=4", "completed");
+    expect(await screen.findByText("Adım 4 · Baseline'ı dondur")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Baseline'ı Dondur" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Taslağı sil" })).not.toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Revizyon adı" })).toBeDisabled();
+  });
+
+  it("yarış: şantiye ekranda açıkken tamamlanırsa 409 mesajı bildirimde görünür", async () => {
+    const { user } = setup({}, "draft");
+    vi.mocked(backendClient.PATCH).mockImplementation((() =>
+      Promise.resolve({
+        data: undefined,
+        error: { detail: "Tamamlanmış şantiyenin bütçesi salt okunurdur" },
+        response: new Response(null, { status: 409 }),
+      })) as never);
+    const input = await screen.findByRole("textbox", { name: "Beton döküm · Temel birim oran" });
+    await user.clear(input);
+    await user.type(input, "2");
+    await user.tab();
+    expect(await screen.findByText("Tamamlanmış şantiyenin bütçesi salt okunurdur")).toBeInTheDocument();
   });
 });

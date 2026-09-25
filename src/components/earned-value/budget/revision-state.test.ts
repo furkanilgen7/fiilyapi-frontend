@@ -134,3 +134,37 @@ describe("revDative — Türkçe yönelme eki ('Rev 2'ye dön', 'Rev 1'e göre')
     expect(revDative(n)).toBe(text);
   });
 });
+
+describe("screenState — tamamlanmış şantiye (B1-12 · PLN-F1.6.2)", () => {
+  const revisions = [DRAFT, ACTIVE_REV_1, ARCHIVED_REV_0];
+
+  it("taslak + approve + backend editable:true OLSA BİLE salt okunur; dondur/sil kapalı, eylemler gizli", () => {
+    const s = screenState(budgetView({ editable: true }), { canDraft: true, canApprove: true }, revisions, true);
+    expect(s).toMatchObject({
+      editable: false,
+      canFreeze: false,
+      canDeleteDraft: false,
+      siteCompleted: true,
+      hideActions: true,
+      isViewer: false,
+    });
+  });
+
+  it("aktif, taslak yok: 'Taslak aç' KAPALI", () => {
+    const s = screenState(ACTIVE_VIEW, { canDraft: true, canApprove: true }, [ACTIVE_REV_1], true);
+    expect(s.canOpenDraft).toBe(false);
+  });
+
+  it("revizyon yok: ilk yazma da yok (Rev 0 doğmaz)", () => {
+    expect(screenState(NONE_VIEW, { canDraft: true, canApprove: true }, [], true).editable).toBe(false);
+  });
+
+  it("varsayılan: tamamlanmamış şantiye davranışı değişmez; görüntüleyici eylemleri gizler", () => {
+    expect(screenState(budgetView(), { canDraft: true, canApprove: true }, revisions)).toMatchObject({
+      editable: true,
+      siteCompleted: false,
+      hideActions: false,
+    });
+    expect(screenState(budgetView(), { canDraft: false, canApprove: false }, revisions).hideActions).toBe(true);
+  });
+});

@@ -106,7 +106,7 @@ describe("fillMessage — Katalogdan öner bildirimi (BÜT:667 + CEO p)", () => 
   const base = { filled_item_count: 0, ambiguous: [] };
   it("belirsiz varsa yönlendirme eklenir (sayı yetim kalmaz)", () => {
     expect(fillMessage({ ...base, filled_leaf_count: 3, ambiguous_count: 1, unmatched_count: 0 })).toBe(
-      "3 boş satır katalogdan dolduruldu · 1 kalemde eşleşme belirsiz · ayrıntı için satırlardaki öneri rozetine bakın",
+      "3 boş satır katalogdan dolduruldu · 1 kalemde eşleşme belirsiz · ayrıntı için oran hücresindeki önerilere bakın",
     );
   });
   it("belirsiz yoksa yönlendirme YOK", () => {

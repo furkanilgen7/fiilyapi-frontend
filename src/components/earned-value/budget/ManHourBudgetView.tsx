@@ -15,6 +15,7 @@ import { BudgetScreen } from "./BudgetScreen";
  * Rota parametreleri "slug VEYA UUID" ADRES anahtarlarıdır (URL-3,
  * `SiteDiaryEntryView` deseni); EV uçları kanonik UUID ister → `useSite`
  * geçişi. Bağlantılar adres anahtarlarıyla kurulur (slug korunur).
+ * Şantiye durumu `useSite` yanıtından (`status === "completed"` → salt okunur, B1-12).
  * Kırıntı ve kabuk uygulamanındır.
  */
 export function ManHourBudgetView() {
@@ -24,6 +25,7 @@ export function ManHourBudgetView() {
   return (
     <BudgetScreen
       siteId={site.data?.id ?? ""}
+      siteCompleted={site.data?.status === "completed"}
       links={{
         boq: routes.projects.sites.boq(params),
         sections: routes.projects.sites.detail(params),

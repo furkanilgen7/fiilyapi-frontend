@@ -157,3 +157,17 @@ export function histogramGeometry(preview: EvPreviewOut): HistogramGeometry {
     peakIndex: peakIndex >= 0 ? peakIndex : null,
   };
 }
+
+/**
+ * CEO n — fare grafikte değilken DURAĞAN ipucu (BÜT:351-356): S-eğrisinde
+ * bugünün noktası; bugün önizleme aralığı dışındaysa ipucu yok.
+ */
+export function defaultSCurveIndex(geo: SCurveGeometry, todayIso: string): number | null {
+  const index = geo.days.indexOf(todayIso);
+  return index >= 0 ? index : null;
+}
+
+/** CEO n — histogramda tepe hafta (BÜT:376-381); bütçe 0 → tepe yok → ipucu yok. */
+export function defaultHistogramIndex(geo: HistogramGeometry): number | null {
+  return geo.peakIndex;
+}
