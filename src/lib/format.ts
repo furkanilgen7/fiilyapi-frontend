@@ -318,6 +318,56 @@ export function toIstanbulDateOnly(isoTimestamp: string): string {
 }
 
 /**
+ * PLN-F3.0-borç-2 · zaman damgası çözücünün TEK kaynağı.
+ *
+ * Ofset TAŞIMAYAN (naive) zaman damgaları UTC kabul edilir — backend UTC
+ * saklar, dolayısıyla ofsetsiz bir değeri tarayıcının yerel saati saymak
+ * kullanıcının bulunduğu zaman dilimine göre KAYAN bir sonuç üretirdi.
+ *
+ * ÖLÇÜLDÜ: bu teknik (regex + `Z` ekleme) üç yerde AYRI AYRI yazılmıştı
+ * (`settings/audit-format.ts formatAuditTime`, `earned-value/reports/kit/
+ * report-date-format.ts` — B, `earned-value/reports/daily/daily-datetime.ts`
+ * — C); üçü de BAYT BAYT aynı `HAS_OFFSET` deseni + `parseX(value)`
+ * fonksiyonunu taşıyordu. `EXPORT_XLSX` kanonuyla AYNI sınıf (`lib/api/
+ * download.ts` üstündeki not) — TEK gerçek fark biçim ÇIKTISI (saat mi,
+ * tarih+saat mi), çözücünün KENDİSİ hiç değişmiyordu.
+ */
+const TIMESTAMP_HAS_OFFSET = /(Z|[+-]\d{2}:?\d{2})$/i;
+
+export function parseUtcOrOffsetTimestamp(value: string): Date {
+  return new Date(TIMESTAMP_HAS_OFFSET.test(value) ? value : `${value}Z`);
+}
+
+const DATE_TIME_DOTS_PARTS = new Intl.DateTimeFormat("tr-TR", {
+  timeZone: "Europe/Istanbul",
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  // h23: gece yarısı "24:xx" değil "00:xx" yazılır.
+  hourCycle: "h23",
+});
+
+/**
+ * ISO zaman damgası → "gg.aa.yyyy ss:dd" (Europe/Istanbul, 24 saat) — GİR
+ * mockup biçimi (GİR:97 "Onaylandı — Mehmet Kaya, 25.09.2026 09:12", GİR:133,
+ * GİR:280). Boş/geçersiz → `EMPTY_CELL`.
+ *
+ * `toLocaleString("tr-TR")`/başka bir yerel `Intl.DateTimeFormat` biçimi
+ * DOĞRUDAN KULLANILMAZ — bu dosyanın env-bağımsızlık notu geçerli; burada
+ * `formatToParts` + SABİT `timeZone`/`hourCycle` ile `formatAuditTime`in
+ * AYNI güvenli tekniği kullanılır.
+ */
+export function formatDateTimeDots(iso: string | null | undefined): string {
+  if (iso === null || iso === undefined || iso === "") return EMPTY_CELL;
+  const date = parseUtcOrOffsetTimestamp(iso);
+  if (Number.isNaN(date.getTime())) return EMPTY_CELL;
+  const parts = Object.fromEntries(DATE_TIME_DOTS_PARTS.formatToParts(date).map((part) => [part.type, part.value]));
+  return `${parts.day}.${parts.month}.${parts.year} ${parts.hour}:${parts.minute}`;
+}
+
+/**
  * Gün + KISA ay (F-PL T2, Planlama ızgarasının gün başlıkları — P111-117:
  * "21 Tem"). `formatDayMonth`in kısaltılmış hâli; ay adları `TR_MONTHS_SHORT`
  * tek kaynağından gelir (`formatPeriodShort` ile AYNI dizi).
