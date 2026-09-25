@@ -12,6 +12,11 @@ import {
   invalidWorkerCountIds,
   isDiaryFormDirty,
   parseDiaryQuantity,
+  addDiaryLines,
+  removeDiaryLine,
+  addDiaryFirm,
+  removeDiaryWorker,
+  diaryWeatherError,
   type DiaryFormState,
 } from "./form-state";
 
@@ -78,7 +83,13 @@ describe("emptyDiaryForm", () => {
       hasIncident: false,
       incidentNote: "",
       quantities: {},
+      overrunReasons: {},
+      addedLines: [],
+      removedLines: [],
       workerCounts: {},
+      workerHours: {},
+      addedFirms: [],
+      removedWorkers: [],
     });
   });
 });
@@ -97,7 +108,7 @@ describe("diaryFormFromEntry", () => {
       safetyMeetingHeld: true,
       ppeChecked: true,
     });
-    expect(form.quantities).toEqual({ "bi-1": "120.000" });
+    expect(form.quantities).toEqual({ "bi-1|": "120.000" });
     expect(form.workerCounts).toEqual({ "company|Kalıpçılar": "12" });
   });
 
@@ -123,7 +134,7 @@ describe("diaryFormFromEntry", () => {
     expect(form).toMatchObject({ tempMinC: "12.5", tempMaxC: "30.0", windMs: "4.5" });
   });
 
-  it("PLN-F2.1: miktar hücresi YALNIZ Bölümsüz satırdan dolar — bölümlü satır onu ezmez", () => {
+  it("PLN-F2.2: HER satır (Bölümsüz + bölümlü) kendi anahtarıyla dolar — biri ötekini ezmez", () => {
     const form = diaryFormFromEntry(
       entry({
         lines: [
@@ -133,13 +144,13 @@ describe("diaryFormFromEntry", () => {
       }),
     );
 
-    expect(form.quantities).toEqual({ "bi-1": "5.000" });
+    expect(form.quantities).toEqual({ "bi-1|": "5.000", "bi-1|sec-9": "12.000" });
   });
 
   it("miktarı 0 olan satırı BOŞ hücre olarak gösterir", () => {
     const form = diaryFormFromEntry(entry({ lines: [line({ quantity: "0.000" })] }));
 
-    expect(form.quantities["bi-1"]).toBe("");
+    expect(form.quantities["bi-1|"]).toBe("");
   });
 
   it("öksüz satır (boq_item_id null) forma GİRMEZ", () => {
@@ -147,7 +158,7 @@ describe("diaryFormFromEntry", () => {
       entry({ lines: [line(), line({ id: "l-2", boq_item_id: null })] }),
     );
 
-    expect(Object.keys(form.quantities)).toEqual(["bi-1"]);
+    expect(Object.keys(form.quantities)).toEqual(["bi-1|"]);
   });
 });
 
@@ -179,7 +190,7 @@ describe("buildDiaryCreateBody", () => {
       workDone: "  Kalıp söküldü  ",
       chiefNote: "   ",
       safetyMeetingHeld: true,
-      quantities: { "bi-1": "12" },
+      quantities: { "bi-1|": "12" },
       workerCounts: { "company|Kalıpçılar": "8" },
     };
 
@@ -283,7 +294,7 @@ describe("buildDiaryLinesBody", () => {
     });
     const form: DiaryFormState = {
       ...diaryFormFromEntry(detail),
-      quantities: { "bi-1": "12", "bi-2": "" },
+      quantities: { "bi-1|": "12", "bi-2|": "" },
     };
 
     expect(buildDiaryLinesBody(detail, form)).toEqual({
@@ -302,25 +313,30 @@ describe("buildDiaryLinesBody", () => {
 
   it("geçersiz hücrede satırın SUNUCUDAKİ miktarı korunur (uydurma 0 yazılmaz)", () => {
     const detail = entry();
-    const form: DiaryFormState = { ...diaryFormFromEntry(detail), quantities: { "bi-1": "abc" } };
+    const form: DiaryFormState = { ...diaryFormFromEntry(detail), quantities: { "bi-1|": "abc" } };
 
     expect(buildDiaryLinesBody(detail, form).lines).toEqual([
       { boq_item_id: "bi-1", section_id: null, quantity: 120, overrun_reason: null },
     ]);
   });
 
-  it("PLN-F2.1: bölümlü satırlar (miktar + aşım gerekçesi) DOKUNULMADAN gövdede kalır; hücre yalnız Bölümsüz'ü yazar", () => {
+  it("PLN-F2.2: bölümlü satır kendi hücresinden yazılır, aşım gerekçesi formdan gider", () => {
     const detail = entry({
       lines: [
         line({ section_id: null, quantity: "0.000" }),
         line({ id: "l-2", section_id: "sec-9", quantity: "12.000", overrun_reason: "Ek iş emri" }),
       ],
     });
-    const form: DiaryFormState = { ...diaryFormFromEntry(detail), quantities: { "bi-1": "4" } };
+    const seeded = diaryFormFromEntry(detail);
+    const form: DiaryFormState = {
+      ...seeded,
+      quantities: { ...seeded.quantities, "bi-1|": "4", "bi-1|sec-9": "13,5" },
+      overrunReasons: { "bi-1|sec-9": "  Revizyon  " },
+    };
 
     expect(buildDiaryLinesBody(detail, form).lines).toEqual([
       { boq_item_id: "bi-1", section_id: null, quantity: 4, overrun_reason: null },
-      { boq_item_id: "bi-1", section_id: "sec-9", quantity: "12.000", overrun_reason: "Ek iş emri" },
+      { boq_item_id: "bi-1", section_id: "sec-9", quantity: 13.5, overrun_reason: "Revizyon" },
     ]);
   });
 });
@@ -329,11 +345,11 @@ describe("invalidQuantityIds / invalidWorkerCountIds", () => {
   it("geçersiz hücreleri görünür hata için raporlar", () => {
     const form: DiaryFormState = {
       ...emptyDiaryForm("2026-08-03"),
-      quantities: { "bi-1": "12", "bi-2": "-4" },
+      quantities: { "bi-1|": "12", "bi-2|": "-4" },
       workerCounts: { "company|Kalıpçılar": "3", "general|Yardımcı": "1,5" },
     };
 
-    expect(invalidQuantityIds(form)).toEqual(["bi-2"]);
+    expect(invalidQuantityIds(form)).toEqual(["bi-2|"]);
     expect(invalidWorkerCountIds(form)).toEqual(["general|Yardımcı"]);
   });
 });
@@ -373,7 +389,7 @@ describe("isDiaryFormDirty", () => {
     const detail = entry();
     const form: DiaryFormState = {
       ...diaryFormFromEntry(detail),
-      quantities: { "bi-1": "130" },
+      quantities: { "bi-1|": "130" },
     };
 
     expect(isDiaryFormDirty(detail, form)).toBe(true);
@@ -394,5 +410,154 @@ describe("isDiaryFormDirty", () => {
     const form: DiaryFormState = { ...diaryFormFromEntry(detail), ppeChecked: false };
 
     expect(isDiaryFormDirty(detail, form)).toBe(true);
+  });
+});
+
+describe("PLN-F2.2 · satır ekleme / kaldırma (G3 · G6) — TAM küme", () => {
+  function sectioned() {
+    return entry({
+      lines: [
+        line({ section_id: null, quantity: "0.000" }),
+        line({ id: "l-2", section_id: "sec-9", quantity: "12.000" }),
+        line({ id: "l-3", boq_item_id: "bi-2", section_id: null, quantity: "3.000" }),
+      ],
+    });
+  }
+
+  it("eklenen satır gövdeye `added` olarak girer; kayıttaki satırların HEPSİ korunur", () => {
+    const detail = sectioned();
+    const form = addDiaryLines(diaryFormFromEntry(detail), [{ boqItemId: "bi-1", sectionId: "sec-7", plannedQuantity: null }]);
+    const withQty: DiaryFormState = { ...form, quantities: { ...form.quantities, "bi-1|sec-7": "5" } };
+
+    expect(buildDiaryLinesBody(detail, withQty).lines).toEqual([
+      { boq_item_id: "bi-1", section_id: null, quantity: 0, overrun_reason: null },
+      { boq_item_id: "bi-1", section_id: "sec-9", quantity: 12, overrun_reason: null },
+      { boq_item_id: "bi-2", section_id: null, quantity: 3, overrun_reason: null },
+      { boq_item_id: "bi-1", section_id: "sec-7", quantity: 5, overrun_reason: null },
+    ]);
+  });
+
+  it("kaldırılan kayıtlı satır YALNIZ o satır olarak düşer (kısmi küme değil)", () => {
+    const detail = sectioned();
+    const form = removeDiaryLine(diaryFormFromEntry(detail), "bi-1|sec-9");
+
+    expect(buildDiaryLinesBody(detail, form).lines).toEqual([
+      { boq_item_id: "bi-1", section_id: null, quantity: 0, overrun_reason: null },
+      { boq_item_id: "bi-2", section_id: null, quantity: 3, overrun_reason: null },
+    ]);
+    expect(form.quantities).not.toHaveProperty("bi-1|sec-9");
+  });
+
+  it("G3: kayıtlı Bölümsüz iskelet satırı KALDIRILAMAZ (işlem yok sayılır)", () => {
+    const detail = sectioned();
+    const seeded = diaryFormFromEntry(detail);
+
+    expect(removeDiaryLine(seeded, "bi-1|")).toBe(seeded);
+    expect(buildDiaryLinesBody(detail, removeDiaryLine(seeded, "bi-1|")).lines).toHaveLength(3);
+  });
+
+  it("henüz kaydedilmemiş eklenen satır kaldırılınca iz bırakmaz (removed'a girmez)", () => {
+    const detail = sectioned();
+    const added = addDiaryLines(diaryFormFromEntry(detail), [{ boqItemId: "bi-2", sectionId: "sec-9", plannedQuantity: null }]);
+    const form = removeDiaryLine(added, "bi-2|sec-9");
+
+    expect(form.addedLines).toEqual([]);
+    expect(form.removedLines).toEqual([]);
+    expect(isDiaryFormDirty(detail, form)).toBe(false);
+  });
+
+  it("kaldırılıp yeniden eklenen kayıtlı satır DÜŞMEZ", () => {
+    const detail = sectioned();
+    const removed = removeDiaryLine(diaryFormFromEntry(detail), "bi-1|sec-9");
+    const readded = addDiaryLines(removed, [{ boqItemId: "bi-1", sectionId: "sec-9", plannedQuantity: null }]);
+
+    expect(readded.removedLines).toEqual([]);
+    expect(buildDiaryLinesBody(detail, readded).lines.map((row) => row.section_id)).toContain("sec-9");
+  });
+
+  it("ekleme/kaldırma formu kirletir", () => {
+    const detail = sectioned();
+    const seeded = diaryFormFromEntry(detail);
+
+    expect(isDiaryFormDirty(detail, addDiaryLines(seeded, [{ boqItemId: "bi-1", sectionId: "sec-7", plannedQuantity: null }]))).toBe(true);
+    expect(isDiaryFormDirty(detail, removeDiaryLine(seeded, "bi-1|sec-9"))).toBe(true);
+  });
+
+  it("aşım gerekçesi değişince kirlidir", () => {
+    const detail = sectioned();
+    const form: DiaryFormState = { ...diaryFormFromEntry(detail), overrunReasons: { "bi-1|sec-9": "x" } };
+
+    expect(isDiaryFormDirty(detail, form)).toBe(true);
+  });
+});
+
+describe("PLN-F2.2 · taşeron FİRMA satırları (kişi × saat · G10)", () => {
+  const firmRow = { id: "w-2", trade: "Kaya Duvar", source: "subcontractor", count: 7, subcontractor_id: "firm-1", hours: "8.0" };
+
+  it("kayıttaki firma saati forma taşınır", () => {
+    const detail = entry({ worker_counts: [firmRow] });
+
+    expect(diaryFormFromEntry(detail).workerHours).toEqual({ "firm|firm-1": "8.0" });
+  });
+
+  it("firma satırının kişi + saati formdan gövdeye gider", () => {
+    const detail = entry({ worker_counts: [firmRow] });
+    const seeded = diaryFormFromEntry(detail);
+    const form: DiaryFormState = {
+      ...seeded,
+      workerCounts: { ...seeded.workerCounts, "firm|firm-1": "5" },
+      workerHours: { "firm|firm-1": "9,5" },
+    };
+
+    expect(buildDiaryUpdateBody(form, detail).worker_counts).toEqual([
+      { trade: "Kaya Duvar", source: "subcontractor", count: 5, subcontractor_id: "firm-1", hours: 9.5 },
+    ]);
+  });
+
+  it("eklenen firma `added` olarak gider; kaldırılan firma YALNIZ kendisi düşer", () => {
+    const detail = entry({
+      worker_counts: [{ id: "w-1", trade: "Kalıpçılar", source: "company", count: 12 }, firmRow],
+    });
+    const withFirm = addDiaryFirm(diaryFormFromEntry(detail), { subcontractorId: "firm-2", trade: "Deniz Tesisat" });
+    const form: DiaryFormState = {
+      ...removeDiaryWorker(withFirm, "firm|firm-1"),
+      workerCounts: { ...withFirm.workerCounts, "firm|firm-2": "4" },
+      workerHours: { ...withFirm.workerHours, "firm|firm-2": "8" },
+    };
+
+    expect(buildDiaryUpdateBody({ ...form, removedWorkers: ["firm|firm-1"] }, detail).worker_counts).toEqual([
+      { trade: "Kalıpçılar", source: "company", count: 12, subcontractor_id: null, hours: null },
+      { trade: "Deniz Tesisat", source: "subcontractor", count: 4, subcontractor_id: "firm-2", hours: 8 },
+    ]);
+  });
+
+  it("geçersiz saat hücresi varsa işçi alanı HİÇ gönderilmez", () => {
+    const detail = entry({ worker_counts: [firmRow] });
+    const form: DiaryFormState = { ...diaryFormFromEntry(detail), workerHours: { "firm|firm-1": "abc" } };
+
+    expect(buildDiaryUpdateBody(form, detail).worker_counts).toBeUndefined();
+    expect(invalidWorkerCountIds(form)).toEqual(["firm|firm-1"]);
+  });
+
+  it("saat değişince / firma eklenince kirlidir", () => {
+    const detail = entry({ worker_counts: [firmRow] });
+    const seeded = diaryFormFromEntry(detail);
+
+    expect(isDiaryFormDirty(detail, { ...seeded, workerHours: { "firm|firm-1": "9" } })).toBe(true);
+    expect(isDiaryFormDirty(detail, addDiaryFirm(seeded, { subcontractorId: "firm-3", trade: "X" }))).toBe(true);
+    expect(isDiaryFormDirty(detail, removeDiaryWorker(seeded, "firm|firm-1"))).toBe(true);
+  });
+});
+
+describe("PLN-F2.2 · diaryWeatherError (backend aralıkları)", () => {
+  it("boş ve aralık içi geçerli; TR virgülü kabul", () => {
+    expect(diaryWeatherError({ ...emptyDiaryForm("2026-09-24"), tempMinC: "17", tempMaxC: "28,5", windMs: "4,2" })).toBeNull();
+    expect(diaryWeatherError(emptyDiaryForm("2026-09-24"))).toBeNull();
+  });
+
+  it("aralık dışı, iki ondalık ve min > max görünür hatadır", () => {
+    expect(diaryWeatherError({ ...emptyDiaryForm("2026-09-24"), tempMaxC: "61" })).toMatch(/Max °C/);
+    expect(diaryWeatherError({ ...emptyDiaryForm("2026-09-24"), windMs: "4,25" })).toMatch(/Rüzgâr/);
+    expect(diaryWeatherError({ ...emptyDiaryForm("2026-09-24"), tempMinC: "20", tempMaxC: "10" })).toMatch(/büyük olamaz/);
   });
 });

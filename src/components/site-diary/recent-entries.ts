@@ -30,9 +30,22 @@ export interface DiaryRecentEntryRow {
    * seçilmemişse "Bölüm seçilmedi", adı çözülemiyorsa `null` (çağıran pending
    * gösterir). */
   sectionLabel: string | null;
-  /** GK364: "₺ 182.400 hakediş katkısı" — `lines_total`. */
-  amountLabel: string;
+  /**
+   * GK364: "₺ 182.400 hakediş katkısı" — `lines_total`. İlerleme görünümünde
+   * (İ:313-327) bu satır YOKTUR → `null`.
+   */
+  amountLabel: string | null;
 }
+
+/**
+ * Satırın hangi mockup'a göre basıldığı. `default` = GK (Bölüm Detay'ın
+ * günlük sekmesi de bunu kullanır — görsel tabanı değişmez); `progress` =
+ * İ:313-327 ("Gönderilmedi" etiketi, ₺ satırı yok).
+ */
+export type DiaryRecentEntryVariant = "default" | "progress";
+
+/** İ:315 — taslak kayıt "Gönderilmedi" rozetiyle basılır. */
+export const DIARY_NOT_SUBMITTED_LABEL = "Gönderilmedi";
 
 /**
  * Liste ucunun sırası zaten `entry_date DESC`tir; yine de burada YENİDEN
@@ -43,7 +56,9 @@ export function buildRecentEntryRows(
   items: readonly SiteDiaryEntryListItem[],
   sections: readonly DiarySectionOption[],
   limit: number = DIARY_RECENT_ENTRY_LIMIT,
+  variant: DiaryRecentEntryVariant = "default",
 ): DiaryRecentEntryRow[] {
+  const isProgress = variant === "progress";
   const sectionNameById = new Map(sections.map((section) => [section.id, section.name]));
   return [...items]
     .sort((a, b) => b.entry_date.localeCompare(a.entry_date))
@@ -52,7 +67,8 @@ export function buildRecentEntryRows(
       id: item.id,
       entryDate: item.entry_date,
       dateLabel: formatDayMonth(item.entry_date),
-      statusLabel: DIARY_STATUS_LABELS[item.status],
+      statusLabel:
+        isProgress && item.status === "draft" ? DIARY_NOT_SUBMITTED_LABEL : DIARY_STATUS_LABELS[item.status],
       isSubmitted: item.status === "submitted",
       isRainy: item.weather === "rainy",
       workerLabel: `${item.worker_total} işçi`,
@@ -60,6 +76,6 @@ export function buildRecentEntryRows(
         item.section_id === null
           ? "Bölüm seçilmedi"
           : (sectionNameById.get(item.section_id) ?? null),
-      amountLabel: `${formatCurrencyPrecise(item.lines_total)} hakediş katkısı`,
+      amountLabel: isProgress ? null : `${formatCurrencyPrecise(item.lines_total)} hakediş katkısı`,
     }));
 }

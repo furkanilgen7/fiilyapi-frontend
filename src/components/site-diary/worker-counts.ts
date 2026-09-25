@@ -125,36 +125,126 @@ export function workerCountsTotal(
   return total;
 }
 
+/** Firma satırı ekleme girdisi (G10 — `subcontractor_id` + backend `trade`). */
+export interface DiaryAddedFirm {
+  subcontractorId: string;
+  /** Backend `trade` (zorunlu, ≤100) — firma adından türetilir. */
+  trade: string;
+}
+
+/** Firma satırının `trade` tavanı (backend `maxLength` 100). */
+export const DIARY_WORKER_TRADE_MAX = 100;
+
+/**
+ * Ekranın işçi satırları (PLN-F2.2): kayıttaki satırlar (`buildWorkerRows`)
+ * + formda EKLENEN firmalar − formda KALDIRILAN satırlar.
+ */
+export function buildDiaryWorkerRows(
+  entryRows: readonly SiteDiaryWorkerCountRead[],
+  addedFirms: readonly DiaryAddedFirm[],
+  removedKeys: readonly SiteDiaryWorkerKey[],
+): DiaryWorkerRow[] {
+  const base = buildWorkerRows(entryRows);
+  const present = new Set(base.map(workerCountKey));
+  const added = addedFirms
+    .map((firm): DiaryWorkerRow => ({
+      trade: firm.trade.slice(0, DIARY_WORKER_TRADE_MAX),
+      source: "subcontractor",
+      subcontractorId: firm.subcontractorId,
+    }))
+    .filter((row) => !present.has(workerCountKey(row)));
+  const removed = new Set(removedKeys);
+  return [...base, ...added].filter((row) => !removed.has(workerCountKey(row)));
+}
+
+/** Firma satırı mı (kişi × saat girilir)? */
+export function isFirmRow(row: DiaryWorkerRow): boolean {
+  return row.subcontractorId !== undefined;
+}
+
+/** Backend `hours`: 0 < h ≤ 24, bir ondalık (`schemas.py` `_HOURS_MAX`). */
+export const DIARY_WORKER_HOURS_MAX = 24;
+
+/**
+ * Firma saat hücresi: boş = saat YOK (`null`); dolu ise 0 < h ≤ 24, en çok
+ * bir ondalık (TR virgülü kabul). Aralık dışı / anlamsız metin GEÇERSİZDİR —
+ * sessizce `null` yazılmaz (backend 422'sini ağa çıkmadan yakalar).
+ */
+export function parseWorkerHours(value: string): { valid: boolean; hours: number | null } {
+  const trimmed = value.trim().replace(",", ".");
+  if (trimmed === "") return { valid: true, hours: null };
+  if (!/^\d+(\.\d)?$/.test(trimmed)) return { valid: false, hours: null };
+  const hours = Number(trimmed);
+  if (hours <= 0 || hours > DIARY_WORKER_HOURS_MAX) return { valid: false, hours: null };
+  return { valid: true, hours };
+}
+
+/** Geçersiz saat girilen hücrelerin anahtarları. */
+export function invalidWorkerHourKeys(values: Record<string, string>): string[] {
+  return Object.entries(values)
+    .filter(([, value]) => !parseWorkerHours(value).valid)
+    .map(([key]) => key);
+}
+
 /**
  * `PATCH` gövdesindeki `worker_counts[]` — KAYDIN satırlarından kurulan TAM
- * küme (`buildSiteDiaryWorkerCountsSave`). Ekrandaki hücreler yalnız SAYIYI
- * değiştirir; firma kimliği ve saat kayıttan korunur. SIFIR olan satır
- * gövdeye GİRMEZ (DEĞİŞTİRME → backend'de silinir, ekranda boş hücre olarak
- * yeniden basılır). Kayıtta olup ekranda satırı OLMAYAN satır DÜŞMEZ.
+ * küme (`buildSiteDiaryWorkerCountsSave`). Ekrandaki hücreler SAYIYI (firma
+ * satırında + SAATİ) değiştirir; firma kimliği kayıttan korunur. SIFIR olan
+ * satır gövdeye GİRMEZ (DEĞİŞTİRME → backend'de silinir, ekranda boş hücre
+ * olarak yeniden basılır). Kayıtta olup ekranda satırı OLMAYAN satır DÜŞMEZ —
+ * yalnız AÇIKÇA kaldırılan (`removedKeys`, G10) düşer.
  * Geçersiz hücre varsa gövde ÜRETİLMEZ (`null`); çağıran kaydetmeyi durdurur.
  */
 export function buildWorkerCountsBody(
   entryRows: readonly SiteDiaryWorkerCountRead[],
   rows: readonly DiaryWorkerRow[],
   values: Record<string, string>,
+  hours: Record<string, string> = {},
+  removedKeys: readonly SiteDiaryWorkerKey[] = [],
 ): SiteDiaryWorkerCountInput[] | null {
   const savedKeys = new Set(entryRows.map(entryRowKey));
+  const savedHoursByKey = new Map(entryRows.map((row) => [entryRowKey(row), row.hours ?? null]));
   const changes: Record<SiteDiaryWorkerKey, SiteDiaryWorkerChange> = {};
-  const removed: SiteDiaryWorkerKey[] = [];
+  const removed: SiteDiaryWorkerKey[] = [...removedKeys];
   const added: SiteDiaryWorkerCountInput[] = [];
   for (const row of rows) {
     const key = workerCountKey(row);
     const count = parseWorkerCount(values[key] ?? "");
     if (count === null) return null;
+    // Saat hücresi formda YOKSA saat kayıttan korunur (dokunulmaz).
+    const firmHours = isFirmRow(row) && key in hours ? parseWorkerHours(hours[key] ?? "") : null;
+    if (firmHours !== null && !firmHours.valid) return null;
+    // Değişmeyen saat kayıttaki YAZIMIYLA kalır ("9.0" → 9 diye yeniden yazılmaz).
+    const savedHours = savedHoursByKey.get(key);
+    const isHoursUnchanged =
+      firmHours === null || (savedHours !== undefined && parseWorkerHours(savedHours ?? "").hours === firmHours.hours);
+    const change: SiteDiaryWorkerChange = isHoursUnchanged ? { count } : { count, hours: firmHours.hours };
     if (count === 0) {
       removed.push(key);
     } else if (savedKeys.has(key)) {
-      changes[key] = { count };
+      changes[key] = change;
     } else {
-      added.push({ trade: row.trade, source: row.source, count, subcontractor_id: row.subcontractorId ?? null });
+      added.push({
+        trade: row.trade,
+        source: row.source,
+        count,
+        subcontractor_id: row.subcontractorId ?? null,
+        hours: firmHours?.hours ?? null,
+      });
     }
   }
   return buildSiteDiaryWorkerCountsSave(entryRows, { changes, added, removed });
+}
+
+/** Kayıttan firma saat değerleri (firma satırı dışında saat girilmez). */
+export function workerHoursFromEntry(
+  entryRows: readonly SiteDiaryWorkerCountRead[] = [],
+): Record<string, string> {
+  const values: Record<string, string> = {};
+  for (const row of entryRows) {
+    if (row.subcontractor_id) values[entryRowKey(row)] = row.hours ?? "";
+  }
+  return values;
 }
 
 /** Yerel işçi değerleri kayıttakinden ayrıştı mı (`isDiaryFormDirty` payı). */
@@ -162,11 +252,19 @@ export function areWorkerCountsDirty(
   entryRows: readonly SiteDiaryWorkerCountRead[],
   rows: readonly DiaryWorkerRow[],
   values: Record<string, string>,
+  hours: Record<string, string> = {},
 ): boolean {
   const saved = workerCountsFromEntry(entryRows);
   const keys = new Set([...Object.keys(saved), ...rows.map(workerCountKey)]);
   for (const key of keys) {
     if (parseWorkerCount(saved[key] ?? "") !== parseWorkerCount(values[key] ?? "")) return true;
+  }
+  const savedHours = workerHoursFromEntry(entryRows);
+  const hourKeys = new Set([...Object.keys(savedHours), ...Object.keys(hours)]);
+  for (const key of hourKeys) {
+    if (parseWorkerHours(savedHours[key] ?? "").hours !== parseWorkerHours(hours[key] ?? "").hours) {
+      return true;
+    }
   }
   return false;
 }

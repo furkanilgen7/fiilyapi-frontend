@@ -2,13 +2,10 @@ import { DateInput } from "@/components/ui/date-input/DateInput";
 import { Field } from "@/components/ui/field/Field";
 import { Input } from "@/components/ui/input/Input";
 import { Select } from "@/components/ui/select/Select";
-import type { Weather } from "@/lib/api/hooks/useSiteDiary";
+import { formatWindKmh } from "@/lib/format";
 
-import {
-  DIARY_TEMPERATURE_MAX,
-  DIARY_TEMPERATURE_MIN,
-  WEATHER_OPTIONS,
-} from "./diary-labels";
+import { DIARY_WEATHER_NUMBER_MAX } from "./diary-labels";
+import { DiaryWeatherPicker } from "./DiaryWeatherPicker";
 import type { DiaryFormState } from "./form-state";
 
 export interface DiarySectionOption {
@@ -26,17 +23,20 @@ export interface DiaryBasicInfoCardProps {
 }
 
 /**
- * GK179-203 · "📅 Temel Bilgiler" kartı — dört sütunlu ızgara (GK181):
- * Tarih (184) · Hava (187-190) · Sıcaklık °C (193-194) · Bölüm (197-200).
+ * İ:164-207 · "📅 Temel Bilgiler & Hava" kartı (PLN-F2.2 hava genişlemesi,
+ * GK179-203'ün yerine). Üstte Tarih · Bölüm (1fr 1fr), altta gri panelde on
+ * ikonlu hava seçicisi + Min °C · Max °C · Rüzgâr m/s (1fr 1fr 1.4fr) ve
+ * "≈ X km/sa" (K22 etiket "km/sa"; `formatWindKmh` genel `lib/format`tan).
+ * Mockup'taki "GENİŞLEDİ" çipi tasarım işaretidir, ürün metni DEĞİL — basılmaz.
  *
- * ⚠️ Tarih mockup'ta `2026-07-17` sabitidir; TARİH ARTEFAKTI İSTİSNASI gereği
- * kopyalanmaz — varsayılan BUGÜNdür (çağıran verir).
+ * ⚠️ Tarih mockup'ta sabittir; TARİH ARTEFAKTI İSTİSNASI gereği kopyalanmaz —
+ * varsayılan BUGÜNdür (çağıran verir).
  */
 export function DiaryBasicInfoCard({ form, onChange, disabled, sections }: DiaryBasicInfoCardProps) {
   return (
     <section className="diary-card" aria-labelledby="diary-basic-title">
       <h2 className="diary-card__title" id="diary-basic-title">
-        📅 Temel Bilgiler
+        📅 Temel Bilgiler &amp; Hava
       </h2>
       <div className="diary-basic__grid">
         <Field label="Tarih">
@@ -50,41 +50,7 @@ export function DiaryBasicInfoCard({ form, onChange, disabled, sections }: Diary
           )}
         </Field>
 
-        <Field label="Hava">
-          {(control) => (
-            <Select
-              {...control}
-              value={form.weather}
-              disabled={disabled}
-              onChange={(event) => onChange({ weather: event.target.value as Weather | "" })}
-            >
-              <option value="">Seçiniz…</option>
-              {WEATHER_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </Select>
-          )}
-        </Field>
-
-        <Field label="Sıcaklık °C">
-          {(control) => (
-            <Input
-              {...control}
-              type="number"
-              inputMode="decimal"
-              step="0.1"
-              min={DIARY_TEMPERATURE_MIN}
-              max={DIARY_TEMPERATURE_MAX}
-              value={form.tempMaxC}
-              disabled={disabled}
-              onChange={(event) => onChange({ tempMaxC: event.target.value })}
-            />
-          )}
-        </Field>
-
-        {/* GK198 — bölüm seçici. Alan nullable: "Bölüm seçilmedi" geçerli
+        {/* İ:171-175 — bölüm seçici. Alan nullable: "Bölüm seçilmedi" geçerli
             bir kayıttır (şantiye geneli günlük). */}
         <Field label="Bölüm">
           {(control) => (
@@ -103,6 +69,64 @@ export function DiaryBasicInfoCard({ form, onChange, disabled, sections }: Diary
             </Select>
           )}
         </Field>
+      </div>
+
+      <div className="diary-basic__weather">
+        <DiaryWeatherPicker
+          value={form.weather}
+          disabled={disabled}
+          onChange={(weather) => onChange({ weather })}
+        />
+        <div className="diary-basic__weather-numbers">
+          <Field label="Min °C">
+            {(control) => (
+              <Input
+                {...control}
+                inputMode="decimal"
+                numeric
+                maxLength={DIARY_WEATHER_NUMBER_MAX}
+                className="diary-basic__number"
+                value={form.tempMinC}
+                disabled={disabled}
+                onChange={(event) => onChange({ tempMinC: event.target.value })}
+              />
+            )}
+          </Field>
+          <Field label="Max °C">
+            {(control) => (
+              <Input
+                {...control}
+                inputMode="decimal"
+                numeric
+                maxLength={DIARY_WEATHER_NUMBER_MAX}
+                className="diary-basic__number"
+                value={form.tempMaxC}
+                disabled={disabled}
+                onChange={(event) => onChange({ tempMaxC: event.target.value })}
+              />
+            )}
+          </Field>
+          <Field label="Rüzgâr m/s">
+            {(control) => (
+              <div className="diary-basic__wind">
+                <Input
+                  {...control}
+                  inputMode="decimal"
+                  numeric
+                  maxLength={DIARY_WEATHER_NUMBER_MAX}
+                  className="diary-basic__number diary-basic__number--wind"
+                  value={form.windMs}
+                  disabled={disabled}
+                  onChange={(event) => onChange({ windMs: event.target.value })}
+                />
+                {/* İ:203 — tahmini km/sa; boş/anlamsız girdide "—" (K20). Mockup'taki
+                    "yaklaşık" işareti (U+2248) font alt kümesi DIŞINDA (sembol
+                    bekçisi) — ASCII "~" basılır; izin listesi kararı CEO'da. */}
+                <span className="diary-basic__kmh">~ {formatWindKmh(form.windMs.replace(",", "."))}</span>
+              </div>
+            )}
+          </Field>
+        </div>
       </div>
     </section>
   );

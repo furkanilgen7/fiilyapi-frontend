@@ -1,0 +1,562 @@
+/* PLN-F2.2 · Şantiye Günlük Kayıt (İlerleme) genişlemesi.
+   Kanon: projedesign/"Şantiye - Günlük Kayıt (İlerleme).dc.html" (İ) +
+   "… (İlerleme) (Ek Formlar).dc.html" (EF). Parantez içi sayılar İ SATIR
+   numaralarıdır. Çıplak hex yasak — tüm renkler tokens.css'ten. */
+
+/* ── Hava paneli (İ:177-206) ───────────────────────────────────────────── */
+.diary-basic__weather {
+  padding: 12px;
+  border-radius: var(--radius-10);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-divider);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.diary-weather__label {
+  display: block;
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+  font-weight: var(--weight-medium);
+  margin-bottom: 6px;
+}
+.diary-weather__label b {
+  color: var(--color-text);
+}
+/* İ:180 — auto-fill minmax(64px,1fr), 4px boşluk */
+.diary-weather__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 4px;
+}
+/* İ:182 — 52px kutu, 1.5px kenar */
+.diary-weather__tile {
+  height: 52px;
+  border-radius: var(--radius-6);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 2px;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+}
+.diary-weather__tile--on {
+  border-color: var(--color-primary);
+  background: var(--color-nav-active-bg);
+}
+.diary-weather__tile:disabled {
+  cursor: not-allowed;
+}
+.diary-weather__tile:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.diary-weather__short {
+  font-size: 9.5px;
+  line-height: 1.1;
+  text-align: center;
+  color: var(--color-text-muted);
+  font-weight: var(--weight-medium);
+}
+.diary-weather__tile--on .diary-weather__short {
+  color: var(--color-primary);
+  font-weight: var(--weight-bold);
+}
+/* İ:189 — 1fr 1fr 1.4fr */
+.diary-basic__weather-numbers {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.4fr;
+  gap: 12px;
+}
+.diary-basic__number {
+  text-align: right;
+  font-family: var(--font-mono);
+}
+.diary-basic__wind {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.diary-basic__wind .input-wrap {
+  flex: 0 0 90px;
+  width: 90px;
+}
+/* İ:202 */
+.diary-basic__kmh {
+  font-size: 12px;
+  color: var(--color-text-subtle);
+  font-family: var(--font-mono);
+  white-space: nowrap;
+}
+
+/* ── Yapılan Miktarlar ağacı (İ:217-253 · EF M1-M4) ────────────────────── */
+.diary-lines__scroll {
+  overflow-x: auto;
+}
+.diary-lines--tree {
+  min-width: 760px;
+}
+.diary-lines__col-num,
+.diary-lines__col-ext {
+  text-align: right;
+  width: 76px;
+}
+.diary-lines__col-remove {
+  width: 28px;
+}
+.diary-lines__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.diary-lines--tree td {
+  padding: 7px 6px;
+  font-size: 12.5px;
+}
+.diary-lines--tree tbody tr:last-child {
+  border-bottom: 1px solid var(--color-divider);
+}
+/* EF M1 — kalem başlık satırı: gri zemin, kalın toplamlar */
+.diary-lines__item-row {
+  background: var(--color-surface-2);
+}
+.diary-lines__item-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.diary-lines__item-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.diary-lines__item-meta {
+  font-family: var(--font-mono);
+}
+.diary-lines__add-anchor {
+  position: relative;
+  flex: 0 0 auto;
+}
+.diary-lines__add {
+  color: var(--color-primary);
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+}
+/* Bölüm satırı — ad sütununda girintili (G1) */
+.diary-lines__leaf {
+  padding-left: 28px !important;
+}
+.diary-lines__leaf-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--color-text);
+}
+.diary-lines__leaf-hint {
+  font-size: 10px;
+  color: var(--color-text-subtle);
+}
+.diary-lines__leaf .diary-lines__item-meta {
+  display: block;
+  font-size: 10px;
+  color: var(--color-text-subtle);
+}
+/* EF M4(b) "YENİ" çipi */
+.diary-lines__new-chip {
+  font-size: 9.5px;
+  font-weight: var(--weight-bold);
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  letter-spacing: 0.4px;
+}
+.diary-lines__leaf-row--new {
+  background: var(--color-nav-active-bg);
+}
+/* İ:223 — aşım satırı: sol amber şerit */
+.diary-lines__leaf-row--over {
+  background: var(--color-warning-tint);
+  box-shadow: inset 3px 0 0 var(--color-warning);
+}
+.diary-lines__num {
+  text-align: right;
+  font-family: var(--font-mono);
+  white-space: nowrap;
+}
+.diary-lines__num--strong {
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.diary-lines__num--muted {
+  color: var(--color-text-muted);
+}
+.diary-lines__num--over {
+  color: var(--color-warning-body-text);
+}
+.diary-lines__num--over-strong {
+  color: var(--color-warning-body-text);
+  font-weight: var(--weight-bold);
+}
+.diary-lines--tree .diary-lines__cumulative {
+  font-size: 12.5px;
+  color: var(--color-text);
+}
+.diary-lines__qty--over {
+  background: var(--color-warning-tint);
+  border-color: var(--color-warning-border-soft);
+}
+.diary-lines__today-text {
+  font-family: var(--font-mono);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+/* EF M3 — Bölümsüz planlısının "KALAN" çipi */
+.diary-lines__kalan-chip {
+  font-size: 9px;
+  font-weight: var(--weight-bold);
+  padding: 0 4px;
+  margin-right: 4px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  letter-spacing: 0.4px;
+}
+.diary-lines__ext {
+  text-align: right;
+  font-family: var(--font-mono);
+}
+.diary-lines__remove-cell {
+  text-align: center;
+}
+.diary-lines__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-subtle);
+  cursor: pointer;
+}
+.diary-lines__remove:hover:not(:disabled) {
+  color: var(--color-danger-strong);
+  background: var(--color-danger-tint);
+}
+.diary-lines__remove:disabled {
+  color: var(--color-border-strong);
+  cursor: not-allowed;
+}
+.diary-lines__remove:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.diary-lines__hint-row td {
+  font-size: 10.5px;
+  color: var(--color-text-subtle);
+  padding-left: 28px;
+}
+/* İ:235-240 — aşım alt satırı + gerekçe */
+.diary-lines__over-row {
+  background: var(--color-warning-tint);
+  box-shadow: inset 3px 0 0 var(--color-warning);
+}
+.diary-lines__over {
+  margin: 0 4px 2px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-warning-border-soft);
+  background: var(--color-warning-tint);
+  border-radius: var(--radius-8);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.diary-lines__over-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-warning-deep-text);
+}
+.diary-lines__over .input-wrap {
+  flex: 1 1 200px;
+}
+.diary-lines__over-input {
+  border-color: var(--color-warning-border-soft);
+}
+.diary-lines__ext-footer td {
+  background: var(--color-info-tint);
+  border-top: 2px solid var(--color-primary);
+  font-weight: var(--weight-bold);
+}
+
+/* ── "+ Bölüm" seçicisi (EF M1) ────────────────────────────────────────── */
+.diary-picker {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 20;
+  width: 310px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-10);
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+/* Tablo kaydırıcısından kaçış (`escapeOverflow`): konum ölçümle yazılır. */
+.diary-picker.anchored-popover--floating {
+  position: fixed;
+}
+.diary-picker__search {
+  padding: 8px;
+  border-bottom: 1px solid var(--color-divider);
+}
+.diary-picker__body {
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 6px 4px;
+}
+.diary-picker__group {
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-subtle);
+  padding: 6px 8px 2px;
+}
+.diary-picker__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.diary-picker__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: var(--radius-6);
+  font-size: 12.5px;
+}
+.diary-picker__option:hover {
+  background: var(--color-nav-active-bg);
+}
+.diary-picker__planned {
+  font-size: 10.5px;
+  color: var(--color-text-subtle);
+  font-family: var(--font-mono);
+  white-space: nowrap;
+}
+.diary-picker__message {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  padding: 6px 8px;
+}
+.diary-picker__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border-top: 1px solid var(--color-divider);
+}
+.diary-picker__count {
+  font-size: 11px;
+  color: var(--color-text-subtle);
+}
+
+/* ── Satır kaldırma onayı (EF M2b) ─────────────────────────────────────── */
+.diary-remove__lead {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: var(--leading-normal);
+  margin-bottom: 12px;
+}
+.diary-remove__summary {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-8);
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+.diary-remove__summary div {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12.5px;
+}
+.diary-remove__summary dt {
+  color: var(--color-text-muted);
+}
+.diary-remove__summary dd {
+  font-family: var(--font-mono);
+  color: var(--color-text);
+}
+.diary-remove__warning {
+  font-size: 12px;
+  color: var(--color-warning-deep-text);
+  background: var(--color-warning-tint);
+  border: 1px solid var(--color-warning-border-soft);
+  border-radius: var(--radius-8);
+  padding: 8px 12px;
+  line-height: var(--leading-normal);
+}
+
+/* ── Uzantı yuvaları (§2.7 · İ:143-149, İ:384-386) ────────────────────── */
+/* İ:144 — kilit bandı durum satırında TAM genişlik */
+.diary__lock-banner {
+  flex: 1 1 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-10);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--color-slate-700);
+}
+.diary__lock-banner-body {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+}
+.diary__subtitle-suffix {
+  color: var(--color-text-subtle);
+}
+/* Gönder ön koşulu / 422 gerekçeleri — EKRANDA (title değil) */
+.diary__gate {
+  font-size: 12px;
+  color: var(--color-warning-deep-text);
+  background: var(--color-warning-tint);
+  border: 1px solid var(--color-warning-border-soft);
+  border-radius: var(--radius-8);
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-3);
+}
+.diary__gate-title {
+  font-weight: var(--weight-semibold);
+  margin-bottom: 2px;
+}
+.diary__gate-list {
+  margin: 0;
+  padding-left: 18px;
+  line-height: var(--leading-normal);
+}
+.diary__error-reasons {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.diary__error-reasons ul {
+  margin: 0;
+  padding-left: 18px;
+}
+/* İ:384 — kart ızgarasının altı, 20px boşluk */
+.diary__full-width {
+  margin-top: 20px;
+}
+
+/* ── İşçi Dağılımı genişlemesi (İ:344-372) ────────────────────────────── */
+.diary-workers__subtitle {
+  font-size: 10.5px;
+  color: var(--color-text-subtle);
+  margin: -10px 0 10px;
+}
+.diary-workers__grid-head,
+.diary-workers__grid-row {
+  display: grid;
+  grid-template-columns: 1fr 46px 46px 50px 20px;
+  gap: 6px;
+  align-items: center;
+}
+.diary-workers__grid-head {
+  font-size: 10px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--color-divider);
+}
+.diary-workers__grid-row .input-wrap {
+  width: 46px;
+}
+.diary-workers__cell-center {
+  text-align: center;
+}
+.diary-workers__cell-right {
+  text-align: right;
+}
+.diary-workers__hours-ro {
+  font-size: 12px;
+  text-align: center;
+  color: var(--color-text-subtle);
+  font-family: var(--font-mono);
+}
+.diary-workers__hours-in {
+  border-color: var(--color-warning-border-soft);
+  background: var(--color-warning-tint);
+  text-align: center;
+}
+.diary-workers__as {
+  font-size: 13px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.diary-workers__as--sub {
+  color: var(--color-warning-body-text);
+}
+.diary-workers__sub-note {
+  font-size: 10.5px;
+  color: var(--color-warning-body-text);
+  background: var(--color-warning-tint);
+  border-radius: var(--radius-6);
+  padding: 5px 8px;
+}
+.diary-workers__add-firm {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.diary-workers__total-as {
+  font-size: 15px;
+  font-weight: var(--weight-bold);
+  color: var(--color-primary);
+  font-family: var(--font-mono);
+  text-align: right;
+}
+.diary-workers__grid-row .diary-workers__count,
+.diary-workers__grid-row .diary-workers__hours-in {
+  width: 46px;
+  text-align: center;
+}
+/* Toplam satırı da aynı 5 kolonlu ızgarayı kullanır (GK434 flex kuralını ezer). */
+.diary-workers__total.diary-workers__grid-row {
+  display: grid;
+}
+/* G5 düzeltmesi — tahsissiz grubun altındaki yönlendirme */
+.diary-picker__allocate {
+  display: block;
+  padding: 4px 8px 6px;
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
+  text-decoration: none;
+}

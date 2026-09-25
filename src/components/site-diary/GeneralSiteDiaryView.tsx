@@ -6,6 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Select } from "@/components/ui/select/Select";
 import { useSiteOptions } from "@/lib/api/hooks/useSiteOptions";
 
+import type { DiaryExtensionProps } from "./diary-extension";
 import { DiaryEntryScreen } from "./SiteDiaryEntryView";
 import "./site-diary.css";
 
@@ -43,7 +44,7 @@ import "./site-diary.css";
  * mockup'tan gelmez: E7 mod anahtarını HİÇ çizmez. Kök ikizleri istenirse
  * AYRI bir dilimdir.
  */
-export function GeneralSiteDiaryView() {
+export function GeneralSiteDiaryView({ extension, onExtensionContext }: DiaryExtensionProps = {}) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -113,6 +114,8 @@ export function GeneralSiteDiaryView() {
       // `SiteDetailTabs`in slug koruma gerekçesi burada geçerli DEĞİLDİR.
       projectKey={selected?.projectId ?? ""}
       siteKey={selected?.siteId ?? ""}
+      extension={extension}
+      onExtensionContext={onExtensionContext}
       chrome={
         <div className="diary__site-picker">
           <Select
