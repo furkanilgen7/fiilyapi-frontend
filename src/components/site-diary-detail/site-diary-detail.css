@@ -1,0 +1,349 @@
+/* DET-1.2 · Günlük kayıt detayı (salt okunur) —
+   projedesign/Şantiye - Günlük Kayıt Detay (Salt Okunur).dc.html.
+   Satır numaraları o dosyanındır; "kaynak" yorumları mockup'taki kaynak
+   zincirini (D = Bölüm Detay · İ = Günlük Kayıt (İlerleme) · HÖ = Hakediş
+   Özeti · PNL/BÜT = Planlama) taşır. Renkler YALNIZ token. */
+
+/* 176 — ana alan dikey aralığı 16px (İ-EK:183) */
+.diary-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 180-181 — başlık kartı (D:54): 14 köşe, 20/24 iç boşluk, kart gölgesi;
+   sağ blok 1024'te alta sarar */
+.diary-detail__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 20px 24px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-14);
+  box-shadow: var(--shadow-card);
+}
+.diary-detail__head-main {
+  min-width: 0;
+}
+
+/* 184 — rozet satırı (D:57-60) */
+.diary-detail__pills {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: 5px;
+  flex-wrap: wrap;
+}
+/* 29 — .pill (D:58-59): 10px · 3px 10px · köşe 10 */
+.diary-detail__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: var(--radius-10);
+  font-size: 10px;
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+}
+/* 185 — "GÜNLÜK KAYIT" */
+.diary-detail__pill--kind {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-weight: var(--weight-bold);
+}
+/* 31 .s-ok — GK:362 / İ:320 */
+.diary-detail__pill--submitted {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+/* 32 .s-dr — S1: taslak AMBER (İ:316), etiket "Taslak" (diary-labels.ts) */
+.diary-detail__pill--draft {
+  background: var(--color-warning-soft);
+  color: var(--color-warning-strong);
+}
+/* 33 .s-lk — İ:145 kilit bandı tonu */
+.diary-detail__pill--lock {
+  background: var(--color-neutral-soft);
+  color: var(--color-slate-700);
+}
+/* 34 .s-nt — D:244 "Genel" nötr; Kural A "Satırla bağlı" */
+.diary-detail__pill--neutral {
+  background: var(--color-neutral-soft);
+  color: var(--color-text-muted);
+}
+
+/* 189 — h1 22/700 (D:61) + tarih mono (İ:112) */
+.diary-detail__title {
+  margin: 0 0 4px;
+  font-size: 22px;
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.3px;
+  color: var(--color-text);
+}
+.diary-detail__date,
+.diary-detail__mono {
+  font-family: var(--font-mono);
+}
+/* 191 — meta 13px (D:62) */
+.diary-detail__meta {
+  font-size: var(--text-body);
+  color: var(--color-text-muted);
+}
+/* 571 — başlık bölümü adı koyu 600 */
+.diary-detail__meta-strong {
+  color: var(--color-text);
+  font-weight: var(--weight-semibold);
+}
+/* 193 — "Oluşturan … · Gönderen …" 12px (İ:112) */
+.diary-detail__author {
+  margin-top: 4px;
+  font-size: var(--text-xs);
+  color: var(--color-text-subtle);
+}
+.diary-detail__author-name {
+  color: var(--color-text-secondary);
+  font-weight: var(--weight-semibold);
+}
+
+/* 195 — sağ blok */
+.diary-detail__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+/* 197 — gezinme kutusu (HÖ:89-93) */
+.diary-detail__nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 6px 10px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-8);
+}
+.diary-detail__nav-link {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+.diary-detail__nav-link:hover {
+  color: var(--color-primary-hover);
+}
+.diary-detail__nav-link:focus-visible,
+.diary-detail__open:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--radius-6);
+}
+.diary-detail__nav-arrow {
+  flex-shrink: 0;
+}
+/* 199/201 — dikey ayırıcı */
+.diary-detail__nav-sep {
+  width: 1px;
+  height: 16px;
+  background: var(--color-border);
+}
+/* 200 — bugünün kısa tarihi */
+.diary-detail__nav-current {
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+/* 705/708 — hâl (j) pasif uç (Bordro Oranları:221 pasif rengi) */
+.diary-detail__nav-edge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-xs);
+  color: var(--color-border-strong);
+  cursor: default;
+}
+/* 205 — "Günlük kayıtta aç →" ikincil düğme (D:65) */
+.diary-detail__open {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 14px;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-8);
+  font-size: var(--text-body);
+  white-space: nowrap;
+}
+.diary-detail__open:hover {
+  color: var(--color-primary-hover);
+}
+
+/* 624 — hâl (c) kilit bandı (İ:144-148, İ-EK:679 ölçüleri) */
+.diary-detail__lock-band {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--color-neutral-soft);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-10);
+  font-size: var(--text-xs);
+  color: var(--color-slate-700);
+}
+.diary-detail__lock-icon {
+  flex-shrink: 0;
+}
+
+/* 647/659 — hâl (e)/(f) kutusu (PNL:403-408): kesikli, ortalı */
+.diary-detail__state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 20px 14px;
+  background: var(--color-surface-2);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-8);
+  text-align: center;
+}
+.diary-detail__state-icon {
+  color: var(--color-text-subtle);
+}
+.diary-detail__state-title {
+  margin: 0;
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.diary-detail__state-note {
+  margin: 0;
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
+  color: var(--color-text-muted);
+}
+/* 651 — birincil küçük düğme */
+.diary-detail__state-action {
+  margin-top: 4px;
+  padding: 7px 14px;
+  background: var(--color-primary);
+  color: var(--color-on-brand);
+  border-radius: var(--radius-6);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+}
+.diary-detail__state-action:hover {
+  background: var(--color-primary-hover);
+}
+
+/* 670-673 — hâl (g) hata kartı (PNL:424-431) */
+.diary-detail__error {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: 14px;
+  background: var(--color-error-card-bg);
+  border: 1px solid var(--color-error-card-border);
+  border-radius: var(--radius-8);
+}
+.diary-detail__error-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.diary-detail__error-icon {
+  flex-shrink: 0;
+  color: var(--color-danger);
+}
+.diary-detail__error-title {
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  color: var(--color-error-card-title);
+}
+.diary-detail__error-note {
+  margin: 0;
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
+  color: var(--color-danger-deep);
+}
+/* 673 — ui/button (secondary, sm) üzerine; özgüllük .btn.x ile geçer */
+.btn.diary-detail__error-retry {
+  align-self: flex-start;
+  padding: 6px var(--space-3);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--color-error-card-title);
+  background: var(--color-surface);
+  border-color: var(--color-error-card-border);
+  border-radius: var(--radius-6);
+}
+
+/* 634-640 — hâl (d) iskelet (PNL:432-436 + BÜT:500-505); başlık kartı kabuğunda */
+.diary-detail__skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px 24px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-14);
+  box-shadow: var(--shadow-card);
+}
+.diary-detail__sk-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.diary-detail__sk-bar {
+  display: block;
+  height: 9px;
+  border-radius: var(--radius-sm);
+}
+.diary-detail__sk-bar--title {
+  width: 40%;
+  background: var(--color-border);
+}
+.diary-detail__sk-bar--sub {
+  width: 65%;
+  background: var(--color-divider);
+}
+.diary-detail__sk-blocks {
+  display: flex;
+  gap: 6px;
+}
+.diary-detail__sk-block {
+  flex: 1;
+  height: 44px;
+  background: var(--color-divider);
+  border-radius: var(--radius-6);
+}
+.diary-detail__sk-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.diary-detail__sk-row {
+  display: grid;
+  grid-template-columns: 60px 1fr 50px 60px;
+  gap: var(--space-2);
+}
+.diary-detail__sk-cell {
+  display: block;
+  height: 10px;
+  background: var(--color-divider);
+  border-radius: var(--radius-sm);
+}
+/* 637 — ilk satırın ilk iki hücresi koyu */
+.diary-detail__sk-row--first .diary-detail__sk-cell:nth-child(-n + 2) {
+  background: var(--color-border);
+}
+/* 638/639 — geniş hücre kısalır (%70 · %80) */
+.diary-detail__sk-row--second .diary-detail__sk-cell--wide {
+  width: 70%;
+}
+.diary-detail__sk-row--third .diary-detail__sk-cell--wide {
+  width: 80%;
+}

@@ -298,6 +298,13 @@ describe("tokens.css", () => {
     expect(hexCount).toBe(EXPECTED_HEX_COUNT);
   });
 
+  it("DET-1.2 — içe odak halkası token'ı birincil renge bağlıdır, hex taşımaz (sayaç oynamaz)", () => {
+    // Kaynak: Şantiye - Günlük Kayıt Detay (Salt Okunur).dc.html:123 (.lr-focus).
+    expect(tokensCss).toMatch(
+      /--focus-ring-inset:\s*inset 0 0 0 1\.5px var\(--color-primary\), inset 0 0 0 4\.5px rgba\(37, 99, 235, 0\.12\)\s*;/,
+    );
+  });
+
   it("koyu tema varsayılanı yoktur — açık tema kanon", () => {
     // Açık tema kanon (README); koyu tema bu fazda YOK.
     expect(tokensCss).not.toContain("prefers-color-scheme: dark");

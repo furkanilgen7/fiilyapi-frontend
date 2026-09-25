@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import { pendingModuleLabel } from "@/lib/pending-modules";
 
 import type { DiaryRecentEntryRow } from "./recent-entries";
@@ -9,8 +11,8 @@ import type { DiaryRecentEntryRow } from "./recent-entries";
  * F-BLMSEK'te çıkarıldı: aynı satır iki yüzeyde basılıyor —
  *   - `DiaryRecentEntriesCard` (şantiye günlüğü sağ paneli): tıklanabilir
  *     `<button>` kabuğu, gün seçer;
- *   - `SectionDiaryPanel` (Bölüm Detay › Günlük Kayıt sekmesi): salt okunur
- *     `<li>` kabuğu, gün seçme davranışı yok.
+ *   - `SectionDiaryPanel` (Bölüm Detay › Günlük Kayıt sekmesi): DET-1.2'den
+ *     beri `<li><a>` kabuğu — satır günlük kayıt DETAY sayfasına gider.
  * İkinci bir kopya yazmak sunumun ZAMANLA AYRIŞMASI demekti (DRY). Kabuk
  * dışarıda bırakıldığı için şantiye kartının BASTIĞI DOM hiç değişmez —
  * o ekranın görsel tabanı vardır.
@@ -19,7 +21,19 @@ import type { DiaryRecentEntryRow } from "./recent-entries";
  * GK363'ün "3 fotoğraf" parçası — fotoğraf modülü yok, `SiteDiaryEntryList
  * Item` şemasında sayı taşınmıyor.
  */
-export function DiaryEntryRowBody({ row }: { row: DiaryRecentEntryRow }) {
+export interface DiaryEntryRowBodyProps {
+  row: DiaryRecentEntryRow;
+  /**
+   * DET-1.2 · Kural A yuvaları (yalnız Bölüm Detay listesi doldurur; şantiye
+   * "Son Kayıtlar" kartı vermez → BASTIĞI DOM değişmez).
+   *   - `extraBadge`: rozet satırının sonuna ("Satırla bağlı");
+   *   - `sectionSlot`: meta satırındaki bölüm parçasının YERİNE ("Başlık: …").
+   */
+  extraBadge?: ReactNode;
+  sectionSlot?: ReactNode;
+}
+
+export function DiaryEntryRowBody({ row, extraBadge, sectionSlot }: DiaryEntryRowBodyProps) {
   return (
     <>
       {/* GK360-362 */}
@@ -39,13 +53,14 @@ export function DiaryEntryRowBody({ row }: { row: DiaryRecentEntryRow }) {
           {row.isRainy && (
             <span className="diary-recent__badge diary-recent__badge--rain">Yağışlı</span>
           )}
+          {extraBadge}
         </span>
       </span>
       {/* GK363 */}
       <span className="diary-recent__meta">
         {row.workerLabel}
         {" · "}
-        {row.sectionLabel ?? (
+        {sectionSlot ?? row.sectionLabel ?? (
           <span className="diary-recent__pending" title={pendingModuleLabel("section_name")}>
             Bölüm adı yok
           </span>

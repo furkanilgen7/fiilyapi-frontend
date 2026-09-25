@@ -13,6 +13,7 @@ import { buildTimesheetView } from "@/components/timesheet/derive";
 import { useSiteDiaryEntries } from "@/lib/api/hooks/useSiteDiary";
 import { useSiteSubcontractorPayments } from "@/lib/api/hooks/useSiteSubcontractorPayments";
 import type { SiteSubcontractorPaymentItem } from "@/lib/api/hooks/useSiteSubcontractorPayments";
+import { sectionNav } from "./section-nav.testkit";
 
 // F-BLMSEK T2 · Bölüm Detay › "Hakediş" sekmesinin EKRAN BAĞLANTISI.
 // AYRI dosyadır: `SectionDetailView.test.tsx` 770 satırla 800 tavanındadır.
@@ -51,9 +52,15 @@ const SECTION_ID = "55555555-5555-5555-5555-555555555555";
 const OTHER_SECTION_ID = "66666666-6666-6666-6666-666666666666";
 const SECTION_NAME = "Kat 6–10 Kaba İnşaat";
 
-vi.mock("next/navigation", () => ({
-  useParams: () => ({ projectId: PROJECT_ID, siteId: SITE_ID, sectionId: SECTION_ID }),
-}));
+// DET-1.2 · S4 — sekme `?sekme=` URL parametresidir; durumlu ikiz `replace`i uygular.
+vi.mock("next/navigation", async () =>
+  (await import("./section-nav.testkit")).sectionNavModule(() => ({
+    projectId: PROJECT_ID,
+    siteId: SITE_ID,
+    sectionId: SECTION_ID,
+  })),
+);
+beforeEach(() => sectionNav.reset());
 
 function payment(overrides: Partial<SiteSubcontractorPaymentItem> = {}): SiteSubcontractorPaymentItem {
   return {

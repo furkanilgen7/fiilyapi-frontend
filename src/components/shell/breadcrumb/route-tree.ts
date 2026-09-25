@@ -40,6 +40,33 @@ const SECTION_NODE: TrailNode = {
           sectionId: k.sectionId,
         }),
     },
+    // DET-1.2 · S4 — `gunluk-kayit` segmentinin KENDİ sayfası YOK; kırıntıda
+    // Bölüm Detay'ın "Günlük Kayıt" SEKMESİNE bağlanır (mockup 152). Geri
+    // tuşu da buraya döner (sondan ikinci parça).
+    "gunluk-kayit": {
+      label: "Günlük Kayıt",
+      crumbHref: (k) =>
+        routes.projects.sites.sections.detail({
+          projectId: k.projectId,
+          siteId: k.siteId,
+          sectionId: k.sectionId,
+          sekme: "gunluk-kayit",
+        }),
+      dynamic: {
+        param: "entityId",
+        node: {
+          named: "diaryEntry",
+          label: "Kayıt Detayı",
+          href: (k) =>
+            routes.projects.sites.sections.diaryEntry({
+              projectId: k.projectId,
+              siteId: k.siteId,
+              sectionId: k.sectionId,
+              entryId: k.entityId,
+            }),
+        },
+      },
+    },
   },
 };
 

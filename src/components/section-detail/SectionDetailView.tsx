@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { AccessDenied } from "@/components/settings/AccessDenied";
 import { currentPeriod } from "@/components/timesheet/month";
@@ -25,10 +24,10 @@ import { SectionStockPanel } from "./SectionStockPanel";
 import { SectionStockSummaryList } from "./SectionStockSummaryList";
 import { SectionTimesheetPanel } from "./SectionTimesheetPanel";
 import { SectionWorkersList } from "./SectionWorkersList";
-import { SECTION_TABS, SectionDetailTabs } from "./SectionDetailTabs";
+import { SECTION_TABS, SectionDetailTabs, sectionTabIndexOf } from "./SectionDetailTabs";
 import { SectionHeroCard } from "./SectionHeroCard";
 import "./section-detail.css";
-import { routes, type SiteStockParams, type SiteTimesheetParams } from "@/lib/routes";
+import { SECTION_TAB_PARAM, routes, type SiteStockParams, type SiteTimesheetParams } from "@/lib/routes";
 
 // Sekme şeridi ve `SECTION_TABS` tanımı `SectionDetailTabs.tsx`tedir (F-BOLLINK
 // ayırması — bekçi testinin hook mock'u olmadan render edebilmesi için).
@@ -123,11 +122,11 @@ export function SectionDetailView() {
   // F-BLMSEK — bölüm süzgeçli günlük kayıt. Hook koşullu ÇAĞRILAMAZ (yukarıdaki
   // BOQ notunun aynısı), bu yüzden sekme seçili olmasa da bağlanır.
   //
-  // 🔴 SÜZGEÇSİZ çağrılır — hem `section_id` sorgu parametresi liste ucunda
-  // YOK (verilse SESSİZCE yok sayılır, `section-diary.ts` başına bakınız), hem
-  // de dönem süzgeci VERİLMEZ: böylece sorgu anahtarı şantiye günlüğü ekranıyla
-  // AYNI kalır (`["site-diary-entries", siteId, null, null, null, null]`) ve
-  // önbellek paylaşılır. Süzgeç yalnız GÖRÜNÜME uygulanır.
+  // 🔴 DET-1.1 — süzgeç ARTIK SUNUCUDA (`?section_id=`, Kural A: başlığı bu
+  // bölüm ∪ bu bölüme miktar satırı yazılmış gün). Eski istemci süzgeci
+  // (`section-diary.ts`) KALKTI: yalnız başlığa bakıyordu ve satır kolunu
+  // SESSİZCE düşürürdü. `sectionId` boşken ("" — bölüm henüz çözülmedi) hook
+  // ağa ÇIKMAZ; süzgeçsiz tam liste bölüm listesi gibi basılmaz.
   // 🔴 STOK-BOLUM — bölümün malzeme kırılımı. Hook koşullu ÇAĞRILAMAZ (kardeş
   // notların aynısı), bu yüzden sekme seçili olmasa da bağlanır: alt kart
   // ("Bölüm Malzeme Durumu") sekme seçili OLMADAN da bu veriyi basar, yani TEK
@@ -136,7 +135,7 @@ export function SectionDetailView() {
   // Sayfalama tavanı AÇIKÇA gönderilir: sunucu varsayılanı 50'dir ve 51.
   // (malzeme, poz) çiftini SESSİZCE düşürürdü (TB3/F-TH kırpılma dersi).
   const sectionStock = useSectionStock(sectionId, { limit: SECTION_STOCK_LIST_MAX_LIMIT });
-  const diaryEntries = useSiteDiaryEntries(siteId, { limit: SITE_DIARY_LIST_MAX_LIMIT });
+  const diaryEntries = useSiteDiaryEntries(siteId, { limit: SITE_DIARY_LIST_MAX_LIMIT, sectionId });
   // F-BLMSEK T2 — bölüm süzgeçli TAŞERON hakedişi. Hook koşullu ÇAĞRILAMAZ
   // (yukarıdaki BOQ notunun aynısı), bu yüzden sekme seçili olmasa da bağlanır.
   //
@@ -147,7 +146,21 @@ export function SectionDetailView() {
   const subcontractorPayments = useSiteSubcontractorPayments(projectId, siteId);
   // İzin: ekran `sites:view`, "Düzenle" butonu `sites:full` (task-2-brief §İzin).
   const { canView, canWrite } = useModulePermission("sites");
-  const [activeTab, setActiveTab] = useState(0);
+  // DET-1.2 · S4 — açık sekme URL'dedir (`?sekme=`): günlük kayıt detayının
+  // kırıntısı/geri tuşu "Günlük Kayıt"a DÖNER. Tek kaynak URL; yerel kopya yok.
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const activeTab = sectionTabIndexOf(searchParams.get(SECTION_TAB_PARAM));
+
+  /** `replace` — sekme geçişi geçmişi ŞİŞİRMEZ; varsayılan sekme parametreyi siler. */
+  function selectTab(index: number) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (index === 0) params.delete(SECTION_TAB_PARAM);
+    else params.set(SECTION_TAB_PARAM, SECTION_TABS[index].siteSlug);
+    const next = params.toString();
+    router.replace(next.length > 0 ? `${pathname}?${next}` : pathname, { scroll: false });
+  }
 
   if (!canView || isForbidden(sectionQuery.error) || isForbidden(siteQuery.error)) {
     return <AccessDenied />;
@@ -207,9 +220,19 @@ export function SectionDetailView() {
             sectionName={section.name}
             sections={siteQuery.data?.sections ?? []}
             items={diaryEntries.data?.items ?? []}
+            total={diaryEntries.data?.total}
             isLoading={diaryEntries.isLoading}
             isError={diaryEntries.isError}
             diaryHref={routes.projects.sites.diary({ projectId: projectKey, siteId: siteKey })}
+            // DET-1.2 — satır detay sayfasına gider; yol ADRES anahtarlarıyla.
+            entryHref={(entryId) =>
+              routes.projects.sites.sections.diaryEntry({
+                projectId: projectKey,
+                siteId: siteKey,
+                sectionId: sectionKey,
+                entryId,
+              })
+            }
           />
         );
       case "hakedisler":
@@ -290,7 +313,7 @@ export function SectionDetailView() {
         projectKey={projectKey}
         siteKey={siteKey}
         activeIndex={activeTab}
-        onSelect={setActiveTab}
+        onSelect={selectTab}
       />
 
       {/* 🔴 STOK-BOLUM — BEŞ sekmenin BEŞİ de gerçek veri basıyor (eski not

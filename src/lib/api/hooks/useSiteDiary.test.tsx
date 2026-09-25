@@ -3,7 +3,13 @@ import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 
-import { useSiteDiaryEntries, useSiteDiaryEntry, useSiteDiarySummary } from "./useSiteDiary";
+import {
+  SITE_DIARY_ENTRY_QUERY_KEY,
+  siteDiaryEntryQueryKey,
+  useSiteDiaryEntries,
+  useSiteDiaryEntry,
+  useSiteDiarySummary,
+} from "./useSiteDiary";
 import { backendClient } from "@/lib/api/client";
 import { BackendError } from "@/lib/api/unwrap";
 
@@ -75,6 +81,28 @@ describe("useSiteDiaryEntries", () => {
     });
   });
 
+  it("DET-1.1 — `sectionId` verilirse `section_id` sunucu süzgeci gider (Kural A)", async () => {
+    vi.mocked(backendClient.GET).mockResolvedValue(
+      okResponse({ items: [], total: 0, limit: 200, offset: 0 }),
+    );
+
+    const { result } = renderHook(
+      () => useSiteDiaryEntries("s-1", { limit: 200, sectionId: "sec-1" }),
+      { wrapper },
+    );
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(backendClient.GET).toHaveBeenCalledWith("/sites/{site_id}/diary", {
+      params: { path: { site_id: "s-1" }, query: { limit: 200, section_id: "sec-1" } },
+    });
+  });
+
+  it("DET-1.1 — `sectionId` İSTENİP henüz boşken ağa ÇIKMAZ (süzgeçsiz tam liste sızmaz)", () => {
+    renderHook(() => useSiteDiaryEntries("s-1", { sectionId: "" }), { wrapper });
+
+    expect(backendClient.GET).not.toHaveBeenCalled();
+  });
+
   it("boş `siteId` ile AĞA ÇIKMAZ (rota parametresi henüz gelmemiş olabilir)", () => {
     renderHook(() => useSiteDiaryEntries(""), { wrapper });
 
@@ -102,6 +130,28 @@ describe("useSiteDiaryEntry", () => {
     expect(backendClient.GET).toHaveBeenCalledWith("/diary/{entry_id}", {
       params: { path: { entry_id: "d-1" } },
     });
+  });
+
+  it("DET-1.1 — `sectionId` verilirse `?section_id=` gider (önceki/sonraki bölüm bağlamında)", async () => {
+    vi.mocked(backendClient.GET).mockResolvedValue(okResponse({ id: "d-1" }));
+
+    const { result } = renderHook(() => useSiteDiaryEntry("d-1", { sectionId: "sec-1" }), { wrapper });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(backendClient.GET).toHaveBeenCalledWith("/diary/{entry_id}", {
+      params: { path: { entry_id: "d-1" }, query: { section_id: "sec-1" } },
+    });
+  });
+
+  it("önbellek anahtarı: bölümsüz çağrı BUGÜNKÜ anahtarı korur, bölümlü çağrı ayrışır", () => {
+    expect(siteDiaryEntryQueryKey("d-1")).toEqual([SITE_DIARY_ENTRY_QUERY_KEY, "d-1"]);
+    expect(siteDiaryEntryQueryKey("d-1", "sec-1")).toEqual([SITE_DIARY_ENTRY_QUERY_KEY, "d-1", "sec-1"]);
+  });
+
+  it("`enabled: false` iken ağa çıkmaz (bölüm kimliği çözülmeden istenmez)", () => {
+    renderHook(() => useSiteDiaryEntry("d-1", { enabled: false }), { wrapper });
+
+    expect(backendClient.GET).not.toHaveBeenCalled();
   });
 
   it("kimlik boşken (o gün kayıt YOK) ağa çıkmaz", () => {

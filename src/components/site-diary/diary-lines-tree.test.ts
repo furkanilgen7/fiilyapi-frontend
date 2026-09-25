@@ -18,6 +18,8 @@ function line(overrides: Partial<SiteDiaryLineRead> = {}): SiteDiaryLineRead {
     id: "l-1",
     boq_item_id: "duv",
     section_id: null,
+    // DET-1.1 sözleşmesi: satır bölüm ADINI da taşır (zorunlu, `section_id` null ise null).
+    section_name: null,
     code: "DUV.01.01",
     description: "Tuğla duvar",
     unit: "m²",
