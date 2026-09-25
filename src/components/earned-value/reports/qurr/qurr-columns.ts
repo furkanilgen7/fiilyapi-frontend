@@ -7,7 +7,7 @@
  */
 import { EMPTY_CELL, formatDecimal } from "@/lib/format";
 import { compareDecimalStrings } from "@/lib/earned-value/decimal-input";
-import { formatPf, formatUnitRate, formatVariancePoints } from "@/lib/earned-value";
+import { formatFixedDecimal, formatPf, formatUnitRate, formatVariancePoints } from "@/lib/earned-value";
 import type { EvQurrRow, EvQurrTotal } from "@/lib/api/models";
 
 import type { QurrTreeNodeData } from "./qurr-tree";
@@ -150,6 +150,24 @@ export function qurrColumnDigits(key: QurrColumnKey, uom: string | null, weekRaw
   return undefined; // m/n/o/p → formatUnitRate kendi basamağını seçer; q/r → formatPf sabit 2
 }
 
+/**
+ * LİDER DENETİMİ (madde 7, GERÇEK KUSUR): mockup `nf(v,d)` HER ZAMAN `d`
+ * basamak basar (`minimumFractionDigits: d, maximumFractionDigits: d}` —
+ * "Demir ton" satırı "520,0" yazar, "520" DEĞİL). Genel `lib/format.ts`
+ * `formatDecimal` yalnız `maximumFractionDigits` verir (sondaki sıfırı
+ * ATAR) — QURR'un miktar kolonları (a-e) için YANLIŞ aile.
+ *
+ * LİDER TALEBİ (DRY, 2026-09-26): bu iki adımlı desen (`roundHalfUp` →
+ * sabit basamaklı `Intl`) `lib/earned-value/format.ts`teki `formatPf`/
+ * `formatVariancePoints`le AYNIYDI — artık ORTAK `formatFixedDecimal`
+ * (aynı dosya) BUNU tek yerde taşıyor. Burada yalnız ADI KORUNUR (test
+ * dosyası SUT olarak doğrudan çağırıyor) — gövde ORTAK fonksiyona devreder,
+ * kopya YOK.
+ */
+export function formatFixedQuantity(value: string | null, digits: number): string {
+  return formatFixedDecimal(value, digits);
+}
+
 export interface QurrCellText {
   readonly text: string;
   /** o/p güncel orandan büyükse (Q:198). */
@@ -167,6 +185,12 @@ export interface QurrCellText {
  * bir tanesi).
  */
 export function qurrCellText(data: QurrTreeNodeData, key: QurrColumnKey): QurrCellText {
+  // LİDER DENETİMİ (madde 8): başlık/ara toplam satırlarında a-e/m-p BOŞTUR
+  // (mockup `sumCells`: bu anahtarlar için `t:''` — "—" DEĞİL). "—" yalnız
+  // GERÇEK bir satırda değer YOKSA basılır; toplam satırında alan zaten
+  // UYGULANAMAZ (kavramsal olarak yok), o başka bir şeydir.
+  if (data.kind === "total" && ROW_ONLY_KEYS.has(key)) return { text: "", danger: false };
+
   const raw = qurrCellRaw(data, key);
   if (key === "q" || key === "r") return { text: formatPf(raw), danger: false };
   if (key === "m" || key === "n" || key === "o" || key === "p") {
@@ -178,6 +202,10 @@ export function qurrCellText(data: QurrTreeNodeData, key: QurrColumnKey): QurrCe
   }
   const uom = data.kind === "row" ? data.row.uom : null;
   const weekRaw = data.kind === "row" ? data.row.e_qty_week : null;
+  if (key === "a" || key === "b" || key === "c" || key === "d" || key === "e") {
+    const digits = qurrColumnDigits(key, uom, weekRaw) ?? 0;
+    return { text: formatFixedQuantity(raw, digits), danger: false };
+  }
   const digits = qurrColumnDigits(key, uom, weekRaw);
   return { text: formatDecimal(raw, digits ?? 0), danger: false };
 }

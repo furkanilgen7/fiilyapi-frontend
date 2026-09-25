@@ -308,16 +308,33 @@
 
 /* Q:160 `min-width:1700px` — yatay kaydırma alanı; tablo gerçek `<table>`
    olduğundan (treegrid DEĞİL, bkz. TreeTable dokümantasyonu) sabit genişlik
-   `table-layout:fixed` + Kod/İş tipi kolonlarının PX genişliğiyle kurulur,
-   kalan 18 kolon eşit paylaşır (mockup'ın `minmax(78px,1fr)`ine en yakın
-   native-table karşılığı). */
+   Kod/İş tipi kolonlarının HER SATIRDA tekrarlanan PX genişliğiyle kurulur
+   (aşağıdaki not), kalan 18 kolon `auto` layout'ta içeriğe göre paylaşır —
+   mockup'ın `minmax(78px,1fr)`ine en yakın native-table karşılığı. */
 .qurr-table-card__inner {
   min-width: 1700px;
 }
 
+/*
+ * LİDER DENETİMİ (ÜÇÜNCÜ turda kök nedene inildi): `table-layout:fixed`
+ * kolon genişliklerini `<colgroup>` yoksa TABLONUN İLK SATIRINDAKİ
+ * hücrelerden okur. İLK turda ilk satırda "İş kalemi" TEK `colSpan=2`
+ * hücreydi; tarayıcı ona verilen TOPLAM genişliği (254px) kapsadığı
+ * kolonlara EŞİT BÖLÜYORDU (254÷2=127px, ne 78 ne 176) — bu yüzden
+ * `table-layout:fixed` "TEMELDEN uygun değil" denip `auto`'ya geçilmişti.
+ * Gerçek kök neden `table-layout:fixed` DEĞİL, İLK SATIRDAKİ colSpan
+ * BELİRSİZLİĞİYDİ. Kök düzeltme HEADER_GROUPS'ta: "code"/"item" artık
+ * AYRI `span:1` girdiler (bkz. WeeklyQurrScreen.tsx), yani ilk satırda
+ * artık colSpan'lı bir grup hücresi YOK — her kolonun genişliği kendi
+ * hücresinden doğrudan okunuyor. Bu yüzden `table-layout:fixed` GÜVENLE
+ * geri eklendi: `auto` layout'ta uzun içerik (ör. kırpılmayan İş kalemi
+ * adı) `white-space:nowrap` ile kolonu ZORLA büyütebilir (bkz. Q:159
+ * `repeat(18, minmax(78px,1fr))` sabit ızgara niyeti) — `fixed` bunu
+ * yapısal olarak imkânsız kılar.
+ */
 .tree-table--qurr {
-  table-layout: fixed;
   width: 100%;
+  table-layout: fixed;
 }
 
 /* Q:162/169/187 — Kod (78px) ve İş tipi (176px) İKİ AYRI yapışkan kolon,
@@ -328,11 +345,76 @@
   left: 0;
   z-index: 2;
   background: inherit;
+  overflow: hidden;
 }
 
-.tree-table--qurr th.qurr-code-cell {
+/*
+ * LİDER DENETİMİ (ölçüldü, GERÇEK KUSUR): `th.qurr-code-cell`/`th.qurr-
+ * item-cell` yalnız BAŞLIK hücresini hedeflemek İÇİN yazılmıştı ama
+ * `TreeTable`ın ağaç hücresi GÖVDE satırlarında da `<th scope="row">`dur
+ * (`renderTreeCell`) — bu yüzden `th.*` seçicisi koyu başlık zeminini HER
+ * gövde satırının İş tipi hücresine de sızdırıyordu ("Kaba İnşaat"/"Kalıp"
+ * neredeyse okunmuyordu). Doğru ayrım `<th>` DEĞİL, `TreeTable`ın başlık
+ * hücresine verdiği `tree-table__head` sınıfıdır — yalnız GERÇEK başlık
+ * satırı bu sınıfı taşır.
+ *
+ * LİDER DENETİMİ (5. TUR, ÖLÇÜLDÜ — GERÇEK KUSUR): bu satır TreeTable'ın
+ * İKİNCİ başlık satırıdır (KOD/İş tipi metni) — GRUP satırı (İŞ KALEMİ)
+ * DEĞİL. Mockup'ta bu satırın zemini KOYU DEĞİL: piksel örneklemesiyle
+ * ölçüldü, `rgb(248,250,252)` = `#f8fafc` = tam olarak projenin
+ * `--color-surface-2` token'ı (aynı satırın diğer tüm hücreleri —
+ * "Önceki rev." vb. — zaten bu tokenı ortak `tree-table__head-row`
+ * kuralından miras alıyor). Metin rengi de ölçüldü: `rgb(100,116,139)`
+ * = `#64748b` = `--color-text-muted`, bu ZATEN `.tree-table__head`in
+ * varsayılanı (aşağıda override YOK, otomatik doğru). Tek düzeltme:
+ * `background: var(--color-slate-700)` → `var(--color-surface-2)`.
+ */
+.tree-table--qurr .tree-table__head.qurr-code-cell {
   z-index: 7;
-  background: var(--color-slate-700);
+  background: var(--color-surface-2);
+}
+
+/*
+ * LİDER DENETİMİ (4. TUR — İLK DÜZELTME YANLIŞ HÜCREYİ HEDEFLEDİ): bir
+ * önceki denemede bu override'ı `.tree-table__head.qurr-code-cell`e
+ * yazmıştım — ama o seçici GRUP satırını (İŞ KALEMİ) DEĞİL, TreeTable'ın
+ * `renderColumnHeaders`de ürettiği İKİNCİ başlık satırını (`tree-table__
+ * head` sınıflı KOD/İş tipi hücreleri, bkz. TreeTable.tsx satır ~283)
+ * hedefliyordu; grup satırı `tree-table__group-head` sınıfını taşır (bkz.
+ * TreeTable.tsx satır ~271, `cx("tree-table__group-head", group.className)`).
+ * Yanlış satıra yazınca sunucu yeniden derlense DE görsel HİÇ değişmedi.
+ * Doğru seçici `tree-table__group-head` ile: ortak tree-table.css'in
+ * `.tree-table__group-head + .tree-table__group-head { border-left }`
+ * kuralı "code"/"item" ayrı hücre olunca aralarına GÖRÜNÜR ayraç
+ * sokuyordu (mockup'ta TEK kesintisiz blok) — `border-left:none` bunu
+ * yalnız QURR'da iptal eder. Etiket "code" hücresine taşındı
+ * (WeeklyQurrScreen.tsx) — mockup'ta "İŞ KALEMİ" KOD'un kendi sol
+ * dolgusuyla aynı hizadan başlar; `text-align:left` + `overflow:visible`
+ * + `white-space:nowrap` ile metnin komşu "item" hücresinin üstüne
+ * TAŞMASINA izin verilir. `z-index:3` (item'ın taban `z-index:2`sinden
+ * yüksek, bkz. `.qurr-code-cell`/`.qurr-item-cell` temel kuralı) taşan
+ * metnin item'ın kendi (aynı renk ama ayrı boyama geçen) koyu zemininin
+ * ALTINDA kalıp görünmez olmasını engeller.
+ */
+/*
+ * LİDER DENETİMİ (6. TUR, ÖLÇÜLDÜ — GERÇEK KUSUR): `.qurr-code-cell`
+ * (aşağıda, gövde KOD hücreleri için) `font-family: var(--font-mono)`
+ * veriyor; bu sınıf grup satırına da AYNEN yazıldığı için (WeeklyQurr
+ * Screen.tsx HEADER_GROUPS'ta className) etikete ("İş kalemi") mono font
+ * MİRAS kaldı — mockup'ta MİKTAR/ADAM-SAAT gibi sans, kalın, büyük harf
+ * olmalı (`.tree-table__group-head`in kendi varsayılanı zaten budur, mono
+ * SADECE bu satırda bozuyordu). `font-family: var(--font-sans)` ile iptal.
+ */
+.tree-table--qurr .tree-table__group-head.qurr-code-cell {
+  z-index: 3;
+  text-align: left;
+  overflow: visible;
+  white-space: nowrap;
+  font-family: var(--font-sans);
+}
+
+.tree-table--qurr .tree-table__group-head.qurr-item-cell {
+  border-left: none;
 }
 
 .tree-table--qurr .qurr-item-cell {
@@ -342,11 +424,12 @@
   z-index: 2;
   background: inherit;
   border-right: 1px solid var(--color-border-strong);
+  overflow: hidden;
 }
 
-.tree-table--qurr th.qurr-item-cell {
+.tree-table--qurr .tree-table__head.qurr-item-cell {
   z-index: 7;
-  background: var(--color-slate-700);
+  background: var(--color-surface-2);
 }
 
 /* ── Yazdırma yalıtımı — LİDER EK (2): gerçek yazdırmada yalnız print
@@ -372,36 +455,120 @@
   background: var(--color-text-secondary) !important;
 }
 
-/* ── İş kalemi hücresi ───────────────────────────────────────────────────── */
+.qurr-group--dark {
+  background: var(--color-slate-700) !important;
+}
+
+/*
+ * ── İş kalemi hücresi ─────────────────────────────────────────────────────
+ * LİDER DENETİMİ (ölçüldü, GERÇEK KUSUR): `.qurr-item__name`in KENDİSİNDE
+ * `min-width:0` YOKTU — yalnız flex KABI (`.qurr-item`) üzerinde vardı.
+ * Flexbox'ta bir ÖĞENİN varsayılan `min-width` değeri `auto`dur (içeriğinin
+ * doğal genişliği), kabın `min-width:0`ı buna miras KALMAZ; öğe kendi
+ * `min-width`ini AÇIKÇA sıfırlamadıkça daralmayı REDDEDER ve kardeş
+ * `.qurr-item__uom`un üstüne bindirip hücre sınırının dışına taşar ("Kalıp
+ * m² 13.600" üst üste biniyordu). `flex-shrink:0` uom'a, `min-width:0` +
+ * `flex-shrink:1` name'e AYRI AYRI verilir.
+ */
+/*
+ * LİDER DENETİMİ (CEO — kırpılma turu, ÖLÇÜLDÜ): mockup kaynağını (Q:188
+ * satırı, `<div style="...gap:6px;">`) canlı DOM'da `getComputedStyle` ile
+ * ölçtüm — `gap:"6px"`, `padding:"6px 10px"` (üst düzey satırlar) / "6px 10px
+ * 6px {ind}px" (girintili satırlar), `font-size:"12.5px"`. `--space-1`
+ * (4px) mockup'ın 6px'inden dardı; sabit `6px` ile birebir eşitlendi.
+ */
 .qurr-item {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
   min-width: 0;
+  width: 100%;
 }
 
 .qurr-item__name {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;
+  flex-shrink: 1;
 }
 
 .qurr-item__uom {
   font-size: 10.5px;
   color: var(--color-text-subtle);
   font-weight: 400;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
+/*
+ * LİDER DENETİMİ (CEO — kırpılma turu, ÖLÇÜLDÜ): mockup KAYNAĞINDA "dolaylı"
+ * rozeti YOKTUR — bu spec §3.15 S3'ün mockup'ı EZEN, önceden onaylı bir
+ * eklentisidir (bkz. WeeklyQurrScreen.tsx `totalContractorLabel` üstü not).
+ * Mockup'ın kendisinde ("Mobilizasyongtr"/"Şantiye temizliğiay") isim+birim
+ * İKİ öğe olarak tam sığıyordu (`scrollWidth === clientWidth`, ölçüldü);
+ * benim üçüncü ("dolaylı") öğem eklenince bütçe aşılıyordu. Kök neden rozetin
+ * KENDİSİ değil, `padding:1px 5px` + `border-radius` + `background`
+ * (chip zemin) taşıdığı FAZLA genişlikti — bunlar kaldırılıp `.qurr-item__
+ * contractor`la AYNI hafif metin muamelesine (dolgu/zemin/kenar YOK)
+ * çevrildi; toplam üç-öğe bütçesi bu şekilde mockup'ın iki-öğe bütçesine
+ * mümkün olduğunca yaklaştırılır.
+ */
 .qurr-item__badge {
   font-size: 10px;
-  font-weight: var(--weight-semibold);
-  padding: 1px 5px;
-  border-radius: var(--radius-sm);
-  background: var(--color-surface-muted);
-  color: var(--color-text-muted);
+  font-weight: 500;
+  color: var(--color-text-subtle);
+  flex-shrink: 0;
 }
 
-/* ── Kolon başlığı (kısa etiket + (harf)), tıklanınca formül (Q:172-182) ── */
+/* Q:169/187 — disiplin satırı Kendi/Taşeron, alt grup satırı "alt grup"
+   (mockup'ın `u` alanı — kod tarafında `kind`e göre türetilir, bkz.
+   `WeeklyQurrScreen.tsx` `totalContractorLabel`). */
+.qurr-item__contractor {
+  font-size: 10.5px;
+  color: var(--color-text-subtle);
+  font-weight: 400;
+  flex-shrink: 0;
+}
+
+/* Q:187 KOD — L1 (disiplin) kalın, alt seviyeler normal gri mono (tree-table
+   seviye stilleri zaten rengi/ağırlığı satıra taşır, kod hücresi ONU
+   miras alır — burada yalnız mono/boyut netleştirilir). */
+.qurr-code-cell {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+/*
+ * ── Kolon başlığı (tam etiket + (harf)), tıklanınca formül (Q:172-182) ──
+ * LİDER DENETİMİ (madde 6, GERÇEK KUSUR): 18 kolonun `mono:true` bayrağı
+ * (`qurrColumns()`) HEM gövde HEM başlık hücresine uygulanıyor
+ * (`TreeTable`ın `cellClass` yardımcısı ikisine de `tree-table__cell--mono`
+ * ekliyor) — mockup'ta yalnız gövde SAYILARI mono'dur (Q:172 başlık metni
+ * sans, yalnız "(a)" harfi mono — `.qurr-head-cell__code` zaten mono).
+ * `column.mono`u iki ayrı bayrağa BÖLMEK yerine (TreeTable sözleşmesini
+ * genişletmek çağıranları etkiler) tek satırlık bir CANCEL yeterli.
+ */
+.tree-table--qurr .tree-table__head.tree-table__cell--mono {
+  font-family: var(--font-sans);
+}
+
+/*
+ * LİDER DENETİMİ (GERÇEK KUSUR): ortak `tree-table.css` `.tree-table__head`
+ * `white-space:nowrap` verir (Panel/BÜT gibi TEK KELİMELİK başlıklarda
+ * sorunsuz) — QURR'un TAM etiketleri ("Önceki rev. bütçe", "Kazanılmış
+ * küm.") dar (~1fr) kolonlarda taşıp KOMŞU başlığın üstüne biniyordu
+ * ("Güncel bütçeKazanılmış küm." — boşluksuz çakışma). Mockup Q:172-174
+ * `<span>{{c.label}}</span>` sarma (wrap) DAVRANIŞINI KISITLAMAZ — kolon
+ * dar olduğunda metin kendiliğinden 2 satıra döner. `white-space:normal` +
+ * sıkı `line-height` bunu geri verir.
+ */
+.tree-table--qurr .tree-table__head {
+  white-space: normal;
+  line-height: 1.25;
+}
+
 .qurr-head-cell-anchor {
   position: relative;
   display: block;
@@ -436,6 +603,16 @@
 }
 
 /* Q:176-180 — koyu zeminli formül baloncuğu. */
+/*
+ * LİDER DENETİMİ (ölçüldü): bu baloncuk `.tree-table__head` (`<th>`) İÇİNDE
+ * render edilir — o sınıfın `text-transform:uppercase` + `letter-spacing:
+ * 0.4px`i (tree-table.css) MİRAS kalıyordu, `color`/`font-weight` zaten
+ * override edilmişti ama bu ikisi UNUTULMUŞTU (Q:176-180 karışık harf ister).
+ * Dördü de burada AÇIKÇA sıfırlanır — hangisinin miras kaldığını "tahmin
+ * etme", tree-table.css'in `.tree-table__head`de kurduğu TÜM devralınan
+ * metin özellikleri (color · font-weight · text-transform · letter-spacing)
+ * tek tek karşılanır.
+ */
 .qurr-formula-pop {
   width: 230px;
   background: var(--color-text-strong);
@@ -447,6 +624,8 @@
   gap: 4px;
   text-align: left;
   font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.25);
   z-index: 20;
 }
@@ -484,13 +663,24 @@
   color: var(--color-danger-strong);
 }
 
-/* ── Toplam satırları (Q:334 TOT — Σ D / Σ D+DL) ─────────────────────────── */
+/*
+ * ── Toplam satırları (Q:334 TOT — Σ D / Σ D+DL) ────────────────────────────
+ * LİDER DENETİMİ (CEO Q1, ÖLÇÜLDÜ): mockup kaynağı (`Planlama - Haftalık
+ * QURR.dc.html`) `TOT = { bg:'#334155', fg:'#fff', bt:'1.5px solid
+ * #1e293b', fw:700 }` (Σ D) ve Σ D+DL için `Object.assign(..., TOT, {
+ * bg:'#0f172a', bd:'#0f172a' })` (üst border AÇIKÇA override EDİLMEZ, TOT'un
+ * `#1e293b`si miras kalır). `#334155`=`--color-slate-700`, `#fff`=
+ * `--color-on-brand`, `#0f172a`=`--color-text-strong` (üçü zaten doğruydu).
+ * TEK sapma: üst border rengi `var(--color-text-strong)` (#0f172a) YAZILMIŞ,
+ * mockup HER İKİ toplam satırında da `#1e293b` = `--color-text` ister —
+ * düzeltildi.
+ */
 .tree-table--qurr tr.qurr-row--direct-total,
 .tree-table--qurr tr.qurr-row--all-total {
   background: var(--color-slate-700);
   color: var(--color-on-brand);
   font-weight: var(--weight-bold);
-  border-top: 1.5px solid var(--color-text-strong);
+  border-top: 1.5px solid var(--color-text);
 }
 
 .tree-table--qurr tr.qurr-row--all-total {

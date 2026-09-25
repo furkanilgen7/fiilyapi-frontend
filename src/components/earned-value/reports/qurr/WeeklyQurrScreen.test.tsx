@@ -204,6 +204,19 @@ describe("WeeklyQurrScreen", () => {
     expect(screen.getAllByText("Σ D").length).toBeGreaterThan(0);
   });
 
+  // LİDER DENETİMİ (kırpılma turu — son iş): kırpılabilen `qurr-item__name`
+  // (sıradan satır VE Σ D+DL toplam satırı) `title`de TAM adı taşımalı ki
+  // fareyle üstüne gelince (CSS ellipsis kırpsa bile) okunabilsin.
+  it("kırpılabilen ad hücreleri title'da TAM metni taşır (sıradan satır + Σ D+DL)", () => {
+    vi.mocked(useWeeklyReport).mockReturnValue(queryStub({ data: QURR_FIXTURE_READY }));
+    render(<WeeklyQurrScreen {...baseProps()} />);
+    expect(screen.getByText("Kalıp")).toHaveAttribute("title", "Kalıp");
+    expect(screen.getByText("Doğrudan + Dolaylı toplam")).toHaveAttribute(
+      "title",
+      "Doğrudan + Dolaylı toplam",
+    );
+  });
+
   // LİDER DENETİMİ: `changed_rate`→"m" eşlemesi "n" yapılınca hiçbir qurr testi
   // kırmızı olmadı — ekran düzeyinde de bekçi yoktu. KAB.01.01'de
   // changed_qty=true, changed_budget=true, changed_rate=false (fikstür):

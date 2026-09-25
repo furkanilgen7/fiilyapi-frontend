@@ -105,11 +105,28 @@ describe("buildQurrTree", () => {
     expect(tree[0].children).toBeUndefined();
   });
 
-  it("gerçek fikstürle: kök sırası backend totals[] dizisiyle AYNI (KAB…ELK, Σ D, GEN, Σ D+DL)", () => {
+  // LİDER DÜZELTMESİ (spec §3.15 S3 — "dolaylı kalem KENDİ disiplininde
+  // durur"): GEN mockup'taki gibi SIRADAN bir disiplindir (KAB'a
+  // TAŞINMAZ — bu, ilk turda mockup'ın KAB toplamını (27.500) bozduğu
+  // ÖLÇÜLÜP geri alınan bir düzeltmedir). Sıra: disiplinler (KAB…GEN) →
+  // Σ D → Σ D+DL, ikisi EN SONDA ardı ardına (mockup'ın Σ D'yi GEN'den
+  // ÖNCE eklediği eski JS artefaktı DEĞİL).
+  it("gerçek fikstürle: kök sırası backend totals[] dizisiyle AYNI (KAB…ELK, GEN, Σ D, Σ D+DL)", () => {
     const tree = buildQurrTree(QURR_FIXTURE_READY.rows, QURR_FIXTURE_READY.totals);
-    expect(tree.map((n) => n.id)).toEqual(["KAB", "DUV", "MEK", "ELK", "qurr-total-direct_total-9", "GEN", "qurr-total-all_total-12"]);
+    expect(tree.map((n) => n.id)).toEqual([
+      "KAB",
+      "DUV",
+      "MEK",
+      "ELK",
+      "GEN",
+      "qurr-total-direct_total-11",
+      "qurr-total-all_total-12",
+    ]);
     const kab = tree[0];
     expect(kab.children?.map((c) => c.id)).toEqual(["KAB.01"]);
     expect(kab.children?.[0].children?.map((c) => c.id)).toEqual(["KAB.01.01", "KAB.01.02", "KAB.01.03"]);
+    const gen = tree.find((n) => n.id === "GEN");
+    expect(gen?.children?.map((c) => c.id)).toEqual(["GEN.01"]);
+    expect(gen?.children?.[0].children?.map((c) => c.id)).toEqual(["GEN.01.01", "GEN.01.02"]);
   });
 });

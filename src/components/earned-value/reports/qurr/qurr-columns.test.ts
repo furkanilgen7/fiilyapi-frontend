@@ -6,6 +6,7 @@ import type { EvQurrRow } from "@/lib/api/models";
 
 import { QURR_FIXTURE_READY } from "./qurr-fixtures";
 import {
+  formatFixedQuantity,
   formatPacalDeviation,
   isPacalDeviationUp,
   isUnitRateOver,
@@ -250,12 +251,12 @@ describe("qurrCellText — ekran ve yazdırmanın TEK ortak biçimleyicisi", () 
   const MHR_DIGITS = 0;
 
   const CASES: ColumnCase[] = [
-    { key: "a", raw: "12345.56", uom: "ton", expected: formatDecimal("12345.56", QTY_DIGITS) },
-    { key: "b", raw: "654.321", uom: "ton", expected: formatDecimal("654.321", QTY_DIGITS) },
-    { key: "c", raw: "999.95", uom: "ton", expected: formatDecimal("999.95", QTY_DIGITS) },
-    { key: "d", raw: "0.06", uom: "ton", expected: formatDecimal("0.06", QTY_DIGITS) },
+    { key: "a", raw: "12345.56", uom: "ton", expected: formatFixedQuantity("12345.56", QTY_DIGITS) },
+    { key: "b", raw: "654.321", uom: "ton", expected: formatFixedQuantity("654.321", QTY_DIGITS) },
+    { key: "c", raw: "999.95", uom: "ton", expected: formatFixedQuantity("999.95", QTY_DIGITS) },
+    { key: "d", raw: "0.06", uom: "ton", expected: formatFixedQuantity("0.06", QTY_DIGITS) },
     // e: değer (0,10) aralığında → weekQtyDigits'in özel 2-ondalık dalı (uom "ton" olsa bile).
-    { key: "e", raw: "5.678", uom: "ton", expected: formatDecimal("5.678", 2) },
+    { key: "e", raw: "5.678", uom: "ton", expected: formatFixedQuantity("5.678", 2) },
     { key: "f", raw: "1234.6", expected: formatDecimal("1234.6", MHR_DIGITS) },
     { key: "g", raw: "9999.5", expected: formatDecimal("9999.5", MHR_DIGITS) },
     { key: "h", raw: "55555.4", expected: formatDecimal("55555.4", MHR_DIGITS) },

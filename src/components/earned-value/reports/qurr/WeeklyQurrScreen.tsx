@@ -10,7 +10,7 @@ import { downloadWeeklyXlsx, useWeeklyReport } from "@/lib/api/hooks/useEvReport
 import { backendErrorMessage } from "@/lib/api/error-message";
 import { formatDateDots } from "@/lib/format";
 import { formatPf, formatUnitRate, weeklyReportFailure } from "@/lib/earned-value";
-import type { EvQurrReport } from "@/lib/api/models";
+import type { EvQurrReport, EvQurrTotal } from "@/lib/api/models";
 
 import { cx } from "@/lib/cx";
 
@@ -37,12 +37,44 @@ import "./qurr-screen.css";
 
 type QurrView = "screen" | "print";
 
+/**
+ * LİDER DENETİMİ (madde 1/2/3, KÖK NEDEN): tek `{span:2}` "İş kalemi"
+ * hücresi (`colSpan=2`) `table-layout:fixed`in TEK genişlik referansı olan
+ * İLK satırdaydı — tarayıcı colspan'lı bir hücrenin genişliğini kapsadığı
+ * kolonlara EŞİT böler (78/176 yerine 127/127 çıktı, sticky `left` ofseti
+ * gerçek kolon sınırıyla UYUŞMADI — metin kaymış/kırpılmış GÖRÜNDÜ, gerçek
+ * bir `text-align`/flex kusuru DEĞİLDİ). Çözüm: SPAN KULLANMA — Kod ve İş
+ * tipi için AYRI AYRI `span:1` girdi (ikisi de aynı koyu zemini taşıyan
+ * `.tree-table__head.qurr-code-cell`/`.qurr-item-cell` sınıflarını kullanır);
+ * her ikisi de artık kendi row-1 hücresinden KENDİ genişliğini (78px/176px)
+ * doğrudan bildirir.
+ *
+ * LİDER DENETİMİ (4. TUR, ÖLÇÜLDÜ): yukarıdaki "görsel olarak TEK bar gibi
+ * birleşir" varsayımı YANLIŞ çıktı — ekran görüntüsünde iki hücre arasında
+ * (a) ortak tree-table.css'in `.tree-table__group-head + .tree-table__group-
+ * head { border-left }` kuralından gelen GÖRÜNÜR bir ayraç çizgisi vardı,
+ * (b) etiket yalnız "item" hücresinin İÇİNDE ortalandığından mockup'taki
+ * gibi KOD'un altına kadar sola yaslı değildi. Düzeltme qurr-screen.css'te:
+ * ayraç `border-left:none` ile kaldırıldı; etiket "code" hücresine taşındı
+ * (`text-align:left` + `overflow:visible` + `white-space:nowrap`, KOD'un
+ * kendi sol dolgusuyla aynı hizadan başlar) ve iki hücre AYNI koyu zemini
+ * taşıdığından (`qurr-group--dark`) taşan metin komşu hücrenin üstünde
+ * kesintisiz görünür — ayrı `<th>` olmaları artık GÖRSEL fark yaratmıyor.
+ */
+/**
+ * Renk sırası Q:161-166: İş kalemi(koyu)·Miktar(açık)·Adam-saat(koyu)·Birim
+ * oran(açık)·Performans(koyu). Grup sayısı 4'ten 6'ya çıkınca (`code`/`item`
+ * ayrıldı) `.tree-table__group-head:nth-child(even)` OTOMATİK alternasyonu
+ * KAYAR (paritesi değişir) — bu yüzden HER girdi KENDİ rengini `qurr-group--
+ * dark`/`--alt` (`!important`) ile AÇIKÇA taşır, nth-child'a GÜVENİLMEZ.
+ */
 const HEADER_GROUPS: readonly TreeTableHeaderGroup[] = [
-  { key: "item", label: "İş kalemi", span: 2 },
+  { key: "code", label: "İş kalemi", span: 1, className: cx("qurr-code-cell", "qurr-group--dark") },
+  { key: "item", label: "", span: 1, className: cx("qurr-item-cell", "qurr-group--dark") },
   { key: "qty", label: "Miktar", span: 5, className: "qurr-group--alt" },
-  { key: "mhr", label: "Adam-saat", span: 7 },
+  { key: "mhr", label: "Adam-saat", span: 7, className: "qurr-group--dark" },
   { key: "rate", label: "Birim oran · a-s/birim", span: 4, className: "qurr-group--alt" },
-  { key: "pf", label: "Performans", span: 2 },
+  { key: "pf", label: "Performans", span: 2, className: "qurr-group--dark" },
 ];
 
 /**
@@ -90,7 +122,11 @@ function QurrHeaderCell({
         aria-expanded={open}
         aria-label={`${col.full} — formülü göster`}
       >
-        <span>{col.short}</span>
+        {/* LİDER DENETİMİ (madde 6): mockup ekran başlığı `c.label` (TAM
+            metin, "Önceki rev.") basar — `c.short` ("Önc. rev") YALNIZ
+            YAZDIRMA kompakt tablosunundur (`QurrPrintView` zaten `col.short`
+            kullanıyor, doğru). Burada yanlışlıkla `short` kullanılıyordu. */}
+        <span>{col.label}</span>
         <span className="qurr-head-cell__code">({col.key})</span>
       </button>
       {open && (
@@ -131,6 +167,20 @@ const CODE_COLUMN: TreeTableColumn<QurrTreeNodeData> = {
   render: (node) => qurrNodeCode(node.data) ?? "—",
 };
 
+/**
+ * LİDER DENETİMİ (madde 3): disiplin satırı Kendi/Taşeron (`total.
+ * contractor_mix`, backend verisi), alt grup satırı sabit "alt grup"
+ * (mockup Q:170/339 `u:'alt grup'` — DATA DEĞİL, `kind==="group"` sunum
+ * metni; her alt grup için AYNI sabit dizeyi backend'in ayrıca göndermesi
+ * gerekmez). Σ D / Σ D+DL (`direct_total`/`all_total`) etiket TAŞIMAZ
+ * (mockup TOT satırının `u` alanı boş).
+ */
+function totalContractorLabel(total: EvQurrTotal): string | null {
+  if (total.kind === "group") return "alt grup";
+  if (total.kind === "discipline") return total.contractor_mix ?? null;
+  return null;
+}
+
 const ITEM_COLUMN: TreeTableColumn<QurrTreeNodeData> = {
   key: "item",
   tree: true,
@@ -140,10 +190,19 @@ const ITEM_COLUMN: TreeTableColumn<QurrTreeNodeData> = {
     const label = node.data.kind === "row" ? node.data.row.name : node.data.total.name;
     const uom = node.data.kind === "row" ? node.data.row.uom : null;
     const indirect = node.data.kind === "row" && node.data.row.is_direct === false;
+    const contractorLabel = node.data.kind === "total" ? totalContractorLabel(node.data.total) : null;
+    // LİDER DENETİMİ (kırpılma turu — son iş): kırpılabilen `qurr-item__name`
+    // (Σ D/Σ D+DL etiketleri dâhil, `label` HER satır türünde tam adı taşır)
+    // `title` alır — fare üstüne gelince tam metin görünür. Görseli
+    // DEĞİŞTİRMEZ (`title` ekran çıktısı basmaz), yalnız erişilebilirlik/
+    // ipucu katmanı.
     return (
       <span className="qurr-item">
-        <span className="qurr-item__name">{label}</span>
+        <span className="qurr-item__name" title={label}>
+          {label}
+        </span>
         {uom !== null && <span className="qurr-item__uom">{uom}</span>}
+        {contractorLabel !== null && <span className="qurr-item__contractor">{contractorLabel}</span>}
         {indirect && <span className="qurr-item__badge">dolaylı</span>}
       </span>
     );
@@ -370,6 +429,11 @@ export function WeeklyQurrScreen({ siteId, siteName, companyName, projectName, l
         </div>
         <div className="qurr-screen__actions">
           <Button variant="secondary" size="sm" onClick={handleExcel} disabled={downloading || !data.has_field_data}>
+            {/* Q:103 — yeşil belge ikonu. */}
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <rect x="2.5" y="2" width="11" height="12" rx="1.5" stroke="#16a34a" strokeWidth="1.4" />
+              <path d="M5.5 5.5l5 5M10.5 5.5l-5 5" stroke="#16a34a" strokeWidth="1.4" strokeLinecap="round" />
+            </svg>
             Excel indir
           </Button>
           <Button variant="secondary" size="sm" onClick={handlePdf} disabled={!data.has_field_data}>
