@@ -999,7 +999,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Site Diary Entry Endpoint */
+        /**
+         * Get Site Diary Entry Endpoint
+         * @description DET-1.B `section_id`: `prev_id`/`next_id` bu bölümün Kural A kümesinde; verilmezse
+         *     şantiye bağlamında. Başka şantiyenin / olmayan bölüm 422.
+         */
         get: operations["get_site_diary_entry_endpoint_diary__entry_id__get"];
         put?: never;
         post?: never;
@@ -1272,14 +1276,16 @@ export interface paths {
          * List Catalog Endpoint
          * @description Birim oran katalogu (KAT). `q` is tipi adinda harf duyarsiz arar.
          *
-         *     `actual` (gerceklesen) ve `diff_pct` K4 kuralindadir; saha verisi PLN-B2'de
-         *     dogdugu icin B1'de her satirda bostur (`catalog_service.catalog_actuals`).
+         *     `actual` (gerceklesen) ve `diff_pct` K4 kuralindadir: TAMAMLANMIS santiyelerin miktar
+         *     agirlikli ortalamasi (`catalog_service.catalog_actuals`); tamamlanmis santiye verisi
+         *     yoksa bostur.
          */
         get: operations["list_catalog_endpoint_earned_value_catalog_get"];
         put?: never;
         /**
          * Create Catalog Item Endpoint
-         * @description Katalog is tipi ekler. (disiplin, ad, birim) benzersiz → 409 `CATALOG_ITEM_TAKEN`.
+         * @description Katalog is tipi ekler. (disiplin, ad, birim) benzersiz — ad/birim NORMALIZE
+         *     karsilastirilir (buyuk/kucuk harf, İ/I, bosluk) → 409 `CATALOG_ITEM_TAKEN_AS`.
          */
         post: operations["create_catalog_item_endpoint_earned_value_catalog_post"];
         delete?: never;
@@ -1321,7 +1327,8 @@ export interface paths {
          * Adopt Actual Endpoint
          * @description KAT "Gerceklesen standart yap": gerceklesen ortalama yoksa 409 `CATALOG_NO_ACTUAL`.
          *
-         *     ⚠️ B1'de gerceklesen hic yoktur → bu uc PLN-B3'e kadar HER ZAMAN 409 doner.
+         *     Gerceklesen = TAMAMLANMIS santiyelerin miktar agirlikli ortalamasi (K4; PLN-B3'ten beri
+         *     `actuals.completed_site_actuals`); hic tamamlanmis santiye verisi yoksa 409.
          */
         post: operations["adopt_actual_endpoint_earned_value_catalog__item_id__adopt_actual_post"];
         delete?: never;
@@ -5747,6 +5754,10 @@ export interface paths {
         /**
          * List Site Diary Entries Endpoint
          * @description GK "Son Kayıtlar" — durum, işçi toplamı ve satır ₺ toplamı TÜREVDİR.
+         *
+         *     DET-1.B `section_id`: Bölüm Detay › Günlük Kayıt — Kural A (başlığı bu bölüm OLAN gün ∪
+         *     bu bölüme miktar satırı yazılmış gün; kayıt tekrarlanmaz). `total` süzülmüş kümedir;
+         *     başka şantiyenin / olmayan bölüm 422. Verilmezse davranış aynen.
          *
          *     `month` YALNIZ `year` ile anlamlıdır ("her yılın temmuzu" bir dönem
          *     değildir); tek başına gönderilirse 422 — sessizce yok saymak, kullanıcının
@@ -19102,6 +19113,8 @@ export interface components {
              * Format: uuid
              */
             created_by: string;
+            /** Created By Name */
+            created_by_name: string | null;
             /** Dropped Orphan Count */
             dropped_orphan_count?: number | null;
             /**
@@ -19122,27 +19135,49 @@ export interface components {
             lines: components["schemas"]["SiteDiaryLineRead"][];
             /** Lines Total */
             lines_total: string;
+            /** Lock Report Date */
+            lock_report_date: string | null;
+            /** Locked */
+            locked: boolean;
+            /** Next Entry Date */
+            next_entry_date: string | null;
+            /** Next Id */
+            next_id: string | null;
             /** Own Crew From Timesheet */
             own_crew_from_timesheet?: components["schemas"]["OwnCrewFromTimesheet"][];
             /** Ppe Checked */
             ppe_checked: boolean;
+            /** Prev Entry Date */
+            prev_entry_date: string | null;
+            /** Prev Id */
+            prev_id: string | null;
             /**
              * Project Id
              * Format: uuid
              */
             project_id: string;
+            /** Project Name */
+            project_name: string;
             /** Safety Meeting Held */
             safety_meeting_held: boolean;
             /** Section Id */
             section_id: string | null;
+            /** Section Name */
+            section_name: string | null;
             /**
              * Site Id
              * Format: uuid
              */
             site_id: string;
+            /** Site Name */
+            site_name: string;
             status: components["schemas"]["DiaryStatus"];
             /** Submitted At */
             submitted_at: string | null;
+            /** Submitted By */
+            submitted_by: string | null;
+            /** Submitted By Name */
+            submitted_by_name: string | null;
             /** Temp Max C */
             temp_max_c?: string | null;
             /** Temp Min C */
@@ -19339,6 +19374,8 @@ export interface components {
             remaining_quantity?: string | null;
             /** Section Id */
             section_id?: string | null;
+            /** Section Name */
+            section_name: string | null;
             /** Unit */
             unit: string;
             /** Unit Price */
@@ -19458,6 +19495,8 @@ export interface components {
             source: components["schemas"]["WorkerSource"];
             /** Subcontractor Id */
             subcontractor_id?: string | null;
+            /** Subcontractor Name */
+            subcontractor_name: string | null;
             /** Trade */
             trade: string;
         };
@@ -26329,7 +26368,9 @@ export interface operations {
     };
     get_site_diary_entry_endpoint_diary__entry_id__get: {
         parameters: {
-            query?: never;
+            query?: {
+                section_id?: string | null;
+            };
             header?: never;
             path: {
                 entry_id: string;
@@ -37857,6 +37898,7 @@ export interface operations {
                 month?: number | null;
                 limit?: number;
                 offset?: number;
+                section_id?: string | null;
             };
             header?: never;
             path: {
