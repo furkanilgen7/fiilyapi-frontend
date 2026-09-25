@@ -1126,3 +1126,233 @@
   color: var(--color-primary-hover);
   cursor: pointer;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PLN-F2.4 · KİLİTLİ GÜN (rapor onayı)
+   Kanon `Şantiye - Puantaj (Kilitli Gün).dc.html` (türetilmiş). Mockup sınıf
+   adları parantezde: `.th-lk .td-lk .lk .lk-e .lk-fm .lk-yarim .lk-edge
+   .lk-foot`. Çıplak hex yok — hepsi `tokens.css`ten.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* M1 · kilitli kolon başlığı (`.th-lk`) — kilit tonu hafta sonu tonundan önce gelir */
+.ts-week-table__day-head--locked {
+  background: var(--color-surface-muted);
+}
+.ts-week-table__weekday--locked {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+.ts-week-table__lock-icon {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+}
+/* M1 · kilit sınırı (`.lk-edge`) — kilitli bloğun bittiği kolonun sağında */
+.ts-week-table__lock-edge {
+  border-right: var(--border-width-total) solid var(--color-border-strong);
+}
+/* M1 · kilitli kolon hücresi (`.td-lk`) */
+.ts-week-table__cell--locked {
+  background: var(--color-surface-2);
+}
+/* M1 · kilitli kolon ayağı (`.lk-foot`) — salt okunur değer tonu */
+.ts-week-table__foot-cell--locked {
+  color: var(--color-text-muted);
+}
+
+/* M1 · salt okunur kutu (`.lk`) — `<input>` yerine */
+.ts-lk {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: auto;
+  width: var(--size-timesheet-hin-w);
+  height: var(--size-timesheet-tag-h);
+  border: var(--border-width-form) solid var(--color-border);
+  border-radius: var(--radius-6);
+  background: var(--color-surface-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+  color: var(--color-text-muted);
+}
+/* `.lk-e` — boş kilitli gün */
+.ts-lk--empty {
+  color: var(--color-border-strong);
+  font-weight: var(--weight-regular);
+}
+/* `.lk-fm` — §3.14 P3: FM ipucu korunur (`.hin-fm` renkleri aynen) */
+.ts-lk--overtime {
+  background: var(--color-warning-soft);
+  border-color: var(--color-warning-border-soft);
+  color: var(--color-warning-body-text);
+}
+/* `.lk-yarim` — §3.14 P3: eksik gün ipucu korunur (`.hin-yarim` renkleri aynen) */
+.ts-lk--short {
+  background: var(--color-info-soft);
+  border-color: var(--color-info-border-soft);
+  color: var(--color-info-strong);
+}
+/* Kutunun tetikleyicisi (`Button` primitive) görünmezdir: yalnız kutu görünür. */
+.btn.ts-lk-trigger {
+  display: flex;
+  margin: auto;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-6);
+  background: transparent;
+  cursor: default;
+}
+.btn--ghost.ts-lk-trigger:hover:not(:disabled) {
+  background: transparent;
+}
+
+/* Legend son öğesi — "Kilitli gün (salt okunur)"; örnek kutu `.lk` küçültülür */
+.ts-legend__lock-icon {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+}
+.ts-legend__swatch.ts-lk {
+  width: 26px;
+  min-width: 26px;
+  height: 18px;
+  border-width: 1px;
+  font-size: var(--text-timesheet-cell);
+}
+
+/* M2 · kilit bandı (İ:144-148 emsali) */
+.ts-lock-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 12px var(--space-4);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-10);
+  background: var(--color-surface-muted);
+  font-size: var(--text-body);
+  color: var(--color-slate-700);
+}
+.ts-lock-banner__icon {
+  flex-shrink: 0;
+}
+.ts-lock-banner__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  font-weight: var(--weight-semibold);
+  color: var(--color-slate-700);
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+/* (b) · kopyalama bildirimi (İ:157 bildirim bandı) */
+.ts-lock-copied {
+  margin-bottom: var(--space-2);
+  padding: 10px 14px;
+  border: 1px solid var(--color-success-tint-border);
+  border-radius: var(--radius-10);
+  background: var(--color-success-tint);
+  font-size: var(--text-body);
+  font-weight: var(--weight-medium);
+  color: var(--color-success-deep);
+}
+
+/* (e) · kilit 409'u — satır içi hata bandı (İ:242-245), düğme yok */
+.ts-lock-conflict {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 12px;
+  padding: var(--space-2) 10px;
+  border: 1px solid var(--color-error-card-border);
+  border-radius: var(--radius-8);
+  background: var(--color-error-card-bg);
+  font-size: 12px;
+  color: var(--color-error-card-title);
+}
+.ts-lock-conflict__icon {
+  flex-shrink: 0;
+  color: var(--color-danger);
+}
+.ts-lock-conflict__title {
+  font-weight: var(--weight-semibold);
+}
+.ts-lock-conflict__body {
+  color: var(--color-danger-deep);
+}
+
+/* M3 · salt okunur popover (BÜT 245-250 öneri popover'ı; eylem düğmesi yok) */
+.ts-pop.ts-pop--locked {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 292px;
+  padding: var(--space-3);
+  border-radius: var(--radius-8);
+  box-shadow: var(--shadow-popover);
+}
+.ts-pop__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ts-pop__title {
+  flex: 1;
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.btn.ts-pop__close {
+  padding: 0;
+  color: var(--color-text-subtle);
+}
+.ts-pop__values {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 10px;
+  margin: 0;
+  font-size: 12px;
+}
+.ts-pop__values dt {
+  color: var(--color-text-muted);
+}
+.ts-pop__value {
+  margin: 0;
+  text-align: right;
+  font-family: var(--font-mono);
+  color: var(--color-text-muted);
+}
+.ts-pop__value--strong {
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+/* Salt okunur mini bant (BÜT 483) */
+.ts-pop__lock-note {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-2) 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-6);
+  background: var(--color-surface-2);
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+.ts-pop__lock-icon {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+}
+.ts-pop__diary-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  align-self: flex-end;
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-slate-700);
+  text-decoration: none;
+}

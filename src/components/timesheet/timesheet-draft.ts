@@ -56,7 +56,7 @@ export function timesheetDraftKey(personnelId: string, workDate: string): string
   return `${personnelId}|${workDate}`;
 }
 
-function splitDraftKey(key: string): { personnelId: string; workDate: string } {
+export function splitDraftKey(key: string): { personnelId: string; workDate: string } {
   const separator = key.lastIndexOf("|");
   return { personnelId: key.slice(0, separator), workDate: key.slice(separator + 1) };
 }

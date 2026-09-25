@@ -9,6 +9,7 @@ import { formatDecimal } from "@/lib/format";
 import { AddPersonnelLink } from "./AddPersonnelLink";
 import type { TimesheetIsoWeek } from "./iso-week";
 import { TimesheetLegend } from "./TimesheetLegend";
+import { TimesheetLockBanner } from "./TimesheetLockBanner";
 import { TimesheetMonthWeeks } from "./TimesheetMonthWeeks";
 import { TimesheetNotices } from "./TimesheetNotices";
 import { TimesheetPayrollPanel } from "./TimesheetPayrollPanel";
@@ -23,6 +24,7 @@ import { TimesheetWeekKpis } from "./TimesheetWeekKpis";
 import { TimesheetWeekNav } from "./TimesheetWeekNav";
 import { TimesheetWeekTable } from "./TimesheetWeekTable";
 import { OVERTIME_SURCHARGE_PERCENT_TEXT } from "./overtime-rule";
+import { mergeDayLocks } from "./timesheet-lock";
 import { useTimesheetWeekData } from "./useTimesheetWeekData";
 import { useTimesheetWeekEditor } from "./useTimesheetWeekEditor";
 import type { TimesheetWeekViewRow } from "./week-derive";
@@ -75,6 +77,12 @@ export interface TimesheetWeekScreenProps {
   className: string;
   /** Boş ızgara mesajı — yükleme/hata gerekçesi çağıranın bildiğidir. */
   emptyMessage: (isLoading: boolean, isError: boolean) => string;
+  /**
+   * PLN-F2.4 · Kilit bandı + salt okunur popover'ın "Günlük kaydına git →"
+   * hedefi (şantiye günlük rotası, tarihsiz — F3'te `?tarih=` gelecek).
+   * Şantiye çözülmediyse `null`: bağlantı basılmaz.
+   */
+  diaryHref: string | null;
 }
 
 export function TimesheetWeekScreen({
@@ -95,6 +103,7 @@ export function TimesheetWeekScreen({
   cardHeader,
   className,
   emptyMessage,
+  diaryHref,
 }: TimesheetWeekScreenProps) {
   const [filters, setFilters] = useState<TimesheetRowFilterState>(EMPTY_ROW_FILTERS);
   /**
@@ -134,6 +143,13 @@ export function TimesheetWeekScreen({
   if (data.isForbidden) return <AccessDenied />;
 
   const { view, weekData, normalDayHours } = data;
+  // PLN-F2.4 · kilit = sunucunun `locked_days`i ∪ kilit 409'unun getirdiği
+  // günler (yeniden yüklemeden salt okunur olsun diye, §3.14 P4).
+  const dayLocks = mergeDayLocks(data.dayLocks, editor.conflictLocks);
+  const lockedDays = new Set(dayLocks.map((lock) => lock.day));
+  // Mockup (c) — yedi gün de kilitliyse kopyalama ve kaydetme PASİF.
+  const isWeekFullyLocked =
+    view.days.length > 0 && view.days.every((day) => lockedDays.has(day.workDate));
   const monthWeeks = weekData?.month_weeks ?? [];
   // E5 356-357 — aktarım kapısının GERÇEK girdisi: ay şeridinin `has_entries`i.
   // "girilmedi" rozetiyle AYNI kaynak; ikinci bir hesap yazılmaz.
@@ -201,7 +217,7 @@ export function TimesheetWeekScreen({
       />
 
       {/* E5 200-209 */}
-      <TimesheetLegend normalDayHours={normalDayHours} />
+      <TimesheetLegend normalDayHours={normalDayHours} hasLockedDays={dayLocks.length > 0} />
 
       <TimesheetNotices
         canWrite={canWrite}
@@ -214,6 +230,9 @@ export function TimesheetWeekScreen({
         copyState={editor.copyState}
         exportError={editor.exportError}
       />
+
+      {/* Kilitli Gün M2 — kilit bandı, tablonun üstünde */}
+      <TimesheetLockBanner locks={dayLocks} diaryHref={diaryHref} />
 
       {/* E5 211-330 */}
       <div className="ts-card">
@@ -238,6 +257,8 @@ export function TimesheetWeekScreen({
           onCommitCode={(personnelId, workDate, code) =>
             editor.commitCode(view.allCells, personnelId, workDate, code)
           }
+          dayLocks={dayLocks}
+          diaryHref={diaryHref}
         />
       </div>
 
@@ -256,8 +277,14 @@ export function TimesheetWeekScreen({
         {/* E5 74 */}
         <Button
           variant="secondary"
-          disabled={!isSiteResolved || !canWrite || editor.copyState.kind === "copying"}
-          onClick={() => void editor.copyPreviousWeek(view.allCells)}
+          disabled={
+            !isSiteResolved ||
+            !canWrite ||
+            isWeekFullyLocked ||
+            editor.copyState.kind === "copying"
+          }
+          // §3.14 P2 — kilitli günler ATLANIR.
+          onClick={() => void editor.copyPreviousWeek(view.allCells, lockedDays)}
         >
           Önceki Haftayı Kopyala
         </Button>
@@ -266,7 +293,12 @@ export function TimesheetWeekScreen({
             gereksiz risk. */}
         <Button
           variant="primary"
-          disabled={!canWrite || !editor.isDirty || editor.saveState.kind === "saving"}
+          disabled={
+            !canWrite ||
+            isWeekFullyLocked ||
+            !editor.isDirty ||
+            editor.saveState.kind === "saving"
+          }
           onClick={() => void editor.save(view.allCells)}
         >
           Haftayı Kaydet

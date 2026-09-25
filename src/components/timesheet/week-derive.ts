@@ -127,7 +127,8 @@ export interface BuildTimesheetWeekViewInput {
   draft?: TimesheetDraft;
 }
 
-const WEEKDAY_LABELS = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
+/** Pzt→Paz kısa gün adları (E5 217) — kilit metinleri de BU tablodan okur. */
+export const WEEKDAY_LABELS = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
 const SATURDAY_INDEX = 5;
 const SUNDAY_INDEX = 6;
 
@@ -301,7 +302,8 @@ function buildDayColumns(
   });
 }
 
-const TR_MONTHS_SHORT = [
+/** TR kısa ay adları (E5 217) — kilit metinleri de BU tablodan okur. */
+export const TR_MONTHS_SHORT = [
   "Oca",
   "Şub",
   "Mar",

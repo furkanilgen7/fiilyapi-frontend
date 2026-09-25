@@ -13,6 +13,7 @@ import { buildListTruncation, type ListTruncation } from "@/lib/list-truncation"
 
 import type { TimesheetIsoWeek } from "./iso-week";
 import { EMPTY_TIMESHEET_DRAFT, type TimesheetDraft } from "./timesheet-draft";
+import { toDayLocks, type TimesheetDayLock } from "./timesheet-lock";
 import {
   buildTimesheetWeekView,
   type TimesheetWeekDerived,
@@ -55,6 +56,12 @@ export interface TimesheetWeekDataState {
    * seçilince diğer meslek/tür/taşeron seçeneklerini YANLIŞ daraltırdı.
    */
   unfilteredRows: readonly TimesheetWeekViewRow[];
+  /**
+   * PLN-F2.4 · Sunucunun KİLİTLİ günleri (`locked_days` + EV-BORC-4
+   * `day_locks`, rapor onayı). TEK dönüştürücüden (`toDayLocks`) geçer; rapor
+   * tarihi yanıtta yoksa `reportDate: null`.
+   */
+  dayLocks: readonly TimesheetDayLock[];
 }
 
 /**
@@ -92,6 +99,8 @@ export function useTimesheetWeekData({
     [week, personnel, weekData, sectionId, draft],
   );
 
+  const dayLocks = useMemo(() => toDayLocks(weekData ?? {}), [weekData]);
+
   return {
     view,
     weekData,
@@ -105,5 +114,6 @@ export function useTimesheetWeekData({
     personnelTruncation: buildListTruncation(personnel?.length ?? 0, personnelQuery.data?.total),
     totalRowCount: unfiltered.rows.length,
     unfilteredRows: unfiltered.rows,
+    dayLocks,
   };
 }

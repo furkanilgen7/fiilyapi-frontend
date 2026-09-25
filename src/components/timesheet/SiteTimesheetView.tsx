@@ -9,6 +9,7 @@ import { useSiteSections } from "@/lib/api/hooks/useSiteSections";
 import { useSite } from "@/lib/api/hooks/useSites";
 import { hasAtLeast } from "@/lib/auth/permissions";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
+import { routes } from "@/lib/routes";
 
 import { AddPersonnelLink } from "./AddPersonnelLink";
 import { timesheetEmptyMessage } from "./GeneralTimesheetView";
@@ -178,6 +179,8 @@ export function SiteTimesheetView() {
         />
       )}
       emptyMessage={(isLoading, isError) => timesheetEmptyMessage(isLoading, isError, siteId)}
+      // PLN-F2.4 · kilit bandı/popover'ı → bu şantiyenin günlük kaydı (rota anahtarlarıyla).
+      diaryHref={routes.projects.sites.diary({ projectId: projectKey, siteId: siteKey })}
     />
   );
 }
