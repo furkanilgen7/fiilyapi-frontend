@@ -268,6 +268,8 @@ export function DiaryEntryScreen({
   // Uzantı yuvası `submitGate`: `canSubmit === false` → Gönder pasif + gerekçeler EKRANDA.
   const gate = extension?.submitGate ?? null;
   const isGateClosed = gate !== null && !gate.canSubmit;
+  // S4: uzantı gerekçeleri kendisi gösteriyorsa (kontrol çubuğu) çekirdek listeyi basmaz.
+  const showGateReasons = gate?.showReasonsInCore !== false;
   const lineRefs = new Map<string, DiaryLineRef>(extensionContext.lines.map((line) => [line.key, line]));
 
   // Sağ panel türevleri — hepsi SAF fonksiyonlarda (ayrı `.ts` dosyaları),
@@ -361,10 +363,31 @@ export function DiaryEntryScreen({
     return message === null;
   }
 
+  /**
+   * Uzantı yuvası `onBeforeSave` (S1): çekirdek KENDİ kaydından HEMEN önce
+   * uzantının kaydını (ör. saat dağıtımı) bekler. Reddedilirse çekirdek
+   * hiçbir istek atmaz — yarım kayıt olmaz; hata mevcut hata bandında görünür.
+   * (Uzantının 409'u "aynı gün kaydı" DEĞİLDİR — o dal burada kullanılmaz.)
+   */
+  async function runBeforeSave(): Promise<boolean> {
+    if (!extension?.onBeforeSave) return true;
+    try {
+      await extension.onBeforeSave();
+      return true;
+    } catch (error: unknown) {
+      setErrorMessage(backendErrorMessage(error, "Ek bölüm kaydedilemedi; günlük kaydedilmedi."));
+      return false;
+    }
+  }
+
   /** Taslak Kaydet (E7 66) — kayıt yoksa açar, varsa başlık + satırları yazar. */
   async function handleSaveDraft() {
     if (!validateForm()) return;
     setIsSaving(true);
+    if (!(await runBeforeSave())) {
+      setIsSaving(false);
+      return;
+    }
     try {
       if (!entry) {
         const created = await createEntry.mutateAsync(buildDiaryCreateBody(form));
@@ -386,6 +409,10 @@ export function DiaryEntryScreen({
     if (!entry || isGateClosed || isLocked) return;
     if (!validateForm()) return;
     setIsSaving(true);
+    if (!(await runBeforeSave())) {
+      setIsSaving(false);
+      return;
+    }
     try {
       const updated = await updateEntry.mutateAsync(buildDiaryUpdateBody(form, entry));
       await saveLines.mutateAsync(buildDiaryLinesBody(updated, form));
@@ -497,7 +524,7 @@ export function DiaryEntryScreen({
         )}
       </div>
 
-      {isGateClosed && gate && !isSubmitted && (
+      {isGateClosed && gate && showGateReasons && !isSubmitted && (
         <div className="diary__gate" role="status">
           <p className="diary__gate-title">Gönderim engelli</p>
           {gate.reasons.length > 0 && (
@@ -545,6 +572,9 @@ export function DiaryEntryScreen({
       )}
 
       {/* GK173 — sol form / sağ özet ızgarası (1fr 340px, 20px boşluk) */}
+      {/* Uzantı yuvası `topBanner` (S3) — başlığın altında, kartlardan önce (İ:150-155). */}
+      {extension?.topBanner && <div className="diary__top-banner">{extension.topBanner}</div>}
+
       <div className="diary__grid">
         <div className="diary__col diary__col--main">
           <DiaryBasicInfoCard

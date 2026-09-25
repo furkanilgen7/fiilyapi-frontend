@@ -560,3 +560,11 @@
   color: var(--color-primary);
   text-decoration: none;
 }
+/* S2 — uzantının satır altı (ör. oransız satır uyarısı) */
+.diary-lines__ext-subrow td {
+  padding: 0 10px 8px;
+}
+/* S3 — başlığın altı, kartlardan önce (İ:150 margin-bottom 16px) */
+.diary__top-banner {
+  margin-bottom: 16px;
+}

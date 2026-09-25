@@ -593,3 +593,96 @@ describe("DiaryEntryScreen · G5 düzeltmesi (tahsissiz bölüm seçilemez)", ()
     );
   });
 });
+
+describe("DiaryEntryScreen · F2.3.1 (onBeforeSave · renderSubRow · topBanner · showReasonsInCore)", () => {
+  it("S1: onBeforeSave REDDEDİLİRSE çekirdek hiçbir istek atmaz; hata mevcut hata yolunda görünür", async () => {
+    const user = userEvent.setup();
+    const onBeforeSave = vi.fn().mockRejectedValue(new BackendError(409, { detail: "Gün kilitli, dağıtım yazılamadı" }));
+    renderScreen(<SiteDiaryEntryView extension={{ onBeforeSave }} />);
+
+    await user.click(screen.getByRole("button", { name: "Taslak Kaydet" }));
+    expect(await screen.findByText("Gün kilitli, dağıtım yazılamadı")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Kaydet & Gönder" }));
+
+    await waitFor(() => expect(onBeforeSave).toHaveBeenCalledTimes(2));
+    expect(updateMutate).not.toHaveBeenCalled();
+    expect(linesMutate).not.toHaveBeenCalled();
+    expect(submitMutate).not.toHaveBeenCalled();
+  });
+
+  it("S1: onBeforeSave çözülürse SIRAYLA — önce uzantı, sonra çekirdek kaydı ve gönderim", async () => {
+    const user = userEvent.setup();
+    const detail = entryDetail();
+    const onBeforeSave = vi.fn().mockResolvedValue(undefined);
+    updateMutate.mockResolvedValue(detail);
+    linesMutate.mockResolvedValue(detail);
+    submitMutate.mockResolvedValue(detail);
+    renderScreen(<SiteDiaryEntryView extension={{ onBeforeSave }} />);
+
+    await user.click(screen.getByRole("button", { name: "Kaydet & Gönder" }));
+
+    await waitFor(() => expect(submitMutate).toHaveBeenCalledTimes(1));
+    expect(onBeforeSave.mock.invocationCallOrder[0]).toBeLessThan(updateMutate.mock.invocationCallOrder[0]);
+    expect(linesMutate.mock.invocationCallOrder[0]).toBeLessThan(submitMutate.mock.invocationCallOrder[0]);
+  });
+
+  it("S1: kayıt YOKKEN de (POST) önce onBeforeSave; reddedilirse POST atılmaz", async () => {
+    const user = userEvent.setup();
+    mockEntry(undefined);
+    const onBeforeSave = vi.fn().mockRejectedValue(new Error("dağıtım kaydedilemedi"));
+    renderScreen(<SiteDiaryEntryView extension={{ onBeforeSave }} />);
+
+    await user.click(screen.getByRole("button", { name: "Taslak Kaydet" }));
+
+    await waitFor(() => expect(onBeforeSave).toHaveBeenCalledTimes(1));
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    expect(createMutate).not.toHaveBeenCalled();
+  });
+
+  it("S2: renderSubRow satırın HEMEN altında; aşım alt satırından SONRA; null → alt satır yok", async () => {
+    const user = userEvent.setup();
+    const extension: DiaryExtension = {
+      lineColumns: {
+        headers: [],
+        renderCells: () => [],
+        renderSubRow: (ref) => (ref.sectionId === null ? <span>uzantı-alt-{ref.key}</span> : null),
+      },
+    };
+    const { container } = renderScreen(<SiteDiaryEntryView extension={extension} />);
+
+    const sub = screen.getByText("uzantı-alt-duv|");
+    const subRow = sub.closest("tr") as HTMLElement;
+    expect(subRow.previousElementSibling?.classList.contains("diary-lines__leaf-row")).toBe(true);
+    expect(within(subRow).getByText("uzantı-alt-duv|").closest("td")).toHaveAttribute("colspan", "8");
+    expect(container.querySelectorAll(".diary-lines__ext-subrow")).toHaveLength(1);
+
+    const field = screen.getByLabelText("DUV.01.01 bugün yapılan miktar");
+    await user.clear(field);
+    await user.type(field, "600");
+    const overRow = screen.getByText(/Planlı miktar aşıldı/).closest("tr") as HTMLElement;
+    expect(overRow.nextElementSibling).toBe(screen.getByText("uzantı-alt-duv|").closest("tr"));
+  });
+
+  it("S3: topBanner başlığın altında, kart ızgarasından ÖNCE", () => {
+    const { container } = renderScreen(
+      <SiteDiaryEntryView extension={{ topBanner: <div>Formen görünümü.</div> }} />,
+    );
+
+    const banner = screen.getByText("Formen görünümü.");
+    const grid = container.querySelector(".diary__grid") as HTMLElement;
+    const head = container.querySelector(".diary__head") as HTMLElement;
+    expect(head.compareDocumentPosition(banner) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(banner.compareDocumentPosition(grid) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("S4: showReasonsInCore=false → çekirdek gerekçe listesi BASILMAZ, Gönder yine pasif", () => {
+    const extension: DiaryExtension = {
+      submitGate: { canSubmit: false, reasons: ["12 a-s dağıtılmamış"], showReasonsInCore: false },
+    };
+    renderScreen(<SiteDiaryEntryView extension={extension} />);
+
+    expect(screen.queryByText("12 a-s dağıtılmamış")).not.toBeInTheDocument();
+    expect(screen.queryByText("Gönderim engelli")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Kaydet & Gönder" })).toBeDisabled();
+  });
+});

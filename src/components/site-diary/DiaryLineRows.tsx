@@ -112,6 +112,8 @@ export interface DiaryLeafRowProps {
   overrunReason: string;
   extraCells: readonly ReactNode[];
   columnCount: number;
+  /** Uzantının tam genişlik alt satırı (S2 · `renderSubRow`); aşım satırından SONRA. */
+  subRow?: ReactNode;
   /**
    * G9 · dolaylı kalem: Bölümsüz satır "Tüm şantiye" etiketiyle, tahsis
    * ipucu ve KALAN çipi olmadan basılır (F0-6 — aynı veri, farklı etiket).
@@ -136,6 +138,7 @@ export function DiaryLeafRowView({
   extraCells,
   columnCount,
   isIndirect = false,
+  subRow = null,
 }: DiaryLeafRowProps) {
   const showAsSiteWide = isIndirect && leaf.isUnsectioned;
   const label = showAsSiteWide ? INDIRECT_UNSECTIONED_LABEL : leaf.label;
@@ -248,6 +251,11 @@ export function DiaryLeafRowView({
               />
             </div>
           </td>
+        </tr>
+      )}
+      {subRow !== null && subRow !== undefined && (
+        <tr className="diary-lines__ext-subrow">
+          <td colSpan={columnCount}>{subRow}</td>
         </tr>
       )}
     </>

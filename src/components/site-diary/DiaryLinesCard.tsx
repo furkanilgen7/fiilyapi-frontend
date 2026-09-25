@@ -233,6 +233,7 @@ export function DiaryLinesCard({
                       }
                       columnCount={columnCount}
                       isIndirect={isIndirect(group.boqItemId)}
+                      subRow={lineColumns?.renderSubRow && ref ? lineColumns.renderSubRow(ref) : null}
                     />
                   );
                 })}
