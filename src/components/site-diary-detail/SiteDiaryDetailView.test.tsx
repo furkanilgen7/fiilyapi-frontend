@@ -56,6 +56,7 @@ function entry(overrides: Partial<SiteDiaryEntryDetail> = {}): SiteDiaryEntryDet
     created_by: "u-1",
     lines: [],
     lines_total: "0.00",
+    worker_counts: [],
     // DET-1.1 sözleşmesi (backend det-1 adc8226)
     site_name: "A-Blok Şantiyesi",
     project_name: "Güneşkent Konut",
