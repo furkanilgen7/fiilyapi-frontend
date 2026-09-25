@@ -1,0 +1,523 @@
+/* PLN-F3.5 · Haftalık QURR ekranı (Planlama - Haftalık QURR.dc.html). */
+.qurr-screen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.qurr-screen__title {
+  font-size: 26px;
+  font-weight: var(--weight-bold);
+  color: var(--color-text-strong);
+  letter-spacing: -0.5px;
+}
+
+.qurr-screen__subtitle {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.qurr-screen__toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+}
+
+.qurr-screen__actions {
+  margin-left: auto;
+  display: flex;
+  gap: var(--space-2);
+}
+
+/* Q:97-101 — Ekran / Yazdırma önizlemesi segmentli anahtarı. */
+.qurr-segment {
+  display: flex;
+  gap: 2px;
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-sm);
+  padding: 3px;
+}
+
+.qurr-segment__item {
+  padding: 5px 12px;
+  font-size: 12px;
+  border: none;
+  border-radius: var(--radius-xs, 4px);
+  cursor: pointer;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-weight: 400;
+  font-family: inherit;
+}
+
+.qurr-segment__item--active {
+  background: var(--color-surface);
+  color: var(--color-primary-hover);
+  font-weight: var(--weight-semibold);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.qurr-screen__toast--success {
+  border: 1px solid var(--color-success-border, var(--color-success-deep));
+  background: var(--color-success-soft);
+  color: var(--color-success-deep);
+}
+
+.qurr-screen__toast {
+  padding: 9px 14px;
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  font-weight: var(--weight-medium);
+}
+
+.qurr-screen__toast--danger {
+  border: 1px solid var(--color-danger-border, var(--color-danger-strong));
+  background: var(--color-danger-soft);
+  color: var(--color-danger-strong);
+}
+
+.qurr-screen__empty {
+  background: var(--color-surface);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-md);
+  padding: 44px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  text-align: center;
+}
+
+.qurr-screen__empty-title {
+  font-size: 15px;
+  font-weight: var(--weight-semibold);
+}
+
+.qurr-screen__empty-body {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  max-width: 440px;
+}
+
+.qurr-screen__footnote {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+/* ── KPI + paçal kartları (Q:132-150) ───────────────────────────────────── */
+.qurr-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: var(--space-3);
+}
+
+.qurr-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  box-shadow: var(--shadow-card);
+}
+
+.qurr-card--pacal {
+  background: var(--color-surface-muted);
+}
+
+.qurr-card__head {
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-subtle);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.qurr-card__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+/* Q:137-138 — kutunun KENDİSİ pfc().soft/.bd zeminini taşır; `pf-band-cell--*`
+   sınıfları `PfBandCell`den (kit) ÖDÜNÇ alınır — aynı renk kararı iki yerde
+   ayrı tanımlanmaz. */
+.qurr-card__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+}
+
+.qurr-card__label {
+  font-size: 10.5px;
+  color: var(--color-text-muted);
+}
+
+.qurr-card__value {
+  font-size: 24px;
+  font-weight: var(--weight-bold);
+  font-family: var(--font-mono);
+  letter-spacing: -0.5px;
+}
+
+/* Q:135 — PF etiketinin sağındaki rozet (own=mavi, subcon=gri). */
+.qurr-card__chip {
+  font-size: 10px;
+  font-weight: var(--weight-semibold);
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.qurr-card__chip--own {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-hover);
+}
+
+.qurr-card__chip--subcon {
+  background: var(--color-surface-muted);
+  color: var(--color-text-secondary);
+}
+
+.qurr-card__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.qurr-card__pacal-label {
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+  line-height: 1.35;
+}
+
+.qurr-card__pacal-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.qurr-card__pacal-actual {
+  font-size: 24px;
+  font-weight: var(--weight-bold);
+  font-family: var(--font-mono);
+  letter-spacing: -0.5px;
+}
+
+.qurr-card__pacal-planned {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.qurr-card__pacal-dev {
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+  font-family: var(--font-mono);
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+}
+
+.qurr-card__pacal-dev--up {
+  background: var(--color-danger-soft);
+  color: var(--color-danger-strong);
+}
+
+.qurr-card__pacal-dev--down {
+  background: var(--color-success-soft);
+  color: var(--color-success-deep);
+}
+
+.qurr-card__pacal-def {
+  font-size: 10.5px;
+  color: var(--color-text-subtle);
+}
+
+/* ── Tablo kartı (Q:152-202) ─────────────────────────────────────────────── */
+.qurr-table-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+}
+
+.qurr-table-card__head {
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.qurr-table-card__title {
+  font-size: 15px;
+  font-weight: var(--weight-semibold);
+}
+
+.qurr-table-card__hint {
+  font-size: 11px;
+  color: var(--color-text-subtle);
+}
+
+.qurr-table-card__legend {
+  margin-left: auto;
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.qurr-legend__swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  display: inline-block;
+  margin-right: 2px;
+}
+
+.qurr-legend__swatch--red { background: var(--color-danger-soft); }
+.qurr-legend__swatch--amber { background: var(--color-warning-soft); }
+.qurr-legend__swatch--green { background: var(--color-success-soft); }
+
+.qurr-legend__chip {
+  padding: 1px 6px;
+  background: var(--color-warning-soft);
+  border-radius: var(--radius-sm);
+  color: var(--color-warning-body-text);
+  font-weight: var(--weight-semibold);
+}
+
+.qurr-table-card__scroll {
+  overflow: auto;
+  max-height: 680px;
+}
+
+/* Q:160 `min-width:1700px` — yatay kaydırma alanı; tablo gerçek `<table>`
+   olduğundan (treegrid DEĞİL, bkz. TreeTable dokümantasyonu) sabit genişlik
+   `table-layout:fixed` + Kod/İş tipi kolonlarının PX genişliğiyle kurulur,
+   kalan 18 kolon eşit paylaşır (mockup'ın `minmax(78px,1fr)`ine en yakın
+   native-table karşılığı). */
+.qurr-table-card__inner {
+  min-width: 1700px;
+}
+
+.tree-table--qurr {
+  table-layout: fixed;
+  width: 100%;
+}
+
+/* Q:162/169/187 — Kod (78px) ve İş tipi (176px) İKİ AYRI yapışkan kolon,
+   yatay kaydırmada sabit kalır (Q:156 "Kod ve İş tipi kolonları… sabit"). */
+.tree-table--qurr .qurr-code-cell {
+  width: 78px;
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: inherit;
+}
+
+.tree-table--qurr th.qurr-code-cell {
+  z-index: 7;
+  background: var(--color-slate-700);
+}
+
+.tree-table--qurr .qurr-item-cell {
+  width: 176px;
+  position: sticky;
+  left: 78px;
+  z-index: 2;
+  background: inherit;
+  border-right: 1px solid var(--color-border-strong);
+}
+
+.tree-table--qurr th.qurr-item-cell {
+  z-index: 7;
+  background: var(--color-slate-700);
+}
+
+/* ── Yazdırma yalıtımı — LİDER EK (2): gerçek yazdırmada yalnız print
+   önizlemesi basılır, ekran kromu basılmaz. */
+@media print {
+  .qurr-no-print {
+    display: none !important;
+  }
+}
+
+.qurr-table-card__foot {
+  padding: 10px 16px;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+/* ── Başlık grubu varyantı (Q:163 açık/koyu sırayla) ────────────────────── */
+.qurr-group--alt {
+  background: var(--color-text-secondary) !important;
+}
+
+/* ── İş kalemi hücresi ───────────────────────────────────────────────────── */
+.qurr-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.qurr-item__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qurr-item__uom {
+  font-size: 10.5px;
+  color: var(--color-text-subtle);
+  font-weight: 400;
+}
+
+.qurr-item__badge {
+  font-size: 10px;
+  font-weight: var(--weight-semibold);
+  padding: 1px 5px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+}
+
+/* ── Kolon başlığı (kısa etiket + (harf)), tıklanınca formül (Q:172-182) ── */
+.qurr-head-cell-anchor {
+  position: relative;
+  display: block;
+}
+
+.qurr-head-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  padding: 0;
+}
+
+.qurr-head-cell--open {
+  color: var(--color-primary-hover);
+}
+
+.qurr-head-cell__code {
+  font-family: var(--font-mono);
+  color: var(--color-text-subtle);
+  font-weight: var(--weight-bold);
+}
+
+.qurr-head-cell--open .qurr-head-cell__code {
+  color: var(--color-primary-hover);
+}
+
+/* Q:176-180 — koyu zeminli formül baloncuğu. */
+.qurr-formula-pop {
+  width: 230px;
+  background: var(--color-text-strong);
+  color: var(--color-on-brand);
+  border-radius: var(--radius-md);
+  padding: 9px 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+  font-weight: 400;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.25);
+  z-index: 20;
+}
+
+.qurr-formula-pop:focus-visible {
+  outline: none;
+}
+
+.qurr-formula-pop__title {
+  font-size: 12px;
+  font-weight: var(--weight-bold);
+}
+
+.qurr-formula-pop__formula {
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--color-primary-light, #93c5fd);
+}
+
+.qurr-formula-pop__note {
+  font-size: 11px;
+  color: var(--color-border-strong);
+  line-height: 1.45;
+}
+
+/* ── Hücre durumları (Q:197-199 altlık) ──────────────────────────────────── */
+.qurr-cell--changed {
+  display: block;
+  background: var(--color-warning-soft);
+  margin: -6px -8px;
+  padding: 6px 8px;
+}
+
+.qurr-cell--danger {
+  color: var(--color-danger-strong);
+}
+
+/* ── Toplam satırları (Q:334 TOT — Σ D / Σ D+DL) ─────────────────────────── */
+.tree-table--qurr tr.qurr-row--direct-total,
+.tree-table--qurr tr.qurr-row--all-total {
+  background: var(--color-slate-700);
+  color: var(--color-on-brand);
+  font-weight: var(--weight-bold);
+  border-top: 1.5px solid var(--color-text-strong);
+}
+
+.tree-table--qurr tr.qurr-row--all-total {
+  background: var(--color-text-strong);
+}
+
+.tree-table--qurr tr.qurr-row--direct-total .qurr-cell--changed,
+.tree-table--qurr tr.qurr-row--all-total .qurr-cell--changed {
+  background: transparent;
+}
+
+/* ── Yükleme iskeleti (Q:112-119) ─────────────────────────────────────────── */
+.qurr-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.qurr-skeleton__cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-3);
+}
+
+.qurr-skeleton__card {
+  height: 96px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
