@@ -331,8 +331,8 @@ export function buildDiaryCreateBody(form: DiaryFormState): SiteDiaryEntryCreate
  * `PATCH /diary/{entry_id}` gövdesi — başlık alanları + işçi kırılımı (T3).
  *
  * `worker_counts` DEĞİŞTİRME semantiğindedir (openapi açıklaması): gövdeye
- * kaydın TÜM satırları (ön tanımlılar + kayıttan gelen fazlalıklar) girer,
- * sıfır olanlar SİLİNSİN diye dışarıda bırakılır. Hücrelerden biri geçersizse
+ * kaydın TÜM satırları (ekrandakiler + G12a'da gizlenen sayısı 0 eski satırlar)
+ * girer; ekranda sıfıra çekilenler SİLİNSİN diye dışarıda bırakılır. Hücrelerden biri geçersizse
  * alan HİÇ gönderilmez (`undefined`) — backend mevcut kırılımı korur, yanlış
  * bir sayı yazılmaz. Çağıran zaten `invalidWorkerCountKeys` ile önce durur.
  */

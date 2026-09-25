@@ -547,6 +547,48 @@
   width: 46px;
   text-align: center;
 }
+/* PLN-F2.1b · G12a — satır adı taşarsa kısalır (İ:353 ellipsis). */
+.diary-workers__name-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Kendi ekip kişi sayısı — puantajdan SALT OKUNUR (onaylı sapma: İ:354 input). */
+.diary-workers__count-ro {
+  font-size: 13px;
+  text-align: center;
+  color: var(--color-text);
+  font-family: var(--font-mono);
+}
+/* G12a boş hâl — puantajsız gün "Puantaja git". */
+.diary-workers__empty {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--color-text-subtle);
+  background: var(--color-neutral-soft);
+  border-radius: var(--radius-6);
+  padding: 6px 8px;
+}
+.diary-workers__empty-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
+  text-decoration: none;
+}
+.diary-workers__empty-link:hover {
+  text-decoration: underline;
+}
+.diary-workers__empty-link:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--radius-6);
+}
 /* Toplam satırı da aynı 5 kolonlu ızgarayı kullanır (GK434 flex kuralını ezer). */
 .diary-workers__total.diary-workers__grid-row {
   display: grid;

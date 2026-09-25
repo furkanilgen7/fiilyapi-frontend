@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { useTimesheetWeek } from "@/lib/api/hooks/useTimesheet";
 import { useSubcontractors } from "@/lib/api/hooks/useSubcontractors";
 
 import { GeneralSiteDiaryView } from "./GeneralSiteDiaryView";
@@ -61,8 +60,8 @@ vi.mock("@/lib/api/hooks/useProgressPayments", () => ({ useProgressPayments: vi.
 vi.mock("@/lib/api/hooks/useSiteSubcontractorPayments", () => ({
   useSiteSubcontractorPayments: vi.fn(),
 }));
-// PLN-F2.2 — işçi kartının puantaj (kendi ekip saati) ve taşeron firma okumaları.
-vi.mock("@/lib/api/hooks/useTimesheet", () => ({ useTimesheetWeek: vi.fn() }));
+// PLN-F2.2 — işçi kartının taşeron firma okuması (kendi ekip saati PLN-F2.1b'den
+// beri kayıt yanıtında: `own_crew_from_timesheet`).
 vi.mock("@/lib/api/hooks/useSubcontractors", () => ({ useSubcontractors: vi.fn() }));
 
 const BASE_ME = {
@@ -166,12 +165,6 @@ beforeEach(() => {
     isError: false,
     isPartial: false,
     truncation: { isTruncated: false, shownCount: 0, totalCount: 0 },
-  } as never);
-  vi.mocked(useTimesheetWeek).mockReturnValue({
-    data: undefined,
-    isLoading: false,
-    isError: false,
-    error: null,
   } as never);
   vi.mocked(useSubcontractors).mockReturnValue({
     data: { items: [] },

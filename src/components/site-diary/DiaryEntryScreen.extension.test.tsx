@@ -21,7 +21,6 @@ import { useBoq } from "@/lib/api/hooks/useBoq";
 import { fetchBoqItemAllocations } from "@/lib/api/hooks/useBoqAllocations";
 import { useProgressPayments } from "@/lib/api/hooks/useProgressPayments";
 import { useSiteSubcontractorPayments } from "@/lib/api/hooks/useSiteSubcontractorPayments";
-import { useTimesheetWeek } from "@/lib/api/hooks/useTimesheet";
 import { useSubcontractors } from "@/lib/api/hooks/useSubcontractors";
 import { useSession } from "@/components/shell/SessionProvider";
 import { BackendError } from "@/lib/api/unwrap";
@@ -52,7 +51,6 @@ vi.mock("@/lib/api/hooks/useBoq", () => ({ useBoq: vi.fn() }));
 vi.mock("@/lib/api/hooks/useBoqAllocations", () => ({ fetchBoqItemAllocations: vi.fn() }));
 vi.mock("@/lib/api/hooks/useProgressPayments", () => ({ useProgressPayments: vi.fn() }));
 vi.mock("@/lib/api/hooks/useSiteSubcontractorPayments", () => ({ useSiteSubcontractorPayments: vi.fn() }));
-vi.mock("@/lib/api/hooks/useTimesheet", () => ({ useTimesheetWeek: vi.fn() }));
 vi.mock("@/lib/api/hooks/useSubcontractors", () => ({ useSubcontractors: vi.fn() }));
 
 const TODAY = isoDate(new Date());
@@ -132,6 +130,8 @@ function entryDetail(overrides: Record<string, unknown> = {}) {
     worker_counts: [
       { id: "w-f", trade: "Kaya Duvar", source: "subcontractor", count: 7, subcontractor_id: "firm-1", hours: "8.0" },
     ],
+    // PLN-F2.1b · G12a — kendi ekip backend'de puantajdan türetilir (salt okunur).
+    own_crew_from_timesheet: [{ trade: "Kalıpçı", source: "company", headcount: 1, hours: "9.0" }],
     lines_total: "30240.00",
     worker_total: 7,
     dropped_orphan_count: 0,
@@ -210,22 +210,6 @@ beforeEach(() => {
     truncation: { isTruncated: false, shownCount: 0, totalCount: 0 },
   } as never);
   vi.mocked(useSitePlanDaySummary).mockReturnValue({ data: undefined, ...idle } as never);
-  vi.mocked(useTimesheetWeek).mockReturnValue({
-    data: {
-      rows: [
-        {
-          personnel_id: "p1",
-          full_name: "Mehmet",
-          trade: "Kalıpçı",
-          source: "company",
-          subcontractor_name: null,
-          cells: [{ work_date: TODAY, hours: "9.0", code: null, section_id: null }],
-          totals: {},
-        },
-      ],
-    },
-    ...idle,
-  } as never);
   vi.mocked(useSubcontractors).mockReturnValue({
     data: {
       items: [
@@ -488,7 +472,7 @@ describe("DiaryEntryScreen · hava + işçi genişlemesi", () => {
     expect(screen.getByText("~ 15 km/sa")).toBeInTheDocument();
   });
 
-  it("kendi ekip saati puantajdan SALT OKUNUR; firma satırı kişi × saat girer ve gövdeye gider", async () => {
+  it("kendi ekip own_crew_from_timesheet'ten SALT OKUNUR; firma satırı kişi × saat girer ve gövdeye gider", async () => {
     const user = userEvent.setup();
     const detail = entryDetail();
     updateMutate.mockResolvedValue(detail);
@@ -496,6 +480,8 @@ describe("DiaryEntryScreen · hava + işçi genişlemesi", () => {
     renderScreen(<SiteDiaryEntryView />);
 
     expect(screen.queryByLabelText("Şirket · Kalıpçılar kişi başı saat")).not.toBeInTheDocument();
+    const ownRow = screen.getByText("Kalıpçı").closest(".diary-workers__grid-row") as HTMLElement;
+    expect(within(ownRow).queryByRole("textbox")).toBeNull();
     const hours = screen.getByLabelText("Taşeron · Kaya Duvar kişi başı saat");
     await user.clear(hours);
     await user.type(hours, "9");

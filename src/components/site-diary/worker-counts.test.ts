@@ -1,21 +1,25 @@
 import { describe, it, expect } from "vitest";
 
-import type { SiteDiaryWorkerCountRead } from "@/lib/api/hooks/useSiteDiary";
+import type { OwnCrewFromTimesheet, SiteDiaryWorkerCountRead } from "@/lib/api/hooks/useSiteDiary";
 
 import {
   areWorkerCountsDirty,
+  buildDiaryWorkerRows,
   buildWorkerCountsBody,
   buildWorkerRows,
-  DIARY_WORKER_PRESETS,
+  diaryCrewTotals,
+  firmManHours,
   invalidWorkerCountKeys,
+  isLegacyRow,
   parseWorkerCount,
   workerCountKey,
   workerCountsFromEntry,
-  workerCountsTotal,
 } from "./worker-counts";
 
-// F-SD T6 · T3'ün "Bugünkü İşçi Dağılımı" türevleri (GK414-439). Backend'in
-// (trade, source) ikilisi ve DEĞİŞTİRME semantiği burada kanıtlanır.
+// F-SD T6 → PLN-F2.1b · "Bugünkü İşçi Dağılımı" türevleri. Kendi ekip satırları
+// artık backend'in `own_crew_from_timesheet`inden gelir (G12a); günlük işçi
+// satırları yalnız FİRMA + "Diğer (eski kayıt)" satırlarıdır. Backend'in
+// DEĞİŞTİRME semantiği (gönderilmeyen çift SİLİNİR) burada kanıtlanır.
 
 function entryRow(overrides: Partial<SiteDiaryWorkerCountRead> = {}): SiteDiaryWorkerCountRead {
   return {
@@ -27,41 +31,78 @@ function entryRow(overrides: Partial<SiteDiaryWorkerCountRead> = {}): SiteDiaryW
   } as SiteDiaryWorkerCountRead;
 }
 
-describe("buildWorkerRows", () => {
-  it("mockup'ın dört ön tanımlı satırını aynı sırayla verir", () => {
-    expect(buildWorkerRows([])).toEqual([...DIARY_WORKER_PRESETS]);
+function firmRow(overrides: Partial<SiteDiaryWorkerCountRead> = {}): SiteDiaryWorkerCountRead {
+  return entryRow({
+    id: "w-f",
+    trade: "Kaya Duvar",
+    source: "subcontractor",
+    count: 6,
+    subcontractor_id: "firm-1",
+    hours: "9.0",
+    ...overrides,
+  });
+}
+
+function crew(overrides: Partial<OwnCrewFromTimesheet> = {}): OwnCrewFromTimesheet {
+  return { trade: "Kalıpçı", source: "company", headcount: 3, hours: "27.0", ...overrides };
+}
+
+describe("buildWorkerRows (G12a — hazır satır YOK)", () => {
+  it("kayıt boşsa satır da YOKTUR (eski dört hazır satır kalktı)", () => {
+    expect(buildWorkerRows([])).toEqual([]);
   });
 
-  it("kayıtta olup ön tanımlılarda olmayan çifti SİLMEZ, sona ekler", () => {
-    const rows = buildWorkerRows([entryRow({ trade: "Sıvacı", source: "subcontractor" })]);
+  it("firmasız satır sayısı > 0 ise 'eski kayıt' satırı olarak kalır", () => {
+    const rows = buildWorkerRows([entryRow({ trade: "Sıvacı", source: "subcontractor", count: 5 })]);
 
-    expect(rows).toHaveLength(DIARY_WORKER_PRESETS.length + 1);
-    expect(rows.at(-1)).toEqual({ trade: "Sıvacı", source: "subcontractor" });
+    expect(rows).toEqual([{ trade: "Sıvacı", source: "subcontractor" }]);
+    expect(isLegacyRow(rows[0])).toBe(true);
   });
 
-  it("kayıttaki çift ön tanımlıyla aynıysa satır ÇİFTLENMEZ", () => {
-    const rows = buildWorkerRows([entryRow({ trade: "Kalıpçılar", source: "company" })]);
-
-    expect(rows).toHaveLength(DIARY_WORKER_PRESETS.length);
+  it("firmasız satır sayısı 0 ise GÖSTERİLMEZ", () => {
+    expect(buildWorkerRows([entryRow({ count: 0 })])).toEqual([]);
   });
 
-  it("PLN-F2.1: FİRMA satırı ön tanımlı (meslek, kaynak) ile çakışmaz — kendi satırı olarak eklenir", () => {
-    const rows = buildWorkerRows([
-      entryRow({ trade: "Demirciler", source: "subcontractor", subcontractor_id: "firm-1", hours: "9.0" }),
-    ]);
+  it("firma satırı sayısından bağımsız basılır ve FİRMA anahtarı taşır", () => {
+    const rows = buildWorkerRows([firmRow({ count: 0 })]);
 
-    expect(rows).toHaveLength(DIARY_WORKER_PRESETS.length + 1);
-    expect(rows.at(-1)).toEqual({ trade: "Demirciler", source: "subcontractor", subcontractorId: "firm-1" });
-    expect(workerCountKey(rows.at(-1)!)).toBe("firm|firm-1");
+    expect(rows).toEqual([{ trade: "Kaya Duvar", source: "subcontractor", subcontractorId: "firm-1" }]);
+    expect(workerCountKey(rows[0])).toBe("firm|firm-1");
+    expect(isLegacyRow(rows[0])).toBe(false);
+  });
+
+  it("firma satırları önce, eski kayıt satırları sonra gelir", () => {
+    const rows = buildWorkerRows([entryRow({ count: 4 }), firmRow()]);
+
+    expect(rows.map(workerCountKey)).toEqual(["firm|firm-1", "company|Kalıpçılar"]);
   });
 
   it("aynı meslek FARKLI kaynakta ayrı satırdır (kimlik ikilidir)", () => {
-    const rows = buildWorkerRows([entryRow({ trade: "Kalıpçılar", source: "subcontractor" })]);
+    const rows = buildWorkerRows([
+      entryRow({ trade: "Kalıpçılar", source: "company", count: 2 }),
+      entryRow({ id: "w-2", trade: "Kalıpçılar", source: "subcontractor", count: 3 }),
+    ]);
 
-    expect(rows).toHaveLength(DIARY_WORKER_PRESETS.length + 1);
-    expect(workerCountKey({ trade: "Kalıpçılar", source: "subcontractor" })).not.toBe(
-      workerCountKey({ trade: "Kalıpçılar", source: "company" }),
+    expect(rows).toHaveLength(2);
+  });
+});
+
+describe("buildDiaryWorkerRows", () => {
+  it("eklenen firma sona girer, kaldırılan satır düşer", () => {
+    const entryRows = [entryRow({ count: 4 }), firmRow()];
+    const rows = buildDiaryWorkerRows(
+      entryRows,
+      [{ subcontractorId: "firm-2", trade: "Deniz Tesisat" }],
+      ["company|Kalıpçılar"],
     );
+
+    expect(rows.map(workerCountKey)).toEqual(["firm|firm-1", "firm|firm-2"]);
+  });
+
+  it("kayıtta olan firma yeniden eklenirse satır ÇİFTLENMEZ", () => {
+    const rows = buildDiaryWorkerRows([firmRow()], [{ subcontractorId: "firm-1", trade: "Kaya Duvar" }], []);
+
+    expect(rows).toHaveLength(1);
   });
 });
 
@@ -76,12 +117,8 @@ describe("workerCountsFromEntry", () => {
     expect(values["subcontractor|Demirciler"]).toBe("8");
   });
 
-  it("PLN-F2.1: firma satırı FİRMA anahtarıyla gelir (ön tanımlı meslek hücresini doldurmaz)", () => {
-    const values = workerCountsFromEntry([
-      entryRow({ trade: "Demirciler", source: "subcontractor", count: 6, subcontractor_id: "firm-1" }),
-    ]);
-
-    expect(values).toEqual({ "firm|firm-1": "6" });
+  it("firma satırı FİRMA anahtarıyla gelir", () => {
+    expect(workerCountsFromEntry([firmRow()])).toEqual({ "firm|firm-1": "6" });
   });
 });
 
@@ -115,114 +152,139 @@ describe("invalidWorkerCountKeys", () => {
   });
 });
 
-describe("workerCountsTotal", () => {
-  it("GK434 toplamı hücrelerden anında türetir", () => {
-    const rows = buildWorkerRows([]);
-
-    expect(
-      workerCountsTotal(rows, {
-        "company|Kalıpçılar": "12",
-        "subcontractor|Demirciler": "8",
-        "general|Yardımcı": "6",
-      }),
-    ).toBe(26);
+describe("firmManHours", () => {
+  it("kişi × saat = a-s", () => {
+    expect(Number(firmManHours("6", "9"))).toBe(54);
+    expect(Number(firmManHours("4", "7,5"))).toBe(30);
   });
 
-  it("hücrelerden biri geçersizse toplam BASILMAZ (null)", () => {
-    const rows = buildWorkerRows([]);
+  it("saat boş ya da geçersizse hesaplanamaz (null)", () => {
+    expect(firmManHours("6", "")).toBeNull();
+    expect(firmManHours("6", "30")).toBeNull();
+    expect(firmManHours("x", "9")).toBeNull();
+  });
+});
 
-    expect(workerCountsTotal(rows, { "company|Kalıpçılar": "x" })).toBeNull();
+describe("diaryCrewTotals (G12a toplamı)", () => {
+  const rows = buildWorkerRows([firmRow(), entryRow({ count: 4 })]);
+  const values = { "firm|firm-1": "6", "company|Kalıpçılar": "4" };
+  const hours = { "firm|firm-1": "9" };
+
+  it("kişi = Σ headcount + Σ günlük satır (firma + eski)", () => {
+    const totals = diaryCrewTotals([crew(), crew({ trade: "Demirci", headcount: 2, hours: "18.0" })], rows, values, hours);
+
+    expect(totals.people).toBe(3 + 2 + 6 + 4);
+  });
+
+  it("a-s = Σ puantaj saati + Σ firma a-s (eski satır a-s taşımaz)", () => {
+    const totals = diaryCrewTotals([crew(), crew({ trade: "Demirci", headcount: 2, hours: "18.5" })], rows, values, hours);
+
+    expect(Number(totals.manHours)).toBe(27 + 18.5 + 6 * 9);
+  });
+
+  it("puantaj yoksa a-s yalnız firma a-s'idir", () => {
+    const totals = diaryCrewTotals([], rows, values, hours);
+
+    expect(totals.people).toBe(10);
+    expect(Number(totals.manHours)).toBe(54);
+  });
+
+  it("günlük satırı yokken toplam puantajın kendisidir", () => {
+    const totals = diaryCrewTotals([crew()], [], {}, {});
+
+    expect(totals.people).toBe(3);
+    expect(Number(totals.manHours)).toBe(27);
+  });
+
+  it("geçersiz kişi hücresi → kişi toplamı BASILMAZ (null)", () => {
+    expect(diaryCrewTotals([crew()], rows, { ...values, "company|Kalıpçılar": "x" }, hours).people).toBeNull();
+  });
+
+  it("firma a-s hesaplanamıyorsa a-s toplamı BASILMAZ (null)", () => {
+    expect(diaryCrewTotals([crew()], rows, values, { "firm|firm-1": "abc" }).manHours).toBeNull();
   });
 });
 
 describe("buildWorkerCountsBody", () => {
-  it("sıfır satırı gövdeye KOYMAZ (DEĞİŞTİRME semantiği → backend'de silinir)", () => {
-    const rows = buildWorkerRows([]);
-    const body = buildWorkerCountsBody([], rows, {
-      "company|Kalıpçılar": "12",
-      "subcontractor|Demirciler": "0",
-      "general|Yardımcı": "",
-    });
-
-    expect(body).toEqual([
-      { trade: "Kalıpçılar", source: "company", count: 12, subcontractor_id: null, hours: null },
-    ]);
-  });
-
   it("geçersiz hücre varsa gövde ÜRETİLMEZ (null) — yanlış sayı yazılmaz", () => {
-    const rows = buildWorkerRows([]);
+    const entryRows = [entryRow({ count: 4 })];
 
-    expect(buildWorkerCountsBody([], rows, { "company|Kalıpçılar": "-2" })).toBeNull();
+    expect(buildWorkerCountsBody(entryRows, buildWorkerRows(entryRows), { "company|Kalıpçılar": "-2" })).toBeNull();
   });
 
-  it("kayıttan gelen fazladan çift de gövdeye girer (veri kaybı yok)", () => {
-    const entryRows = [entryRow({ trade: "Sıvacı", source: "subcontractor", count: 5 })];
-    const body = buildWorkerCountsBody(entryRows, buildWorkerRows(entryRows), {
-      "subcontractor|Sıvacı": "5",
-    });
+  it("eski kayıt satırı düzenlenir; 0'a çekilirse gövdeden düşer", () => {
+    const entryRows = [entryRow({ count: 4 })];
+    const rows = buildWorkerRows(entryRows);
 
-    expect(body).toEqual([
-      { trade: "Sıvacı", source: "subcontractor", count: 5, subcontractor_id: null, hours: null },
+    expect(buildWorkerCountsBody(entryRows, rows, { "company|Kalıpçılar": "5" })).toEqual([
+      { trade: "Kalıpçılar", source: "company", count: 5, subcontractor_id: null, hours: null },
     ]);
+    expect(buildWorkerCountsBody(entryRows, rows, { "company|Kalıpçılar": "0" })).toEqual([]);
   });
 
-  it("PLN-F2.1: firma satırı gövdede firma kimliği + SAATİYLE gider (saat ekranda düzenlenmese de korunur)", () => {
+  it("🔴 TAM KÜME: ekranda GÖSTERİLMEYEN (sayısı 0) eski satır gövdede AYNEN korunur", () => {
     const entryRows = [
-      entryRow({ trade: "Kalıpçılar", source: "company", count: 12 }),
-      entryRow({ id: "w-2", trade: "Demirciler", source: "subcontractor", count: 6, subcontractor_id: "firm-1", hours: "9.0" }),
+      entryRow({ trade: "Yardımcı", source: "general", count: 0 }),
+      firmRow(),
     ];
     const rows = buildWorkerRows(entryRows);
+    expect(rows.map(workerCountKey)).toEqual(["firm|firm-1"]);
+
     const body = buildWorkerCountsBody(entryRows, rows, {
+      ...workerCountsFromEntry(entryRows),
+      "firm|firm-1": "7",
+    });
+
+    expect(body).toEqual([
+      { trade: "Yardımcı", source: "general", count: 0, subcontractor_id: null, hours: null },
+      { trade: "Kaya Duvar", source: "subcontractor", count: 7, subcontractor_id: "firm-1", hours: "9.0" },
+    ]);
+  });
+
+  it("firma satırı gövdede firma kimliği + SAATİYLE gider (saat ekranda düzenlenmese de korunur)", () => {
+    const entryRows = [entryRow({ count: 12 }), firmRow()];
+    const body = buildWorkerCountsBody(entryRows, buildWorkerRows(entryRows), {
       ...workerCountsFromEntry(entryRows),
       "company|Kalıpçılar": "14",
     });
 
     expect(body).toEqual([
       { trade: "Kalıpçılar", source: "company", count: 14, subcontractor_id: null, hours: null },
-      { trade: "Demirciler", source: "subcontractor", count: 6, subcontractor_id: "firm-1", hours: "9.0" },
+      { trade: "Kaya Duvar", source: "subcontractor", count: 6, subcontractor_id: "firm-1", hours: "9.0" },
     ]);
   });
 
-  it("PLN-F2.1: ekranda satırı OLMAYAN kayıt satırı da düşmez (tam küme)", () => {
-    const entryRows = [
-      entryRow({ id: "w-2", trade: "Demirciler", source: "subcontractor", count: 6, subcontractor_id: "firm-1", hours: "9.0" }),
-    ];
-    // Çağıran yalnız ön tanımlıları basıyor olsa bile firma satırı korunur.
-    const body = buildWorkerCountsBody(entryRows, [...DIARY_WORKER_PRESETS], { "company|Kalıpçılar": "3" });
+  it("eklenen firma gövdeye girer; kaldırılan eski satır düşer", () => {
+    const entryRows = [entryRow({ count: 4 })];
+    const added = [{ subcontractorId: "firm-2", trade: "Deniz Tesisat" }];
+    const removed = ["company|Kalıpçılar"];
+    const rows = buildDiaryWorkerRows(entryRows, added, removed);
+    const body = buildWorkerCountsBody(entryRows, rows, { "firm|firm-2": "3" }, { "firm|firm-2": "8" }, removed);
 
     expect(body).toEqual([
-      { trade: "Demirciler", source: "subcontractor", count: 6, subcontractor_id: "firm-1", hours: "9.0" },
-      { trade: "Kalıpçılar", source: "company", count: 3, subcontractor_id: null, hours: null },
+      { trade: "Deniz Tesisat", source: "subcontractor", count: 3, subcontractor_id: "firm-2", hours: 8 },
     ]);
   });
 });
 
 describe("areWorkerCountsDirty", () => {
-  const entryRows = [entryRow({ trade: "Kalıpçılar", source: "company", count: 12 })];
+  const entryRows = [entryRow({ count: 12 })];
 
   it("kayıtla aynı değerlerde false döner", () => {
-    expect(
-      areWorkerCountsDirty(entryRows, buildWorkerRows(entryRows), { "company|Kalıpçılar": "12" }),
-    ).toBe(false);
+    expect(areWorkerCountsDirty(entryRows, buildWorkerRows(entryRows), { "company|Kalıpçılar": "12" })).toBe(false);
   });
 
-  it("boş hücre ile '0' AYNI sayılır (kayıtta 0 → ekranda boş)", () => {
-    const zeroRows = [entryRow({ trade: "Kalıpçılar", source: "company", count: 0 })];
+  it("gizli (sayısı 0) eski satır formu kirletmez", () => {
+    const zeroRows = [entryRow({ count: 0 })];
 
-    expect(
-      areWorkerCountsDirty(zeroRows, buildWorkerRows(zeroRows), { "company|Kalıpçılar": "" }),
-    ).toBe(false);
+    expect(areWorkerCountsDirty(zeroRows, buildWorkerRows(zeroRows), workerCountsFromEntry(zeroRows))).toBe(false);
   });
 
   it("değer değişince true döner", () => {
-    expect(
-      areWorkerCountsDirty(entryRows, buildWorkerRows(entryRows), { "company|Kalıpçılar": "13" }),
-    ).toBe(true);
+    expect(areWorkerCountsDirty(entryRows, buildWorkerRows(entryRows), { "company|Kalıpçılar": "13" })).toBe(true);
   });
 
   it("kayıtta olan satır ekranda boşaltılırsa true döner", () => {
-    expect(
-      areWorkerCountsDirty(entryRows, buildWorkerRows(entryRows), { "company|Kalıpçılar": "" }),
-    ).toBe(true);
+    expect(areWorkerCountsDirty(entryRows, buildWorkerRows(entryRows), { "company|Kalıpçılar": "" })).toBe(true);
   });
 });

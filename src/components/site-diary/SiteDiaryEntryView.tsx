@@ -13,7 +13,6 @@ import { useProgressPayments } from "@/lib/api/hooks/useProgressPayments";
 import { useSite } from "@/lib/api/hooks/useSites";
 import { useSiteSubcontractorPayments } from "@/lib/api/hooks/useSiteSubcontractorPayments";
 import { useSubcontractors } from "@/lib/api/hooks/useSubcontractors";
-import { useTimesheetWeek } from "@/lib/api/hooks/useTimesheet";
 import { useSiteDiaryEntries, useSiteDiaryEntry } from "@/lib/api/hooks/useSiteDiary";
 import {
   useCreateSiteDiaryEntry,
@@ -32,7 +31,6 @@ import { hasAtLeast } from "@/lib/auth/permissions";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
 
 import { formatMonthName } from "@/lib/format";
-import { isoWeekOf } from "@/components/timesheet/iso-week";
 
 import { DiaryBasicInfoCard } from "./DiaryBasicInfoCard";
 import { DiaryLinesCard } from "./DiaryLinesCard";
@@ -53,7 +51,7 @@ import type { DiaryExtensionContext, DiaryExtensionProps, DiaryLineRef } from ".
 import { buildDiaryExtensionContext, isSameDiaryExtensionContext } from "./diary-extension-context";
 import { buildDiaryLineTree, diaryTreeLeaves } from "./diary-lines-tree";
 import { boqTreeItems, siteTreeSections } from "./diary-tree-sources";
-import { puantajDayCrew } from "./puantaj-crew";
+import { diaryTimesheetHref } from "./diary-timesheet-link";
 import {
   addDiaryFirm,
   addDiaryLines,
@@ -152,10 +150,10 @@ export function DiaryEntryScreen({
   const subcontractorPayments = useSiteSubcontractorPayments(projectId, siteId);
   const paymentsPermission = useModulePermission("progress_payments");
 
-  // PLN-F2.2 — kendi ekip saati puantajdan SALT OKUNUR (haftalık uç; gün
-  // süzmesi istemcide) ve firma adları taşeron listesinden (satır yanıtı ad
-  // taşımaz). Pasif firmalar da okunur: kayıttaki eski firma satırı adsız kalmasın.
-  const timesheetWeek = useTimesheetWeek(siteId, isoWeekOf(activeDate));
+  // PLN-F2.2 — firma adları taşeron listesinden (satır yanıtı ad taşımaz).
+  // Pasif firmalar da okunur: kayıttaki eski firma satırı adsız kalmasın.
+  // (PLN-F2.1b · G12: kendi ekip saati artık kayıt yanıtının
+  // `own_crew_from_timesheet`idir — puantaj haftası bu ekrandan OKUNMAZ.)
   const subcontractors = useSubcontractors({ activeOnly: false });
 
   const createEntry = useCreateSiteDiaryEntry(siteId);
@@ -284,11 +282,9 @@ export function DiaryEntryScreen({
   const firms = subcontractors.data?.items ?? [];
   const firmNameById = new Map(firms.map((firm) => [firm.id, firm.name]));
   const firmOptions = firms.filter((firm) => firm.is_active).map((firm) => ({ id: firm.id, name: firm.name }));
-  const puantaj = {
-    crew: timesheetWeek.data ? puantajDayCrew(timesheetWeek.data.rows, activeDate) : null,
-    isLoading: timesheetWeek.isLoading,
-    isError: timesheetWeek.isError,
-  };
+  // G12a — kendi ekip backend'de türetilir; kayıt yokken (ya da eski yanıtta) boş.
+  const ownCrew = entry?.own_crew_from_timesheet ?? [];
+  const timesheetHref = diaryTimesheetHref({ projectKey, siteKey, day: activeDate });
   const accrual = computeDiaryAccrual({
     employerItems: employerPaymentsQuery.data?.items ?? [],
     isEmployerLoading: employerPaymentsQuery.isLoading,
@@ -658,7 +654,8 @@ export function DiaryEntryScreen({
             onRemoveRow={(key) => setForm((prev) => removeDiaryWorker(prev, key))}
             firmOptions={firmOptions}
             firmNameById={firmNameById}
-            puantaj={puantaj}
+            ownCrew={ownCrew}
+            timesheetHref={timesheetHref}
             disabled={isReadOnly}
             isEntryMissing={!entry}
           />

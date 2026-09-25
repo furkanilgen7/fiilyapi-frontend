@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { useTimesheetWeek } from "@/lib/api/hooks/useTimesheet";
 import { useSubcontractors } from "@/lib/api/hooks/useSubcontractors";
+import { isoWeekOf } from "@/components/timesheet/iso-week";
 
 import { SiteDiaryEntryView } from "./SiteDiaryEntryView";
 import { isoDate } from "./derive";
@@ -55,8 +55,9 @@ vi.mock("@/lib/api/hooks/useProgressPayments", () => ({ useProgressPayments: vi.
 vi.mock("@/lib/api/hooks/useSiteSubcontractorPayments", () => ({
   useSiteSubcontractorPayments: vi.fn(),
 }));
-// PLN-F2.2 — işçi kartının puantaj (kendi ekip saati) ve taşeron firma okumaları.
-vi.mock("@/lib/api/hooks/useTimesheet", () => ({ useTimesheetWeek: vi.fn() }));
+// PLN-F2.2 — işçi kartının taşeron firma okuması. (PLN-F2.1b: kendi ekip saati
+// artık kayıt yanıtının `own_crew_from_timesheet`inden gelir — puantaj haftası
+// bu ekrandan OKUNMAZ.)
 vi.mock("@/lib/api/hooks/useSubcontractors", () => ({ useSubcontractors: vi.fn() }));
 
 const BASE_ME = {
@@ -206,12 +207,6 @@ beforeEach(() => {
     isError: false,
     isPartial: false,
     truncation: { isTruncated: false, shownCount: 0, totalCount: 0 },
-  } as never);
-  vi.mocked(useTimesheetWeek).mockReturnValue({
-    data: undefined,
-    isLoading: false,
-    isError: false,
-    error: null,
   } as never);
   vi.mocked(useSubcontractors).mockReturnValue({
     data: { items: [] },
@@ -542,5 +537,86 @@ describe("SiteDiaryEntryView · kaydetme akışı", () => {
 
     expect(await screen.findByText("Gönderilmiş kayıt düzenlenemez.")).toBeInTheDocument();
     expect(submitMutate).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * PLN-F2.1b · G12a — "Bugünkü İşçi Dağılımı" kendi ekip satırlarını kayıt
+ * yanıtının `own_crew_from_timesheet`inden basar (backend türetir; ekran
+ * puantaj haftası OKUMAZ, dize sezgisi YOK). Eski dört hazır satır kalktı.
+ */
+describe("SiteDiaryEntryView · işçi dağılımı (G12a)", () => {
+  function timesheetHrefFor(day: string): string {
+    const week = isoWeekOf(day);
+    return `${routes.projects.sites.timesheet({ projectId: "p-1", siteId: "s-1" })}?iso_year=${week.isoYear}&iso_week=${week.isoWeek}`;
+  }
+
+  it("kendi ekip satırları own_crew_from_timesheet'ten SALT OKUNUR basılır; hazır satırlar YOK", () => {
+    mockScreen({
+      entry: entryDetail({
+        own_crew_from_timesheet: [{ trade: "Kalıpçı", source: "company", headcount: 3, hours: "27.0" }],
+      }),
+    });
+    render(<SiteDiaryEntryView />);
+
+    const row = screen.getByText("Kalıpçı").closest(".diary-workers__grid-row") as HTMLElement;
+    expect(within(row).queryByRole("textbox")).toBeNull();
+    expect(within(row).getByText("3")).toBeInTheDocument();
+    for (const preset of ["Kalıpçılar", "Demirciler", "Elektrikçiler", "Yardımcı"]) {
+      expect(screen.queryByText(preset)).toBeNull();
+    }
+    expect(screen.queryByText(/Bu gün için puantaj girilmemiş/)).toBeNull();
+  });
+
+  it("puantajsız gün: boş hâl + o günün haftasına 'Puantaja git' (routes.ts şantiye puantajı)", () => {
+    mockScreen({ entry: entryDetail({ own_crew_from_timesheet: [] }) });
+    render(<SiteDiaryEntryView />);
+
+    expect(screen.getByText(/Bu gün için puantaj girilmemiş/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Puantaja git/ })).toHaveAttribute("href", timesheetHrefFor(TODAY));
+  });
+
+  it("alan hiç gelmezse (eski yanıt) de boş hâl basılır", () => {
+    mockScreen({ entry: entryDetail() });
+    render(<SiteDiaryEntryView />);
+
+    expect(screen.getByText(/Bu gün için puantaj girilmemiş/)).toBeInTheDocument();
+  });
+
+  it("kayıt yokken boş hâl + 'önce taslak kaydedin' notu", () => {
+    mockScreen();
+    render(<SiteDiaryEntryView />);
+
+    expect(screen.getByText(/Bu gün için puantaj girilmemiş/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Puantaja git/ })).toHaveAttribute("href", timesheetHrefFor(TODAY));
+    expect(screen.getByText(/önce “Taslak Kaydet” deyin/)).toBeInTheDocument();
+  });
+
+  it("🔴 TAM KÜME: gizli (sayısı 0) eski satır PATCH gövdesinde korunur; görünen eski satır 'Diğer (eski kayıt)'", async () => {
+    const user = setupUser();
+    const detail = entryDetail({
+      entry_date: TODAY,
+      worker_counts: [
+        { id: "w-0", trade: "Yardımcı", source: "general", count: 0, subcontractor_id: null, hours: null },
+        { id: "w-1", trade: "Kalıpçılar", source: "company", count: 4, subcontractor_id: null, hours: null },
+      ],
+      own_crew_from_timesheet: [{ trade: "Kalıpçı", source: "company", headcount: 3, hours: "27.0" }],
+    });
+    mockScreen({ entry: detail });
+    updateMutate.mockResolvedValue(detail);
+    linesMutate.mockResolvedValue(detail);
+    render(<SiteDiaryEntryView />);
+
+    expect(screen.queryByText(/Yardımcı/)).toBeNull();
+    const legacy = screen.getByLabelText("Şirket · Diğer (eski kayıt) · Kalıpçılar işçi sayısı");
+    await user.clear(legacy);
+    await user.type(legacy, "5");
+    await user.click(screen.getByRole("button", { name: "Taslak Kaydet" }));
+
+    await waitFor(() => expect(updateMutate).toHaveBeenCalledTimes(1));
+    expect(updateMutate.mock.calls[0][0].worker_counts).toEqual([
+      { trade: "Yardımcı", source: "general", count: 0, subcontractor_id: null, hours: null },
+      { trade: "Kalıpçılar", source: "company", count: 5, subcontractor_id: null, hours: null },
+    ]);
   });
 });
