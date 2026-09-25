@@ -1,3 +1,4 @@
+import { guardedFetch } from "@/lib/api/app-build";
 import { BackendError } from "@/lib/api/unwrap";
 import { downloadAttachment } from "@/lib/api/download";
 import type { components } from "@/lib/api/schema";
@@ -50,7 +51,7 @@ export async function uploadEquipmentDocument(
   form.append("type_id", input.typeId);
   if (input.validUntil !== undefined) form.append("valid_until", input.validUntil);
 
-  const response = await globalThis.fetch(uploadPath(input.equipmentId), {
+  const response = await guardedFetch(uploadPath(input.equipmentId), {
     method: "POST",
     credentials: "same-origin",
     body: form,

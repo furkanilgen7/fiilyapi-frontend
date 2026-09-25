@@ -1,3 +1,4 @@
+import { guardedFetch } from "@/lib/api/app-build";
 import { BackendError } from "@/lib/api/unwrap";
 import { attachmentFilename, exportFilename } from "@/lib/api/export-filename";
 
@@ -59,7 +60,7 @@ function saveBlob(blob: Blob, filename: string): void {
 }
 
 async function fetchBinary(path: string): Promise<Response> {
-  const response = await globalThis.fetch(path, {
+  const response = await guardedFetch(path, {
     method: "GET",
     credentials: "same-origin",
   });

@@ -1775,3 +1775,157 @@ describe("BFF catch-all — capraz kaynak (CSRF) kapisi", () => {
     expect(res.status).toBe(200);
   });
 });
+
+/**
+ * PLN-F2.0 — SÜRÜM BANDI (eski istemcinin yazmasını durdurma).
+ *
+ * Neden: `PUT /diary/{id}/lines` ve `worker_counts` DEĞİŞTİRME semantiğindedir.
+ * Yeni sürüm canlıya çıktıktan sonra sekmesinde ESKİ JS açık kalan kullanıcı
+ * kaydederse, eski paket yeni alanları hiç bilmediği için onları SİLEREK yazar.
+ *
+ * İki katman vardır ve ikisi de burada bekçilenir:
+ *   1. Her yanıt `x-app-build: <sunucunun build kimliği>` taşır — istemci
+ *      kendi kimliğiyle karşılaştırıp "eski sürüm" durumuna geçer.
+ *   2. İstemci her isteğe KENDİ kimliğini koyar; YAZMA isteğinde kimlik
+ *      sunucununkinden FARKLIYSA BFF isteği backend'e HİÇ iletmeden 412 ile
+ *      reddeder. (1) tek başına, sürümden sonraki İLK yazmayı durduramazdı:
+ *      başlık ancak o yazmanın YANITINDA görülür, silme o an olmuştur.
+ * Başlık YOKSA (bu sürümden önceki istemci, tarayıcı dışı çağıran) reddetmez —
+ * fail-open; gerekçe `route.ts`te.
+ */
+describe("BFF catch-all — surum bandi (x-app-build)", () => {
+  const AUTHED = { [ACCESS_COOKIE]: "acc", [REFRESH_COOKIE]: "ref" };
+  const SERVER_BUILD = "build-sunucu-1";
+
+  function buildReq(url: string, method: string, headers: Record<string, string>, body?: unknown): NextRequest {
+    const h: Record<string, string> = { host: "localhost:3000", ...headers };
+    const init: { method: string; headers: Record<string, string>; body?: string } = { method, headers: h };
+    if (body !== undefined) {
+      init.body = JSON.stringify(body);
+      h["content-type"] = "application/json";
+    }
+    const r = new NextRequest("http://localhost:3000" + url, init);
+    for (const [k, v] of Object.entries(AUTHED)) r.cookies.set(k, v);
+    return r;
+  }
+
+  beforeEach(() => {
+    process.env.BACKEND_URL = "http://backend:8000";
+    vi.stubEnv("NEXT_PUBLIC_BUILD_ID", SERVER_BUILD);
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllEnvs();
+    delete process.env.BACKEND_URL;
+  });
+
+  it("GET 200 yaniti sunucunun build kimligini tasir", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ items: [] }), { status: 200 })));
+    const res = await GET(buildReq("/api/backend/users", "GET", {}), ctx(["users"]));
+    expect(res.status).toBe(200);
+    expect(res.headers.get("x-app-build")).toBe(SERVER_BUILD);
+  });
+
+  it("ikili (xlsx) yanit da build kimligini tasir", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(
+      new Response(new Uint8Array([1, 2, 3]), {
+        status: 200,
+        headers: { "content-type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" },
+      }),
+    ));
+    const res = await GET(buildReq("/api/backend/audit-log/export.xlsx", "GET", {}), ctx(["audit-log", "export.xlsx"]));
+    expect(res.status).toBe(200);
+    expect(res.headers.get("x-app-build")).toBe(SERVER_BUILD);
+  });
+
+  it.each([
+    ["POST 201", 201],
+    ["POST 422", 422],
+    ["POST 204", 204],
+    ["POST 500", 500],
+    ["POST 401", 401],
+  ])("%s yaniti da build kimligini tasir", async (_label, status) => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(
+      new Response(status === 204 ? null : JSON.stringify({ detail: "x" }), { status }),
+    ));
+    const res = await POST(buildReq("/api/backend/projects", "POST", {}, { name: "a" }), ctx(["projects"]));
+    expect(res.status).toBe(status);
+    expect(res.headers.get("x-app-build")).toBe(SERVER_BUILD);
+  });
+
+  it("izinsiz kok 404 ve 502 (backend erisilemez) de build kimligini tasir", async () => {
+    const notFound = await GET(buildReq("/api/backend/secrets", "GET", {}), ctx(["secrets"]));
+    expect(notFound.status).toBe(404);
+    expect(notFound.headers.get("x-app-build")).toBe(SERVER_BUILD);
+
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("ECONNREFUSED")));
+    const down = await GET(buildReq("/api/backend/users", "GET", {}), ctx(["users"]));
+    expect(down.status).toBe(502);
+    expect(down.headers.get("x-app-build")).toBe(SERVER_BUILD);
+  });
+
+  it.each([
+    ["POST", POST],
+    ["PUT", PUT],
+    ["PATCH", PATCH],
+    ["DELETE", DELETE],
+  ])("ESKI build kimlikli %s 412 alir ve backend'e HIC istek gitmez", async (method, handler) => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const res = await handler(
+      buildReq("/api/backend/diary/d-1/lines", method, { "x-app-build": "build-eski-0" }, { lines: [] }),
+      ctx(["diary", "d-1", "lines"]),
+    );
+
+    expect(res.status).toBe(412);
+    const body = await res.json();
+    expect(body.code).toBe("stale_build");
+    expect(body.detail).toBe("Uygulama güncellendi — kaydetmeden önce sayfayı yenileyin.");
+    expect(res.headers.get("x-app-build")).toBe(SERVER_BUILD);
+    // 🔒 Asil iddia: eski paketin DEGISTIRME yazmasi backend'e ULASMADI.
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("eski kimlikli multipart yukleme de 412 alir (ham govde dali bypass DEGILDIR)", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const r = new NextRequest("http://localhost:3000/api/backend/documents", {
+      method: "POST",
+      body: "--b\r\nContent-Disposition: form-data; name=\"file\"\r\n\r\nx\r\n--b--\r\n",
+      headers: { host: "localhost:3000", "x-app-build": "build-eski-0", "content-type": "multipart/form-data; boundary=b" },
+    });
+    for (const [k, v] of Object.entries(AUTHED)) r.cookies.set(k, v);
+    const res = await POST(r, ctx(["documents"]));
+    expect(res.status).toBe(412);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("KARSIT KANIT: ayni build kimlikli PUT backend'e iletilir", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: 1 }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const res = await PUT(
+      buildReq("/api/backend/diary/d-1/lines", "PUT", { "x-app-build": SERVER_BUILD }, { lines: [] }),
+      ctx(["diary", "d-1", "lines"]),
+    );
+    expect(res.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("FAIL-OPEN: build basligi OLMAYAN yazma (eski surum oncesi istemci / tarayici disi) iletilir", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: 1 }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const res = await PUT(buildReq("/api/backend/diary/d-1/lines", "PUT", {}, { lines: [] }), ctx(["diary", "d-1", "lines"]));
+    expect(res.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("GET serbesttir — eski build kimligiyle bile backend'e iletilir", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ items: [] }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const res = await GET(buildReq("/api/backend/users", "GET", { "x-app-build": "build-eski-0" }), ctx(["users"]));
+    expect(res.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(res.headers.get("x-app-build")).toBe(SERVER_BUILD);
+  });
+});

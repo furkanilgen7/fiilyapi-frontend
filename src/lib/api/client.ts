@@ -1,5 +1,6 @@
 import createClient from "openapi-fetch";
 
+import { buildGuardMiddleware } from "./app-build";
 import type { paths } from "./schema";
 
 /**
@@ -27,3 +28,10 @@ export const backendClient = createClient<paths>({
   baseUrl: "/api/backend",
   fetch: (input: Request) => globalThis.fetch(input),
 });
+
+/**
+ * PLN-F2.0 — sürüm bandı: yeni sürüm canlıya çıktıktan sonra eski paketin
+ * YAZMALARI ağa çıkmadan reddedilir, GET'ler serbest (bkz. `app-build.ts`).
+ * `apiClient` (/api/auth/*) sarılmaz: catch-all BFF'e gitmez, veri yazmaz.
+ */
+backendClient.use(buildGuardMiddleware);

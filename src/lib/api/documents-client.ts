@@ -1,3 +1,4 @@
+import { guardedFetch } from "@/lib/api/app-build";
 import { BackendError } from "@/lib/api/unwrap";
 import { downloadAttachment } from "@/lib/api/download";
 import type { components } from "@/lib/api/schema";
@@ -71,7 +72,7 @@ export async function uploadDocument(input: DocumentUploadInput): Promise<Docume
   if (input.folderId !== undefined) form.append("folder_id", input.folderId);
   if (input.description !== undefined) form.append("description", input.description);
 
-  const response = await globalThis.fetch(DOCUMENTS_PATH, {
+  const response = await guardedFetch(DOCUMENTS_PATH, {
     method: "POST",
     credentials: "same-origin",
     body: form,
