@@ -3791,7 +3791,66 @@ function buildDiaryEntryFixtures(): MockDiaryEntry[] {
       worker_counts: [{ id: "d-3-w-1", trade: "Duvarcı", source: "subcontractor", count: 10 }],
     },
     ...buildEvDiaryScenarioEntries(),
+    buildDiaryLineArmEntry(),
   ];
+}
+
+/**
+ * DET-1.4 · Kural A SATIR KOLU fikstürünün kimliği — görsel spec ve ikiz
+ * bekçisi BURADAN okur (tarih/kimlik iki yerde yazılmaz).
+ */
+export const DIARY_LINE_ARM_FIXTURE = {
+  entryId: "d-10",
+  day: "2026-11-12",
+  /** Başlık bölümü (Zemin Kat Kaba İnşaat). */
+  headerSectionId: "sec-2",
+  /** YALNIZ satırla bağlı olduğu bölüm (Kat 6–10 Kaba İnşaat) — iki miktar satırı. */
+  lineSectionId: "sec-1",
+} as const;
+
+/**
+ * DET-1.4 · Kural A SATIR KOLU — başlığı `sec-2`, iki miktar satırı `sec-1`e,
+ * bir satırı `sec-2`ye yazılmış GÖNDERİLMİŞ gün (s-1 · 12.11.2026 Perşembe).
+ * Bu kayıt olmadan hiçbir fikstür "Satırla bağlı" hâlini kalıcı olarak
+ * taşımıyordu (ikiz testi d-8'i PATCH'le geçici olarak taşıyordu).
+ *
+ * 🔒 İZOLASYON (ölçüldü, DET-1.4):
+ *   · KASIM — Temmuz (görsel/okuma) · Eylül (`site-diary.spec` mutasyonu) ·
+ *     Ekim (EV senaryoları) aylarından hiçbirine girmez; 12.11 kilitli DEĞİL
+ *     (Kasım kilitleri 01.11 · 02–03.11) ve EV gün kaydı YOK (`has_baseline:
+ *     false` → çekirdek detay). Özet/öneri uçları hep ay süzgeçli çağrılır.
+ *   · `hiddenFromUnfilteredList` — Bölüm Detay'ın ay süzgeçsiz listesine
+ *     (sec-1 "1 satır" karesi) SIZMAZ.
+ *   · Bölümsüz satır YOK: bölümsüz yaprağın kümülatifi `site-diary.spec`in
+ *     Eylül'de açtığı iskelet kaydını sayardı (koşu sırasına bağlı sayı).
+ *   · Tek bilinçli yan etki: d-8'in (09.10) sonrakisi — şantiye ve sec-1
+ *     bağlamında — artık bu kayıt (`diaryNeighbours` gizlemeyi uygulamaz).
+ *     Hiçbir kare d-8'in gezinmesine bakmaz.
+ */
+function buildDiaryLineArmEntry(): MockDiaryEntry {
+  const { entryId, day, headerSectionId, lineSectionId } = DIARY_LINE_ARM_FIXTURE;
+  return {
+    id: entryId, site_id: "s-1", project_id: "p-1", entry_date: day,
+    section_id: headerSectionId, weather: "partly_cloudy", temperature_c: null,
+    temp_min_c: "9.0", temp_max_c: "17.0", wind_ms: "3.4",
+    work_done: "Zemin kat perde duvar betonu döküldü; kat 10 döşeme betonu ve donatısı tamamlandı.",
+    chief_note: "Zemin kat kalıpları yarın sökülecek; beton numuneleri laboratuvara gönderildi.",
+    safety_meeting_held: true, ppe_checked: true, has_incident: false, incident_note: null,
+    status: "submitted", submitted_at: "2026-11-12T17:10:00Z", submitted_by: "u-2",
+    created_by: "u-2", created_at: "2026-11-12T08:00:00Z", updated_at: "2026-11-12T17:10:00Z",
+    // Satırlar (kalem × bölüm) yapraklarıdır → `evLines` (PUT tam değiştirme semantiği).
+    evLines: true,
+    hiddenFromUnfilteredList: true,
+    lines: evDiaryLines(entryId, [
+      ["bi-3", lineSectionId, 24],
+      ["bi-4", lineSectionId, 2.6],
+      ["bi-3", headerSectionId, 18],
+    ]),
+    worker_counts: [
+      { id: `${entryId}-w-1`, trade: "Betoncu", source: "company", count: 10 },
+      { id: `${entryId}-w-2`, trade: "Kalıpçı", source: "subcontractor", count: 6 },
+    ],
+  };
 }
 
 /**

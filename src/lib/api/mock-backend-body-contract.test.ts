@@ -24,7 +24,12 @@ import path from "node:path";
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { EV_DAY_SCENARIO_DAYS, TIMESHEET_LOCK_SCENARIOS, startMockBackend } from "../../../e2e/mock-backend";
+import {
+  DIARY_LINE_ARM_FIXTURE,
+  EV_DAY_SCENARIO_DAYS,
+  TIMESHEET_LOCK_SCENARIOS,
+  startMockBackend,
+} from "../../../e2e/mock-backend";
 
 import { fieldSchema } from "./form-limits.contract";
 import type { components } from "./schema";
@@ -716,6 +721,9 @@ describe("🔴 test ikizi ↔ puantaj KİLİDİ (EV gün kilidi TEK kaynak)", ()
 type DiaryDetail = components["schemas"]["SiteDiaryEntryDetail"];
 type DiaryList = components["schemas"]["SiteDiaryEntryListResponse"];
 
+/** DET-1.4 · Kural A SATIR KOLU fikstürü (12.11.2026 · başlık sec-2 · satırlar sec-1 ×2 + sec-2 ×1). */
+const LINE_ARM = DIARY_LINE_ARM_FIXTURE;
+
 describe("🔴 test ikizi ↔ günlük detay bağlamı + Kural A (DET-1.B)", () => {
   let detBase = "";
   let detClose: () => Promise<void>;
@@ -818,8 +826,11 @@ describe("🔴 test ikizi ↔ günlük detay bağlamı + Kural A (DET-1.B)", () 
     // sec-1 bağlamında d-2 (sec-2) ATLANIR.
     const section = await detail("d-1", "sec-1");
     expect(section).toMatchObject({ prev_id: null, prev_entry_date: null, next_id: "d-9", next_entry_date: "2026-10-02" });
+    // DET-1.4 · d-8'in sonrakisi SATIR KOLU fikstürü (12.11, başlığı sec-2):
+    // komşu sorgusu `hiddenFromUnfilteredList`i UYGULAMAZ (bilinçli).
+    expect(await detail("d-8", "sec-1")).toMatchObject({ prev_id: "d-7", next_id: LINE_ARM.entryId, next_entry_date: LINE_ARM.day });
     // Son gün: sonraki yok.
-    expect(await detail("d-8", "sec-1")).toMatchObject({ prev_id: "d-7", next_id: null, next_entry_date: null });
+    expect(await detail(LINE_ARM.entryId, "sec-1")).toMatchObject({ prev_id: "d-8", next_id: null, next_entry_date: null });
   });
 
   it("gün kilidi = EV gün kilidi (TEK kaynak): kilitli, kilitsiz, kilit açılınca", async () => {
@@ -859,6 +870,56 @@ describe("🔴 test ikizi ↔ günlük detay bağlamı + Kural A (DET-1.B)", () 
     const unfiltered = await list(OCT);
     expect(unfiltered.items.every((item) => item.section_line_count === null)).toBe(true);
     expect(unfiltered.items.find((item) => item.id === "d-4")?.section_name).toBe("Kat 6–10 Kaba İnşaat");
+  });
+
+  it("DET-1.4 · SATIR KOLU fikstürü: sec-1'de YALNIZ satır koluyla (2 satır), sec-2'de başlık koluyla", async () => {
+    const NOV = "year=2026&month=11";
+    // sec-1: başlık sec-2 → kayıt sec-1 kümesine YALNIZ miktar satırlarıyla girer.
+    const sec1 = await list(`${NOV}&section_id=${LINE_ARM.lineSectionId}`);
+    expect(sec1.total).toBe(1);
+    expect(sec1.items.map((item) => item.id)).toEqual([LINE_ARM.entryId]);
+    expect(sec1.items[0]).toMatchObject({
+      entry_date: LINE_ARM.day,
+      status: "submitted",
+      section_id: LINE_ARM.headerSectionId,
+      section_name: "Zemin Kat Kaba İnşaat",
+      section_line_count: 2,
+    });
+    // sec-2: başlık kolu (aynı kayıt, bu bölüme tek satır).
+    const sec2 = await list(`${NOV}&section_id=${LINE_ARM.headerSectionId}`);
+    expect(sec2.items.map((item) => item.id)).toEqual([LINE_ARM.entryId]);
+    expect(sec2.items[0]).toMatchObject({ section_id: LINE_ARM.headerSectionId, section_line_count: 1 });
+    // sec-3: ne başlık ne satır.
+    expect((await list(`${NOV}&section_id=sec-3`)).total).toBe(0);
+
+    // Detay: iki sec-1 satırı + bir sec-2 satırı, bölümsüz satır YOK; kilitsiz, EV günü YOK.
+    const entry = await detail(LINE_ARM.entryId, LINE_ARM.lineSectionId);
+    expect(entry.lines.map((line) => line.section_id)).toEqual([
+      LINE_ARM.lineSectionId,
+      LINE_ARM.lineSectionId,
+      LINE_ARM.headerSectionId,
+    ]);
+    expect(entry).toMatchObject({ locked: false, lock_report_date: null, section_name: "Zemin Kat Kaba İnşaat" });
+    const { json: day } = await call<{ has_baseline: boolean }>("GET", `/sites/s-1/earned-value/days/${LINE_ARM.day}`);
+    expect(day.has_baseline, "Kasım günü çekirdek detaydır (planlamasız)").toBe(false);
+  });
+
+  it("DET-1.4 · SATIR KOLU fikstürü İZOLE: ay süzgeçsiz ve Temmuz/Eylül/Ekim listelerine SIZMAZ, Kasım'ın TEK kaydıdır", async () => {
+    const ids = async (query: string) => (await list(query)).items.map((item) => item.id);
+    for (const query of [
+      "limit=200",
+      "limit=200&section_id=sec-1",
+      "limit=200&section_id=sec-2",
+      "year=2026&month=7",
+      "year=2026&month=9",
+      `${OCT}&section_id=sec-1`,
+      `${OCT}&section_id=sec-2`,
+    ]) {
+      expect(await ids(query), query).not.toContain(LINE_ARM.entryId);
+    }
+    // Bölüm Detay karelerinin kümesi: sec-1 süzgeçsiz = yalnız d-1.
+    expect(await ids("limit=200&section_id=sec-1")).toEqual(["d-1"]);
+    expect(await ids("year=2026&month=11")).toEqual([LINE_ARM.entryId]);
   });
 
   it("Kural A · SATIR kolu: başlığı başka bölüm ama bu bölüme miktar satırı olan gün listeye ve komşulara girer (bir kez)", async () => {
