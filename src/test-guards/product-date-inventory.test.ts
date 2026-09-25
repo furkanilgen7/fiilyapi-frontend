@@ -42,6 +42,9 @@ const URUN_TARIH_ENVANTERI: Record<string, number> = {
   // PLN-F1.6 — Bütçe Adım 2 Gantt + Adım 3 S-eğrisi "bugün" çizgisi (BÜT:292, 349)
   // `localTodayIso()`. Görsel spec `page.clock.setFixedTime` ile sabitlemeli.
   "components/earned-value/budget/budget-format.ts": 1,
+  // PLN-F3.4 · GİR `?tarih=` yoksa İstanbul bugünü (`todayIso`); görsel spec
+  // F3.6b'de `page.clock.setFixedTime` ile sabitlenecek.
+  "components/earned-value/reports/daily/daily-url-state.ts": 1,
   "components/documents/SiteDocumentsView.tsx": 1,
   "components/equipment-rental/EquipmentRentalInvoiceDetailView.tsx": 1,
   "components/equipment-rental/EquipmentRentalInvoicesView.tsx": 1,

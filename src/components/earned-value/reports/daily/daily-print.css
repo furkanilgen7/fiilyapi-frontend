@@ -1,0 +1,152 @@
+/* PLN-F3.4 · GİR yazdırma önizlemesi (GİR:299-386). */
+.ev-daily-print {
+  background: var(--color-border-strong);
+  border-radius: 8px;
+  padding: 24px;
+  overflow-x: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+}
+
+.ev-print-head {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--color-text);
+}
+
+.ev-print-head__title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.ev-print-head__eyebrow {
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.ev-print-head__name {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.ev-print-head__meta {
+  font-size: 10.5px;
+  color: var(--color-text-secondary);
+}
+
+.ev-print-section-title {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  margin: 6px 0;
+}
+
+.ev-print-kpi {
+  width: 100%;
+  border: 1px solid var(--color-border-strong);
+  border-collapse: collapse;
+  font-size: 10px;
+  font-family: var(--font-mono);
+}
+
+.ev-print-kpi th,
+.ev-print-kpi td {
+  padding: 4px 6px;
+  text-align: right;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.ev-print-kpi th:first-child,
+.ev-print-kpi td:first-child {
+  text-align: left;
+  font-family: var(--font-sans, inherit);
+}
+
+.ev-print-kpi__overall {
+  font-weight: 700;
+  background: var(--color-surface-muted);
+}
+
+.ev-print-qty__head {
+  display: flex;
+  gap: 10px;
+  padding: 4px 8px;
+  background: var(--color-surface-muted);
+  border-bottom: 1px solid var(--color-border-strong);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.ev-print-qty__head-meta {
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.ev-print-qty__row {
+  display: grid;
+  grid-template-columns: 1.6fr 40px repeat(4, minmax(0, 1fr)) 1fr;
+  gap: 4px;
+  padding: 3px 8px;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 10px;
+  font-family: var(--font-mono);
+}
+
+.ev-print-qty__row > span:first-child {
+  font-family: var(--font-sans, inherit);
+}
+
+/* GİR:371-379 — mutabakat + PF bant dışı, yalnız SON sayfa. */
+.ev-print-reconciliation {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 10px;
+}
+
+.ev-print-reconciliation__ok {
+  font-weight: 700;
+  color: var(--color-success-deep);
+}
+
+.ev-print-reconciliation__warn {
+  color: var(--color-warning-strong);
+}
+
+.ev-print-reconciliation__pf {
+  border: 1px solid var(--color-border-strong);
+}
+
+.ev-print-reconciliation__pf-title {
+  padding: 4px 8px;
+  background: var(--color-surface-muted);
+  font-size: 8.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--color-border-strong);
+}
+
+.ev-print-reconciliation__pf table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.ev-print-reconciliation__pf th,
+.ev-print-reconciliation__pf td {
+  padding: 3px 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 9px;
+}
