@@ -206,11 +206,12 @@ test("adam saat butcesi goruntuleyici gorsel", async ({ page }) => {
 });
 
 // ---------------------------------------------------------------------------
-// 13) Tamamlanmış B-Blok (s-2) — yalnız Rev 1 aktif, salt okunur
+// 13) Tamamlanmış B-Blok (s-2) — salt okunur (PLN-F1.6.2: şantiye durumundan;
+//     backend `editable` taslakta true dönse bile yazma 409'dur)
 // ---------------------------------------------------------------------------
 test("adam saat butcesi tamamlanmis santiye gorsel", async ({ page }) => {
   await openManHourBudget(page, { siteId: COMPLETED_SITE_ID });
-  await expect(page.getByRole("note")).toContainText("Rev 1 aktif, taslak yok.");
+  await expect(page.getByRole("note")).toContainText("Tamamlanmış şantiye · bütçe salt okunur.");
 
   await prepareFrame(page);
   await expect(page).toHaveScreenshot("adam-saat-butcesi-tamamlanmis.png", { fullPage: true });

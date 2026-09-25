@@ -121,7 +121,13 @@ export const BUDGET_REV_1_ACTIVE = "e7ae5000-0000-4000-8000-000000000101";
  * kaydırma HİÇ oluşmaz ve yüzey çapasının yanında kalır. `openManHourBudget`
  * sayfanın bu pencereye SIĞDIĞINI doğrular (sessizce kırpılmaz).
  */
-export const MAN_HOUR_BUDGET_VIEWPORT = { width: 1440, height: 2800 } as const;
+// 🔴 ÖLÇÜLDÜ (Linux CI, Visual Baselines run 36077807288): Adım 1 içeriğinin
+// alt sınırı 2857,5px — macOS'taki yerel ölçümden ~57px UZUN (Linux font satır
+// yükseklikleri). 2800 sığma bekçisini kırdı. 3000 = 2857,5 + ~%5 pay. Pencere
+// sayfa HİÇ kaymasın diye uzun tutuluyor (fixed konumlu popover'lar kayan
+// `fullPage` karede yanlış yere basar); sığma bekçisi (`openManHourBudget`)
+// yerinde kalır — içerik büyürse kare almadan önce kırmızı verir.
+export const MAN_HOUR_BUDGET_VIEWPORT = { width: 1440, height: 3000 } as const;
 
 export interface BudgetTarget {
   siteId?: string;
