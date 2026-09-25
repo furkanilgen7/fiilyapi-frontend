@@ -9,7 +9,7 @@ import { EMPTY_CELL } from "@/lib/format";
 
 import { formatHours, toCenti } from "./hours";
 import type { CodeIndex } from "./code-tree";
-import { formatEarned, lineProgress, unratedLines } from "./line-progress";
+import { formatEarned, lineProgress } from "./line-progress";
 import { PfBadge } from "./PfBadge";
 
 export interface LineColumnsInput {
@@ -45,6 +45,9 @@ export function buildLineColumns(input: LineColumnsInput): DiaryLineColumns {
     },
     footer: <LineProgressFooter {...input} />,
     renderItemCells: (boqItemId) => itemCells(boqItemId, input),
+    // S2 · İ:241-246 — yalnız oransız satırın hemen altında.
+    renderSubRow: (line) =>
+      lineProgress(line, progress, index).noRate ? <UnratedNotice budgetHref={input.budgetHref} /> : null,
     caption:
       input.revisionNumber === null ? undefined : `kazanılmış = bugün miktar × birim oran (Rev ${input.revisionNumber})`,
   };
@@ -69,8 +72,7 @@ function itemCells(boqItemId: string, { progress, index, bands }: LineColumnsInp
   ];
 }
 
-function LineProgressFooter({ lines, progress, index, bands, budgetHref }: LineColumnsInput) {
-  const unrated = unratedLines(lines, index);
+function LineProgressFooter({ progress, bands }: LineColumnsInput) {
   return (
     <div className="ev-diary-line-foot">
       {/* İ:248-252 — "Bugün toplam kazanılmış · harcanan N a-s" + kazanılmış + PF */}
@@ -82,24 +84,17 @@ function LineProgressFooter({ lines, progress, index, bands, budgetHref }: LineC
         <span className="ev-diary-line-foot__earned">{formatEarned(progress?.earned_day ?? null)}</span>
         <PfBadge value={progress?.pf_day ?? null} bands={bands} />
       </div>
-      {unrated.length > 0 && <UnratedNotice labels={unrated.map((u) => u.label)} budgetHref={budgetHref} />}
     </div>
   );
 }
 
-/**
- * İ:241-246 oransız satır uyarısı. Sözleşmede satır-altı yuvası YOK
- * (`DiaryLineColumns` yalnız hücre + footer taşır) → uyarı satır altında değil
- * tablo altında, oransız satırların adıyla basılır (raporda sapma).
- */
-function UnratedNotice({ labels, budgetHref }: { labels: readonly string[]; budgetHref: string | null }) {
+/** İ:241-246 — "✕ Bu kaleme oran atanmamış · Miktar kaydedilir, kazanılmış hesaplanmaz. · Adam-Saat Bütçesi →" (K12). */
+function UnratedNotice({ budgetHref }: { budgetHref: string | null }) {
   return (
     <div className="ev-diary-norate" role="note">
       <XIcon className="ev-diary-norate__icon" aria-hidden="true" />
       <span className="ev-diary-norate__lead">Bu kaleme oran atanmamış</span>
-      <span className="ev-diary-norate__text">
-        {labels.join(", ")} — miktar kaydedilir, kazanılmış hesaplanmaz.
-      </span>
+      <span className="ev-diary-norate__text">Miktar kaydedilir, kazanılmış hesaplanmaz.</span>
       {budgetHref && (
         <Link href={budgetHref} className="ev-diary-norate__link">
           Adam-Saat Bütçesi <ArrowRightIcon aria-hidden="true" />

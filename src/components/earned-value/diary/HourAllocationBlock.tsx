@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { UseQueryResult } from "@tanstack/react-query";
 
-import { ClockIcon, UserIcon, WarningTriangleIcon } from "@/components/ui/icons";
+import { ClockIcon, WarningTriangleIcon } from "@/components/ui/icons";
 import type { EvCodeNode, EvDayRow, EvDayView } from "@/lib/api/models";
 import { cx } from "@/lib/cx";
 import type { PfBandSettings } from "@/lib/earned-value";
@@ -47,7 +47,6 @@ export function HourAllocationBlock(props: HourAllocationBlockProps) {
   const strip = stripValues(view, draft, props.isDirty);
   return (
     <div className="ev-diary-block">
-      {access.showForemanBand && <ForemanBand />}
       <section className={cx("ev-diary-alloc", access.isForeman && "ev-diary-alloc--faded")} aria-labelledby="ev-diary-alloc-title">
         <AllocationHead strip={strip} />
         {access.readOnlyText && <p className="ev-diary-alloc__ro">Salt okunur · {access.readOnlyText}</p>}
@@ -64,7 +63,7 @@ export function HourAllocationBlock(props: HourAllocationBlockProps) {
           isCopying={actions.isCopying}
           onDistribute={actions.distribute}
           onBulkApply={(nodeId, text) => actions.bulkApply(nodeId, text, headers[nodeId]?.short ?? nodeId)}
-          save={{ isDirty: props.isDirty, isSaving: actions.isSaving, invalidCount: props.invalidCount, onSave: () => void actions.save() }}
+          invalidCount={props.invalidCount}
         />
         <GridSection
           {...props}
@@ -158,19 +157,6 @@ function AllocationHead({ strip }: { strip: ReturnType<typeof stripValues> }) {
         </p>
       </div>
       <AllocationStrip values={strip} />
-    </div>
-  );
-}
-
-/** İ:150-155 formen bandı — metin §3.14 G10 (Ek Formlar "(e)"); 👷 yerine SVG. */
-function ForemanBand() {
-  return (
-    <div className="ev-diary-foreman" role="note">
-      <UserIcon aria-hidden="true" />
-      <span>
-        <b>Formen görünümü.</b> Miktar satırları, işçi / taşeron sayıları ve hava düzenlenebilir; Saat
-        Dağıtımı mühendis tarafından doldurulur. Gönderim mühendiste.
-      </span>
     </div>
   );
 }

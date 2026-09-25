@@ -49,18 +49,3 @@ export function lineProgress(
   if (leaf === undefined) return { earned: EMPTY_CELL, pf: null, noRate };
   return { earned: formatEarned(leaf.earned_day), pf: leaf.pf_day, noRate };
 }
-
-export interface UnratedLine {
-  key: string;
-  label: string;
-}
-
-/** İ:241-246 uyarısının satırları — "Buat/priz montajı · Bölümsüz". */
-export function unratedLines(lines: readonly DiaryLineRef[], index: CodeIndex): UnratedLine[] {
-  return lines.flatMap((line) => {
-    const leaf = index.get(leafNodeIdForLine(line));
-    if (leaf?.has_rate !== false) return [];
-    const item = leaf.parent_id === null ? undefined : index.get(leaf.parent_id);
-    return [{ key: line.key, label: item ? `${item.label} · ${leaf.label}` : leaf.label }];
-  });
-}

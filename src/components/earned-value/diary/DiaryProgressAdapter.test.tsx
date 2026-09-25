@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, renderHook, screen, within } from "@testing-library/react";
+import { render, renderHook, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactElement } from "react";
@@ -32,7 +32,7 @@ import type { EvDayView } from "@/lib/api/models";
 import type { MeResponse } from "@/lib/auth/types";
 import { BackendError } from "@/lib/api/unwrap";
 
-import { ITEM_BETON, ITEM_KALIP, SEC_K610, codeTree, dayView } from "./diary-fixtures";
+import { ITEM_BETON, ITEM_KALIP, ITEM_PRIZ, P_RECEP, LEAF_KALIP, SEC_K610, codeTree, dayView } from "./diary-fixtures";
 import { useDiaryProgressExtension } from "./useDiaryProgressExtension";
 
 // PLN-F2.3 · ENTEGRASYON: rota sayfası → planlama adaptörü → GERÇEK çekirdek
@@ -88,6 +88,8 @@ vi.mock("@/lib/api/hooks/useEvBudget", () => ({ useEvBudget: vi.fn(), useEvBudge
 
 const TODAY = isoDate(new Date());
 const unlockMutate = vi.fn();
+const saveAllocationMutate = vi.fn();
+const updateEntryMutate = vi.fn();
 
 function query(data: unknown, extra: Record<string, unknown> = {}) {
   return { data, isLoading: false, isError: false, isFetching: false, error: null, refetch: vi.fn(), ...extra } as never;
@@ -171,7 +173,7 @@ function mockCore() {
   vi.mocked(useSitePlanDaySummary).mockReturnValue(query(undefined));
   const mutation = () => ({ mutateAsync: vi.fn(), mutate: vi.fn(), isPending: false }) as never;
   vi.mocked(useCreateSiteDiaryEntry).mockReturnValue(mutation());
-  vi.mocked(useUpdateSiteDiaryEntry).mockReturnValue(mutation());
+  vi.mocked(useUpdateSiteDiaryEntry).mockReturnValue({ mutateAsync: updateEntryMutate, mutate: vi.fn(), isPending: false } as never);
   vi.mocked(useSaveSiteDiaryLines).mockReturnValue(mutation());
   vi.mocked(useSubmitSiteDiaryEntry).mockReturnValue(mutation());
   vi.mocked(useReopenSiteDiaryEntry).mockReturnValue(mutation());
@@ -194,7 +196,9 @@ beforeEach(() => {
     query({ disciplines: [{ groups: [{ items: [{ item_id: ITEM_KALIP, is_direct: true, contractor_type: "own" }] }] }] }),
   );
   vi.mocked(usePreviousAllocation).mockReturnValue({ refetch: vi.fn() } as never);
-  vi.mocked(useSaveDayAllocation).mockReturnValue({ mutateAsync: vi.fn(), isPending: false } as never);
+  saveAllocationMutate.mockResolvedValue(dayView({ day: TODAY }));
+  updateEntryMutate.mockResolvedValue(entry());
+  vi.mocked(useSaveDayAllocation).mockReturnValue({ mutateAsync: saveAllocationMutate, isPending: false } as never);
   unlockMutate.mockResolvedValue({ locked: false });
   vi.mocked(useUnlockDay).mockReturnValue({ mutateAsync: unlockMutate, isPending: false } as never);
 });
@@ -237,7 +241,8 @@ describe("şantiye rotası → adaptör → çekirdek", () => {
     mockDay(dayView({ day: TODAY, submit: { can_submit: false, reasons: ["Hava bilgisi eksik (durum, min/max sıcaklık, rüzgâr)"] } }));
     renderWithClient(<SiteDiaryPage />);
     expect(screen.getByRole("button", { name: /^(Kaydet & )?Gönder$/ })).toBeDisabled();
-    expect(screen.getAllByText("Hava bilgisi eksik (durum, min/max sıcaklık, rüzgâr)").length).toBeGreaterThan(0);
+    // S4 — gerekçe yalnız kontrol çubuğunda; çekirdek kendi kutusunda LİSTELEMEZ.
+    expect(screen.queryByText("Hava bilgisi eksik (durum, min/max sıcaklık, rüzgâr)")).not.toBeInTheDocument();
     expect(screen.getByText("Hava eksik")).toBeInTheDocument();
   });
 
@@ -262,6 +267,31 @@ describe("şantiye rotası → adaptör → çekirdek", () => {
     renderWithClient(<SiteDiaryPage />);
     expect(screen.getByText("Bu gün 25.09.2026 raporuyla kilitlendi.")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Kilidi aç (yetkili)" })).not.toBeInTheDocument();
+  });
+});
+
+describe("S1 · tek kayıt düğmesi: çekirdek kaydından ÖNCE dağıtım (onBeforeSave)", () => {
+  async function editAndSaveDraft() {
+    const user = userEvent.setup();
+    renderWithClient(<SiteDiaryPage />);
+    await user.type(screen.getByLabelText("Recep Uçar · Kalıp · Kat 6–10 saati"), "8");
+    await user.click(screen.getByRole("button", { name: "Taslak Kaydet" }));
+  }
+
+  it("kirli dağıtım TAM kümeyle PUT edilir, sonra çekirdek kaydı yapılır", async () => {
+    await editAndSaveDraft();
+    await waitFor(() => expect(updateEntryMutate).toHaveBeenCalled());
+    const body = saveAllocationMutate.mock.calls[0][0];
+    expect(body.cells).toHaveLength(3); // dokunulmamış iki satır + düzenlenen
+    expect(body.cells.at(-1)).toEqual({ row: { kind: "personnel", ref_id: P_RECEP }, node_id: LEAF_KALIP, hours: "8" });
+    expect(saveAllocationMutate.mock.invocationCallOrder[0]).toBeLessThan(updateEntryMutate.mock.invocationCallOrder[0]);
+  });
+
+  it.each([409, 422])("dağıtım %i → reddeder: çekirdek kaydı YAPILMAZ, hata ekranda", async (status) => {
+    saveAllocationMutate.mockRejectedValue(new BackendError(status, { detail: "Gün kilitli, dağıtım yazılamadı" }));
+    await editAndSaveDraft();
+    expect(await screen.findByText("Gün kilitli, dağıtım yazılamadı")).toBeInTheDocument();
+    expect(updateEntryMutate).not.toHaveBeenCalled();
   });
 });
 
@@ -317,8 +347,23 @@ describe("useDiaryProgressExtension — üretilen DiaryExtension", () => {
     expect(ext?.lineColumns?.caption).toBe("kazanılmış = bugün miktar × birim oran (Rev 1)");
     expect(ext?.lineColumns?.renderItemCells?.(ITEM_KALIP)).toHaveLength(ext?.lineColumns?.headers.length ?? -1);
     expect(ext?.headerSuffix).toBe("Gün 142 · H21");
-    expect(ext?.submitGate).toEqual({ canSubmit: true, reasons: [] });
+    expect(ext?.submitGate).toEqual({ canSubmit: true, reasons: [], showReasonsInCore: false });
+    expect(ext?.topBanner).toBeUndefined();
     expect(ext?.lock).toBeNull();
+    const sub = ext?.lineColumns?.renderSubRow;
+    expect(sub?.({ key: "a", boqItemId: ITEM_KALIP, sectionId: SEC_K610, quantityToday: "1" })).toBeNull();
+    expect(sub?.({ key: "b", boqItemId: ITEM_PRIZ, sectionId: null, quantityToday: "1" })).not.toBeNull();
+  });
+
+  it("S1: taslak temizse onBeforeSave istek ATMADAN çözülür", async () => {
+    await expect(extension()?.onBeforeSave?.()).resolves.toBeUndefined();
+    expect(saveAllocationMutate).not.toHaveBeenCalled();
+  });
+
+  it("S3: formen (earned_value view + site_diary yazma) → topBanner formen bandı", () => {
+    mockSession({ site_diary: "full", earned_value: "view" });
+    const { container } = render(<>{extension()?.topBanner}</>);
+    expect(container.textContent).toContain("Formen görünümü.");
   });
 });
 

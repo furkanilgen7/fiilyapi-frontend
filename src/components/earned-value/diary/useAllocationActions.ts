@@ -4,13 +4,12 @@ import { useEffect, useState } from "react";
 import type { UseQueryResult } from "@tanstack/react-query";
 
 import { usePreviousAllocation } from "@/lib/api/hooks/useEvDay";
-import { dayAllocationErrorMessage, useSaveDayAllocation } from "@/lib/api/hooks/useEvDayMutations";
 import { backendErrorMessage } from "@/lib/api/error-message";
 import type { EvCodeNode, EvDayView } from "@/lib/api/models";
 import { formatDateDots } from "@/lib/format";
 
 import { bulkAssign, copyPreviousPattern, distributeRemaining } from "./allocation-actions";
-import { buildAllocationBody, type AllocationDraft, type RowKey } from "./allocation-model";
+import type { AllocationDraft, RowKey } from "./allocation-model";
 import { buildCodeIndex, isAllocatableCode } from "./code-tree";
 
 export interface Flash {
@@ -34,13 +33,13 @@ export interface AllocationActionsInput {
 
 /**
  * Saat Dağıtımı araç çubuğunun yan etkili eylemleri: dünkü deseni iste ve
- * uygula (B2-7), orantılı dağıt, toplu ata, KAYDET (PUT tam değiştirme).
+ * uygula (B2-7), orantılı dağıt, toplu ata. KAYIT burada DEĞİL: çekirdeğin
+ * tek düğmesi `onBeforeSave` ile yazar (S1, `before-save.ts`).
  * Hesaplar saf `allocation-actions`tadır; burada yalnız ağ + bildirim.
  */
 export function useAllocationActions(input: AllocationActionsInput) {
-  const { siteId, day, view, draft, onDraftChange } = input;
+  const { view, draft, onDraftChange } = input;
   const [flash, setFlash] = useFlash();
-  const saveMutation = useSaveDayAllocation(siteId, day);
   const copy = useCopyPrevious(input, setFlash);
 
   function distribute() {
@@ -59,16 +58,7 @@ export function useAllocationActions(input: AllocationActionsInput) {
     setFlash({ tone: "ok", message: `${keys.length} kişiye ${label} için ${text} sa atandı` });
   }
 
-  async function save() {
-    try {
-      await saveMutation.mutateAsync(buildAllocationBody(draft, view.rows));
-      setFlash({ tone: "ok", message: "Saat dağıtımı kaydedildi" });
-    } catch (error: unknown) {
-      setFlash({ tone: "error", message: dayAllocationErrorMessage(error) });
-    }
-  }
-
-  return { flash, isSaving: saveMutation.isPending, ...copy, distribute, bulkApply, save };
+  return { flash, ...copy, distribute, bulkApply };
 }
 
 /** İ:602 `flash` — bildirim `FLASH_MS` sonra kalkar; zamanlayıcı temizlenir. */

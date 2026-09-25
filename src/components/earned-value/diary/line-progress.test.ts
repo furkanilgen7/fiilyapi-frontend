@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { DiaryLineRef } from "@/components/site-diary/diary-extension";
 
 import { buildCodeIndex } from "./code-tree";
-import { formatEarned, leafNodeIdForLine, lineProgress, unratedLines } from "./line-progress";
+import { formatEarned, leafNodeIdForLine, lineProgress } from "./line-progress";
 import { ITEM_BETON, ITEM_KALIP, ITEM_PRIZ, LEAF_KALIP, SEC_K610, codeTree, dayView } from "./diary-fixtures";
 
 function line(boqItemId: string, sectionId: string | null): DiaryLineRef {
@@ -36,13 +36,6 @@ describe("lineProgress — 'Bugün kaz. a-s' + PF hücreleri backend payload'ın
   it("payload'da olmayan satır (henüz kaydedilmedi) '—'", () => {
     expect(lineProgress(line(ITEM_BETON, null), progress, index)).toEqual({ earned: "—", pf: null, noRate: false });
     expect(lineProgress(line(ITEM_KALIP, SEC_K610), null, index)).toEqual({ earned: "—", pf: null, noRate: false });
-  });
-});
-
-describe("unratedLines — oransız satır uyarısı (İ:241-246)", () => {
-  it("yalnız oransız yaprağa düşen satırlar, 'kalem · bölüm' adıyla", () => {
-    const lines = [line(ITEM_KALIP, SEC_K610), line(ITEM_PRIZ, null)];
-    expect(unratedLines(lines, index)).toEqual([{ key: `${ITEM_PRIZ}:`, label: "Buat/priz montajı · Bölümsüz" }]);
   });
 });
 

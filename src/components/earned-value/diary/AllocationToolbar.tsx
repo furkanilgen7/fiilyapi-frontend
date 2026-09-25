@@ -22,7 +22,8 @@ export interface AllocationToolbarProps {
   isCopying: boolean;
   onDistribute: () => void;
   onBulkApply: (nodeId: string, text: string) => void;
-  save: { isDirty: boolean; isSaving: boolean; invalidCount: number; onSave: () => void };
+  /** Geçersiz metinli hücre sayısı — kayıt (çekirdeğin tek düğmesi, S1) bunu reddeder. */
+  invalidCount: number;
 }
 
 /** İ:403-445 — "+ İş kodu ekle" · "Dünkü dağılımı kopyala" · "Seçili kişilere toplu ata · n" · "Kalanı orantılı dağıt". */
@@ -49,7 +50,9 @@ export function AllocationToolbar(props: AllocationToolbarProps) {
         <Button variant="secondary" className="ev-diary-btn" disabled={!canEdit} onClick={props.onDistribute}>
           Kalanı orantılı dağıt
         </Button>
-        {canEdit && <SaveControl {...props.save} />}
+        {canEdit && props.invalidCount > 0 && (
+          <span className="ev-diary-toolbar__note ev-diary-tone--danger">{props.invalidCount} hücrede geçersiz değer</span>
+        )}
       </div>
       {isBulkOpen && canBulk && (
         <BulkAssignPanel
@@ -88,28 +91,6 @@ function CodePickerButton({ canEdit, codes, tree, onToggleCode }: AllocationTool
           onClose={() => setOpen(false)}
         />
       )}
-    </span>
-  );
-}
-
-/**
- * Dağıtımı kaydet — mockup'ta yok: orada tek "Kaydet & Gönder" her şeyi
- * yazıyordu. Çekirdeğin kaydı dağıtımı bilmez (§2.7), bu yüzden dağıtımın
- * kendi kaydı var (PUT tam değiştirme). Raporda sapma.
- */
-function SaveControl({ isDirty, isSaving, invalidCount, onSave }: AllocationToolbarProps["save"]) {
-  const note = invalidCount > 0 ? `${invalidCount} hücrede geçersiz değer` : isDirty ? "Kaydedilmemiş değişiklik" : "";
-  return (
-    <span className="ev-diary-toolbar__save">
-      {note && <span className={cx("ev-diary-toolbar__note", invalidCount > 0 && "ev-diary-tone--danger")}>{note}</span>}
-      <Button
-        className="ev-diary-btn"
-        disabled={!isDirty || isSaving || invalidCount > 0}
-        aria-busy={isSaving || undefined}
-        onClick={onSave}
-      >
-        {isSaving ? "Kaydediliyor…" : "Dağıtımı kaydet"}
-      </Button>
     </span>
   );
 }

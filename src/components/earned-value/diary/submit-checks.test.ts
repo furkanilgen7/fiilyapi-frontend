@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildSubmitState, resolveAllocationAccess, type SubmitInput } from "./submit-checks";
+import { buildSubmitState, classifyReason, resolveAllocationAccess, type SubmitInput } from "./submit-checks";
 
 function input(overrides: Partial<SubmitInput> = {}): SubmitInput {
   return {
@@ -17,7 +17,7 @@ function input(overrides: Partial<SubmitInput> = {}): SubmitInput {
 describe("buildSubmitState — Gönder kontrol çubuğu (İ:493-510) + submitGate", () => {
   it("backend izin verir, taslak temiz → kapı açık, üç çip yeşil, 'Gönderime hazır'", () => {
     const state = buildSubmitState(input());
-    expect(state.gate).toEqual({ canSubmit: true, reasons: [] });
+    expect(state.gate).toEqual({ canSubmit: true, reasons: [], showReasonsInCore: false });
     expect(state.checks.map((c) => [c.label, c.tone])).toEqual([
       ["Miktarlar girildi", "ok"],
       ["Bütün saatler dağıtıldı", "ok"],
@@ -29,7 +29,7 @@ describe("buildSubmitState — Gönder kontrol çubuğu (İ:493-510) + submitGat
   it("backend 'can_submit: false' ise kapı KAPALI ve gerekçeler backend'in (tek kaynak)", () => {
     const reasons = ["Miktar girilmedi", "Hava bilgisi eksik (durum, min/max sıcaklık, rüzgâr)"];
     const state = buildSubmitState(input({ submit: { can_submit: false, reasons } }));
-    expect(state.gate).toEqual({ canSubmit: false, reasons });
+    expect(state.gate).toEqual({ canSubmit: false, reasons, showReasonsInCore: false });
     expect(state.checks.map((c) => [c.label, c.tone])).toEqual([
       ["Miktar girilmedi", "warn"],
       ["Bütün saatler dağıtıldı", "ok"],
@@ -54,13 +54,23 @@ describe("buildSubmitState — Gönder kontrol çubuğu (İ:493-510) + submitGat
     expect(reasoned.note).toEqual({ text: "Gerekçeyle gönderilebilir", tone: "ok" });
   });
 
-  it("kaydedilmemiş dağıtım kapıyı kapatır (backend kaydedilmiş hâli bilir)", () => {
-    const state = buildSubmitState(input({ isDirty: true }));
-    expect(state.gate).toEqual({
-      canSubmit: false,
-      reasons: ["Saat dağıtımında kaydedilmemiş değişiklik var — önce dağıtımı kaydedin"],
+  it("kirli taslak kapıyı KAPATMAZ (Kaydet & Gönder önce dağıtımı yazar, S1); saat gerekçesi önizlemeden", () => {
+    const backendHours = { can_submit: false, reasons: ["16 a-s dağıtılmamış; gerekçe gerekli"] };
+    // Taslakta gerekçe yazıldı → backend'in (kaydedilmiş hâle ait) saat gerekçesi düşer.
+    expect(buildSubmitState(input({ isDirty: true, unallocated: 1600, reason: "temizlik", submit: backendHours })).gate).toEqual({
+      canSubmit: true,
+      reasons: [],
+      showReasonsInCore: false,
     });
-    expect(state.note.text).toBe("Önce saat dağıtımını kaydedin");
+    // Taslakta dağıtılmamış var ve gerekçe yok → önizleme gerekçesiyle kapalı.
+    expect(buildSubmitState(input({ isDirty: true, unallocated: 250 })).gate).toEqual({
+      canSubmit: false,
+      reasons: ["2,5 a-s dağıtılmamış; gerekçe gerekli"],
+      showReasonsInCore: false,
+    });
+    // Saat dışı backend gerekçesi kirlilikte de korunur.
+    const weather = { can_submit: false, reasons: ["Hava bilgisi eksik (durum, min/max sıcaklık, rüzgâr)"] };
+    expect(buildSubmitState(input({ isDirty: true, submit: weather })).gate?.canSubmit).toBe(false);
   });
 
   it("kilitli gün ve formen notları (İ:728)", () => {
@@ -75,6 +85,18 @@ describe("buildSubmitState — Gönder kontrol çubuğu (İ:493-510) + submitGat
 
   it("kayıt yokken (submit null) kapı verilmez — çekirdek bugünkü gibi", () => {
     expect(buildSubmitState(input({ submit: null })).gate).toBeNull();
+  });
+});
+
+describe("classifyReason — backend metni → çip türü (TEK yer; reasons[].code gelince değişir)", () => {
+  it.each([
+    ["Miktar girilmedi", "quantity"],
+    ["Planlı miktarı aşan satır gerekçesiz", "overrun"],
+    ["Hava bilgisi eksik (durum, min/max sıcaklık, rüzgâr)", "weather"],
+    ["16 a-s dağıtılmamış; gerekçe gerekli", "hours"],
+    ["Günlüğü göndermek planlama yazma yetkisi ister (formen gönderemez)", "other"],
+  ])("%s → %s", (reason, kind) => {
+    expect(classifyReason(reason)).toBe(kind);
   });
 });
 

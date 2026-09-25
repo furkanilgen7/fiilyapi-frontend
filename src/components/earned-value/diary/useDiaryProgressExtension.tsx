@@ -6,15 +6,18 @@ import { ErrorCard } from "@/components/earned-value/common/state";
 import type { DiaryExtension, DiaryExtensionContext } from "@/components/site-diary/diary-extension";
 import { useEvBudget, useEvBudgetRevisions } from "@/lib/api/hooks/useEvBudget";
 import { useEvCodeTree, useEvDay } from "@/lib/api/hooks/useEvDay";
+import { useSaveDayAllocation } from "@/lib/api/hooks/useEvDayMutations";
 import { useEvSettings } from "@/lib/api/hooks/useEvSettings";
 import { useSite } from "@/lib/api/hooks/useSites";
-import type { EvCodeNode, EvDayView, EvSettingsRead } from "@/lib/api/models";
+import type { EvAllocationSave, EvCodeNode, EvDayView, EvSettingsRead } from "@/lib/api/models";
 import { BackendError } from "@/lib/api/unwrap";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
 import { DEFAULT_PF_BANDS, type PfBandSettings } from "@/lib/earned-value";
 import { routes } from "@/lib/routes";
 
-import { stripValues } from "./allocation-model";
+import { buildAllocationBody, stripValues } from "./allocation-model";
+import { saveAllocationIfDirty } from "./before-save";
+import { ForemanBand } from "./ForemanBand";
 import { buildCodeIndex } from "./code-tree";
 import { DayLockBanner } from "./DayLockBanner";
 import { HourAllocationBlock } from "./HourAllocationBlock";
@@ -48,6 +51,7 @@ export function useDiaryProgressExtension(ctx: DiaryExtensionContext | null): Di
   const activeRevision = activeRevisionId(useEvBudgetRevisions(activeSite).data);
   const budget = useEvBudget(activeRevision === null ? "" : activeSite, activeRevision);
   const draftApi = useAllocationDraft(siteId, hasBaseline ? dayQuery.data : undefined);
+  const saveAllocation = useSaveDayAllocation(siteId, day);
   useEvDayFreshness(siteId, day, ctx?.entryId ?? null, ctx?.entryStatus ?? null);
 
   if (ctx === null || siteId === "" || day === "") return undefined;
@@ -64,6 +68,7 @@ export function useDiaryProgressExtension(ctx: DiaryExtensionContext | null): Di
     codeTree,
     bands: bandsFrom(settings.data),
     draftApi,
+    saveAllocation: saveAllocation.mutateAsync,
     itemFacts: buildItemFacts(budget.data),
     evLevel: evPermission.level,
     diaryCanWrite: diaryPermission.canWrite,
@@ -80,6 +85,7 @@ interface BuildInput {
   codeTree: UseQueryResult<EvCodeNode[], Error>;
   bands: PfBandSettings;
   draftApi: AllocationDraftApi;
+  saveAllocation: (body: EvAllocationSave) => Promise<unknown>;
   itemFacts: ItemFacts;
   evLevel: ReturnType<typeof useModulePermission>["level"];
   diaryCanWrite: boolean;
@@ -106,6 +112,9 @@ function buildExtension(input: BuildInput): DiaryExtension {
       ? { isLocked: true, banner: <DayLockBanner siteId={input.siteId} day={input.day} lock={view.lock} canUnlock={access.canUnlock} /> }
       : null,
     submitGate: submitState.gate,
+    topBanner: access.showForemanBand ? <ForemanBand /> : undefined,
+    // S1 — çekirdeğin tek kayıt düğmesi önce dağıtımı yazar; hata çekirdek kaydını durdurur.
+    onBeforeSave: () => saveAllocationIfDirty({ ...beforeSaveInput(input), canEdit: access.canEdit }),
     lineColumns: lineColumnsFor(input),
     itemMeta: {
       indirectItemIds: input.itemFacts.indirectItemIds,
@@ -126,6 +135,15 @@ function buildExtension(input: BuildInput): DiaryExtension {
         submitState={submitState}
       />
     ),
+  };
+}
+
+function beforeSaveInput({ draftApi, view, saveAllocation }: BuildInput) {
+  return {
+    isDirty: draftApi.isDirty,
+    invalidCount: draftApi.invalidCount,
+    buildBody: () => buildAllocationBody(draftApi.draft, view.rows),
+    save: saveAllocation,
   };
 }
 

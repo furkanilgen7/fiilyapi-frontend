@@ -4,7 +4,6 @@ import userEvent from "@testing-library/user-event";
 import type { UseQueryResult } from "@tanstack/react-query";
 
 import { usePreviousAllocation } from "@/lib/api/hooks/useEvDay";
-import { useSaveDayAllocation } from "@/lib/api/hooks/useEvDayMutations";
 import type { EvCodeNode, EvDayView } from "@/lib/api/models";
 import { DEFAULT_PF_BANDS } from "@/lib/earned-value";
 
@@ -14,12 +13,6 @@ import { buildSubmitState, resolveAllocationAccess, type AccessInput } from "./s
 import { useAllocationDraft } from "./useAllocationDraft";
 import {
   DAY,
-  GROUP_KAB,
-  LEAF_BETON,
-  LEAF_KALIP,
-  P_EMRE,
-  P_MEHMET,
-  P_RECEP,
   SITE_ID,
   codeTree,
   dayView,
@@ -27,17 +20,11 @@ import {
 } from "./diary-fixtures";
 
 // PLN-F2.3 · Saat Dağıtımı bloğu — gerçek taslak hook'u + sahte EV yazma uçları.
-vi.mock("@/lib/api/hooks/useEvDayMutations", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/lib/api/hooks/useEvDayMutations")>()),
-  useSaveDayAllocation: vi.fn(),
-  useUnlockDay: vi.fn(),
-}));
 vi.mock("@/lib/api/hooks/useEvDay", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api/hooks/useEvDay")>()),
   usePreviousAllocation: vi.fn(),
 }));
 
-const saveMock = vi.fn();
 const prevRefetch = vi.fn();
 
 function treeQuery(nodes: EvCodeNode[] = codeTree()): UseQueryResult<EvCodeNode[], Error> {
@@ -82,8 +69,6 @@ function cell(person: string, codeShort: string): HTMLInputElement {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  saveMock.mockResolvedValue(dayView());
-  vi.mocked(useSaveDayAllocation).mockReturnValue({ mutateAsync: saveMock, isPending: false } as never);
   prevRefetch.mockResolvedValue({ data: previousAllocation() });
   vi.mocked(usePreviousAllocation).mockReturnValue({ refetch: prevRefetch } as never);
 });
@@ -112,37 +97,15 @@ describe("HourAllocationBlock — ızgara (İ:446-489)", () => {
     expect(recep.querySelector(".ev-diary-remain--ok")).not.toBeNull();
     const strip = screen.getByText("Dağıtılmamış").closest("div") as HTMLElement;
     expect(within(strip).getByText("58")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Dağıtımı kaydet" }));
-    expect(saveMock).toHaveBeenCalledWith({
-      codes: [
-        { node_id: GROUP_KAB, rule: "prorata_by_daily_qty" },
-        { node_id: LEAF_KALIP, rule: "direct" },
-      ],
-      cells: [
-        { row: { kind: "personnel", ref_id: P_MEHMET }, node_id: LEAF_KALIP, hours: "9" },
-        { row: { kind: "personnel", ref_id: P_EMRE }, node_id: GROUP_KAB, hours: "9" },
-        { row: { kind: "personnel", ref_id: P_RECEP }, node_id: LEAF_KALIP, hours: "8" },
-      ],
-      unallocated_reason: null,
-    });
-    expect(await screen.findByText("Saat dağıtımı kaydedildi")).toBeInTheDocument();
+    // Ayrı "Dağıtımı kaydet" düğmesi YOK (S1): kayıt çekirdeğin tek düğmesinden, `onBeforeSave` ile.
+    expect(screen.queryByRole("button", { name: "Dağıtımı kaydet" })).not.toBeInTheDocument();
   });
 
-  it("kaydetme hatası backend metniyle basılır (409 kilitli gün vb.)", async () => {
-    const user = userEvent.setup();
-    saveMock.mockRejectedValue(new Error("x"));
-    render(<Harness view={dayView()} />);
-    await user.type(cell("Recep Uçar", "Kalıp · Kat 6–10"), "1");
-    await user.click(screen.getByRole("button", { name: "Dağıtımı kaydet" }));
-    expect(await screen.findByText("Saat dağıtımı kaydedilemedi.")).toBeInTheDocument();
-  });
-
-  it("geçersiz hücre kaydı kapatır", async () => {
+  it("geçersiz hücre uyarısı (kayıt `onBeforeSave`de reddedilir)", async () => {
     const user = userEvent.setup();
     render(<Harness view={dayView()} />);
     await user.type(cell("Recep Uçar", "Kalıp · Kat 6–10"), "x");
     expect(screen.getByText("1 hücrede geçersiz değer")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Dağıtımı kaydet" })).toBeDisabled();
   });
 
   it("üst grup kolonunda kip düğmesi kuralı çevirir (İ:456)", async () => {
@@ -150,8 +113,6 @@ describe("HourAllocationBlock — ızgara (İ:446-489)", () => {
     render(<Harness view={dayView()} />);
     await user.click(screen.getByRole("button", { name: "Miktara göre dağıtılır" }));
     expect(screen.getByRole("button", { name: "Doğrudan" })).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Dağıtımı kaydet" }));
-    expect(saveMock.mock.calls[0][0].codes[0]).toEqual({ node_id: GROUP_KAB, rule: "direct" });
   });
 });
 
@@ -166,8 +127,7 @@ describe("+ İş kodu ekle (İ:404-423)", () => {
     await user.click(beton);
     expect(cell("Recep Uçar", "Beton döküm · Kat 6–10")).toBeInTheDocument();
     await user.click(within(picker).getByRole("button", { name: "Tamam" }));
-    await user.click(screen.getByRole("button", { name: "Dağıtımı kaydet" }));
-    expect(saveMock.mock.calls[0][0].codes.at(-1)).toEqual({ node_id: LEAF_BETON, rule: "direct" });
+    expect(screen.queryByRole("dialog", { name: "İş kodu ekle" })).not.toBeInTheDocument();
   });
 });
 
@@ -223,13 +183,12 @@ describe("salt okunur hâller (K17 · kilit · tamamlanmış şantiye)", () => {
     expect(screen.getByRole("button", { name: "+ İş kodu ekle" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Dünkü dağılımı kopyala" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Miktara göre dağıtılır" })).toBeDisabled();
-    expect(screen.queryByRole("button", { name: "Dağıtımı kaydet" })).not.toBeInTheDocument();
     expect(screen.getByText("Gün kilitli")).toBeInTheDocument();
   });
 
-  it("formen (earned_value view): formen bandı, soluk blok, düzenleme yok", () => {
+  it("formen (earned_value view): soluk blok, düzenleme yok (bant `topBanner`da, S3)", () => {
     render(<Harness view={dayView()} access={{ ...ENGINEER, evLevel: "view" }} />);
-    expect(screen.getByText("Formen görünümü.")).toBeInTheDocument();
+    expect(screen.queryByText("Formen görünümü.")).not.toBeInTheDocument();
     expect(screen.getByText("Salt okunur · Saat Dağıtımı mühendis tarafından yapılır")).toBeInTheDocument();
     expect(cell("Mehmet Demir", "Kalıp · Kat 6–10")).toBeDisabled();
     expect(screen.getByRole("region", { name: /Saat Dağıtımı/ })).toHaveClass("ev-diary-alloc--faded");
@@ -250,7 +209,5 @@ describe("Gönder kontrol çubuğu (İ:493-510)", () => {
     await user.click(screen.getByRole("button", { name: "gerekçe yaz" }));
     await user.type(screen.getByLabelText("Dağıtılmamış saat gerekçesi"), "temizlik");
     expect(screen.getByText("66 a-s dağıtılmamış · gerekçe yazıldı")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Dağıtımı kaydet" }));
-    expect(saveMock.mock.calls[0][0].unallocated_reason).toBe("temizlik");
   });
 });

@@ -4,8 +4,8 @@
  *
  * TEK KAYNAK backend'dir: `days/{day}.submit` (`can_submit` + `reasons[]`,
  * B2 `submit_blockers`). Backend kaydedilmiş hâli bilir; bu yüzden istemci
- * yalnız KENDİ bildiği iki şeyi ekler: kaydedilmemiş dağıtım ve kilitli gün.
- * Saat çipi ise dağıtım önizlemesinden (anında) kurulur.
+ * yalnız KENDİ bildiğini ekler: kilitli gün ve — taslak kirliyken — önizlenen
+ * saat gerekçesi (kayıt `onBeforeSave` ile gönderimden önce yazılır, S1).
  *
  * ⚠️ Çiplerin sınıflandırması backend METNİNE bakar (yapısal kod yok —
  * raporda istek). Tanınmayan gerekçe kaybolmaz: ayrı bir uyarı çipi olur.
@@ -39,16 +39,27 @@ export interface SubmitInput {
 export interface SubmitState {
   checks: SubmitCheck[];
   note: { text: string; tone: CheckTone };
-  gate: { canSubmit: boolean; reasons: readonly string[] } | null;
+  /** S4: gerekçeler yalnız kontrol çubuğunda — çekirdek kendi kutusunda listelemez. */
+  gate: { canSubmit: boolean; reasons: readonly string[]; showReasonsInCore: false } | null;
 }
 
-export const DIRTY_ALLOCATION_REASON = "Saat dağıtımında kaydedilmemiş değişiklik var — önce dağıtımı kaydedin";
 export const LOCKED_DAY_REASON = "Gün kilitli";
 
-const QUANTITY_PATTERN = /^Miktar girilmedi|aşan satır/;
-const WEATHER_PATTERN = /^Hava/;
-const HOURS_PATTERN = /dağıtılmamış/;
-const OVERRUN_PATTERN = /aşan satır/;
+export type ReasonKind = "quantity" | "overrun" | "weather" | "hours" | "other";
+
+/**
+ * Backend gerekçesinin TÜRÜ — çip ayrımının TEK yeri. Backend bugün yalnız
+ * metin döner (`SubmitCheckOut.reasons: string[]`, B2 `submit_blockers`);
+ * ⚠️ `reasons[].code` gelince bu fonksiyon koda bakacak şekilde değişir,
+ * çağıranlar değişmez (raporda backend isteği).
+ */
+export function classifyReason(reason: string): ReasonKind {
+  if (/^Miktar girilmedi/.test(reason)) return "quantity";
+  if (/aşan satır/.test(reason)) return "overrun";
+  if (/^Hava/.test(reason)) return "weather";
+  if (/dağıtılmamış/.test(reason)) return "hours";
+  return "other";
+}
 
 function check(key: string, tone: CheckTone, label: string, canWriteReason = false): SubmitCheck {
   return { key, tone, label, canWriteReason };
@@ -63,11 +74,9 @@ function hoursCheck(unallocated: Centi, reason: string): SubmitCheck {
 }
 
 function buildChecks(reasons: readonly string[], input: SubmitInput): SubmitCheck[] {
-  const quantity = reasons.find((r) => QUANTITY_PATTERN.test(r));
-  const weather = reasons.find((r) => WEATHER_PATTERN.test(r));
-  const others = reasons.filter(
-    (r) => !QUANTITY_PATTERN.test(r) && !WEATHER_PATTERN.test(r) && !HOURS_PATTERN.test(r),
-  );
+  const quantity = reasons.find((r) => ["quantity", "overrun"].includes(classifyReason(r)));
+  const weather = reasons.find((r) => classifyReason(r) === "weather");
+  const others = reasons.filter((r) => classifyReason(r) === "other");
   return [
     quantity ? check("quantity", "warn", quantity) : check("quantity", "ok", "Miktarlar girildi"),
     hoursCheck(input.unallocated, input.reason),
@@ -76,23 +85,32 @@ function buildChecks(reasons: readonly string[], input: SubmitInput): SubmitChec
   ];
 }
 
+/**
+ * Kaydedilmemiş dağıtım kapıyı KAPATMAZ: "Kaydet & Gönder" önce `onBeforeSave`
+ * ile dağıtımı yazar (S1). Backend'in saat gerekçesi KAYDEDİLMİŞ hâle aittir;
+ * taslak kirliyken o gerekçe yerine önizlemeden kurulan saat gerekçesi konur
+ * (gerekçe yazıldıysa açılır). Backend gönderimde yine 422 ile doğrular.
+ */
 function buildGate(input: SubmitInput): SubmitState["gate"] {
   if (input.submit === null) return null;
-  const reasons = [...input.submit.reasons];
-  if (input.isDirty) reasons.push(DIRTY_ALLOCATION_REASON);
+  const reasons = input.isDirty
+    ? input.submit.reasons.filter((r) => classifyReason(r) !== "hours")
+    : [...input.submit.reasons];
+  const hoursBlocked = input.unallocated !== 0 && input.reason.trim() === "";
+  if (input.isDirty && hoursBlocked) reasons.push(`${formatHours(input.unallocated)} a-s dağıtılmamış; gerekçe gerekli`);
   if (input.isLocked) reasons.push(LOCKED_DAY_REASON);
-  return { canSubmit: input.submit.can_submit && reasons.length === 0, reasons };
+  const backendAllows = input.isDirty || input.submit.can_submit;
+  return { canSubmit: backendAllows && reasons.length === 0, reasons, showReasonsInCore: false };
 }
 
 function buildNote(input: SubmitInput, gate: SubmitState["gate"]): SubmitState["note"] {
   if (input.isLocked) return { text: "Gün kilitli", tone: "warn" };
   if (input.isForeman) return { text: "Gönderim mühendiste", tone: "warn" };
-  if (input.isDirty) return { text: "Önce saat dağıtımını kaydedin", tone: "warn" };
   const reasons = gate?.reasons ?? [];
   if (input.unallocated !== 0 && input.reason.trim() === "") {
     return { text: "Dağıtılmamış saat gönderimi engelliyor", tone: "warn" };
   }
-  if (reasons.some((r) => OVERRUN_PATTERN.test(r))) return { text: "Aşım gerekçesi gönderimi engelliyor", tone: "warn" };
+  if (reasons.some((r) => classifyReason(r) === "overrun")) return { text: "Aşım gerekçesi gönderimi engelliyor", tone: "warn" };
   if (gate !== null && !gate.canSubmit) return { text: "Gönderim engelli", tone: "warn" };
   return { text: input.unallocated !== 0 ? "Gerekçeyle gönderilebilir" : "Gönderime hazır", tone: "ok" };
 }
