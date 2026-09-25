@@ -845,6 +845,22 @@ describe("🔴 test ikizi ↔ günlük detay bağlamı + Kural A (DET-1.B)", () 
     expect(resubmitted.json).toMatchObject({ status: "submitted", submitted_by: "u-1", submitted_by_name: "Ahmet Yılmaz" });
   });
 
+  it("liste öğesi (DET-1.B ek, backend#130): `section_name` başlık bölümü · `section_line_count` bölüm bağlamında o bölümün satırı, süzgeçsiz null", async () => {
+    const sec1 = await list(`${OCT}&section_id=sec-1`);
+    expect(sec1.items.length).toBeGreaterThan(0);
+    for (const item of sec1.items) {
+      const full = await detail(item.id);
+      // Başlık adı detaydakiyle aynı; sayı detayın o bölüme düşen satırlarıyla aynı (liste ↔ detay tutarlılığı).
+      expect(item.section_name, item.id).toBe(full.section_name);
+      expect(item.section_line_count, item.id).toBe(full.lines.filter((line) => line.section_id === "sec-1").length);
+    }
+    expect(sec1.items.some((item) => (item.section_line_count ?? 0) > 0)).toBe(true);
+    // Süzgeçsiz listede sayı YOK (null); ad yine basılır.
+    const unfiltered = await list(OCT);
+    expect(unfiltered.items.every((item) => item.section_line_count === null)).toBe(true);
+    expect(unfiltered.items.find((item) => item.id === "d-4")?.section_name).toBe("Kat 6–10 Kaba İnşaat");
+  });
+
   it("Kural A · SATIR kolu: başlığı başka bölüm ama bu bölüme miktar satırı olan gün listeye ve komşulara girer (bir kez)", async () => {
     // d-8: satırı bi-3 × sec-1. Başlığı sec-2'ye taşınınca YALNIZ satır koluyla sec-1'dedir.
     const moved = await call<DiaryDetail>("PATCH", "/diary/d-8", { section_id: "sec-2" });

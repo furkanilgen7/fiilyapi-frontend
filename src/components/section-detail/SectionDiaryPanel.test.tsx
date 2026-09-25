@@ -27,6 +27,8 @@ function listItem(overrides: Partial<SiteDiaryEntryListItem> = {}): SiteDiaryEnt
     lines_total: "182400.00",
     created_by: "u-2",
     created_at: "2026-07-15T08:00:00Z",
+    section_name: SECTION_NAME,
+    section_line_count: 3,
     ...overrides,
   } as SiteDiaryEntryListItem;
 }
@@ -231,22 +233,35 @@ describe("SectionDiaryPanel — tıklanabilir satır (DET-1.2)", () => {
   });
 
   it("Kural A — başlığı BAŞKA bölüm olan gün: 'Satırla bağlı' rozeti + başlık bölümü adı", () => {
-    renderPanel({ items: [listItem({ id: "k", section_id: "sec-other", entry_date: "2026-07-15" })] });
+    renderPanel({
+      items: [
+        listItem({ id: "k", section_id: "sec-other", section_name: "Peyzaj", section_line_count: 2, entry_date: "2026-07-15" }),
+      ],
+    });
 
     const link = screen.getByRole("link", {
       name: "15.07.2026 günlük kaydını görüntüle · Gönderildi — başlık bölümü Peyzaj",
     });
     expect(within(link).getByText("Satırla bağlı")).toHaveClass("section-diary__linkage-badge");
-    expect(link).toHaveTextContent("Başlık: Peyzaj");
-    // 🔴 "bu bölüme N satır" UYDURULMAZ: liste öğesi satır sayısını TAŞIMIYOR (backend eksik).
+    // Mockup Detay 571: "Başlık: Kat 1–5 · bu bölüme 2 satır" — sayı sunucudan (backend#130).
+    expect(link).toHaveTextContent("Başlık: Peyzaj · bu bölüme 2 satır");
+  });
+
+  it("Kural A — başlık adı SUNUCUDAN (`section_name`) gelir; sayı yoksa (null) uydurulmaz", () => {
+    renderPanel({
+      items: [listItem({ id: "k", section_id: "sec-other", section_name: "Peyzaj (yeni ad)", section_line_count: null })],
+    });
+
+    const link = screen.getByRole("link", { name: /başlık bölümü Peyzaj \(yeni ad\)$/ });
+    expect(link).toHaveTextContent("Başlık: Peyzaj (yeni ad)");
     expect(link).not.toHaveTextContent(/bu bölüme \d+ satır/);
   });
 
   it("Kural A — başlık bölümü SEÇİLMEMİŞ gün de satırla bağlıdır ('Bölüm seçilmedi')", () => {
-    renderPanel({ items: [listItem({ id: "n", section_id: null, entry_date: "2026-07-15" })] });
+    renderPanel({ items: [listItem({ id: "n", section_id: null, section_name: null, section_line_count: 1, entry_date: "2026-07-15" })] });
 
     const link = screen.getByRole("link", { name: /başlık bölümü Bölüm seçilmedi$/ });
     expect(within(link).getByText("Satırla bağlı")).toBeInTheDocument();
-    expect(link).toHaveTextContent("Başlık: Bölüm seçilmedi");
+    expect(link).toHaveTextContent("Başlık: Bölüm seçilmedi · bu bölüme 1 satır");
   });
 });

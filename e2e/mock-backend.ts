@@ -3707,8 +3707,15 @@ function buildDiaryEntryDetail(
   };
 }
 
+/**
+ * DET-1.B ek (backend#130) · liste öğesi: `section_name` = başlık bölümünün adı
+ * (başlıksız → null) · `section_line_count` = YALNIZ `?section_id=` verilince o
+ * bölüme düşen miktar satırı sayısı (backend `read.section_line_count`), süzgeçsiz null.
+ */
 function buildDiaryEntryListItem(
+  state: MockState,
   entry: MockDiaryEntry,
+  sectionFilter: string | null,
 ): components["schemas"]["SiteDiaryEntryListItem"] {
   return {
     id: entry.id,
@@ -3723,6 +3730,9 @@ function buildDiaryEntryListItem(
     lines_total: money2(diaryLinesTotal(entry)),
     created_by: entry.created_by,
     created_at: entry.created_at,
+    section_name: diarySectionName(state, entry.section_id),
+    section_line_count:
+      sectionFilter === null ? null : entry.lines.filter((line) => line.section_id === sectionFilter).length,
   };
 }
 
@@ -10698,7 +10708,7 @@ export function startMockBackend(port: number): { server: Server; close: () => P
         .filter((e) => !(isUnfiltered && e.hiddenFromUnfilteredList === true))
         .sort((a, b) => b.entry_date.localeCompare(a.entry_date) || a.id.localeCompare(b.id));
       return send(200, {
-        items: filtered.slice(offset, offset + limit).map(buildDiaryEntryListItem),
+        items: filtered.slice(offset, offset + limit).map((entry) => buildDiaryEntryListItem(state, entry, sectionFilter)),
         total: filtered.length,
         limit,
         offset,

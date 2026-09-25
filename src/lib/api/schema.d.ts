@@ -19242,6 +19242,10 @@ export interface components {
             project_id: string;
             /** Section Id */
             section_id: string | null;
+            /** Section Line Count */
+            section_line_count: number | null;
+            /** Section Name */
+            section_name: string | null;
             /**
              * Site Id
              * Format: uuid

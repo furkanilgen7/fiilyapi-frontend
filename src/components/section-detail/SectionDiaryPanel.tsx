@@ -9,7 +9,7 @@ import { formatDateDots } from "@/lib/format";
 import { buildListTruncation, listTruncationMessage } from "@/lib/list-truncation";
 import "@/components/site-diary/site-diary.css";
 
-import { sectionDiaryRowLinkage } from "./section-diary-linkage";
+import { sectionDiaryLinkageMeta, sectionDiaryRowLinkage } from "./section-diary-linkage";
 
 /**
  * F-BLMSEK · Bölüm Detay › "Günlük Kayıt" sekmesinin GÖVDESİ.
@@ -125,7 +125,7 @@ function SectionDiaryBody({
                           </span>
                         )
                       }
-                      sectionSlot={linkage === null ? undefined : `Başlık: ${linkage.headerSectionName}`}
+                      sectionSlot={linkage === null ? undefined : sectionDiaryLinkageMeta(linkage)}
                     />
                   </span>
                   <ChevronRightIcon className="section-diary__entry-arrow" />
