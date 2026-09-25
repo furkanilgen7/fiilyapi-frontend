@@ -506,6 +506,49 @@ describe("🔴 test ikizi ↔ Saha (EV gün) yazma gövdesi sözleşmesi", () =>
     const tree = await getJson<{ id: string; has_rate: boolean | null }[]>("/sites/s-1/earned-value/code-tree");
     expect(tree.some((node) => node.has_rate === false), "en az bir ORANSIZ yaprak (K12)").toBe(true);
   });
+
+  // PLN-F2.5e · Günlük adaptörü Kendi/Taşeron etiketini ve G9 dolaylı hâlini
+  // AKTİF bütçenin `item_id`'sinden okur ve günlük satırının `boq_item_id`'siyle
+  // eşler (`earned-value/diary/item-meta.ts`). Kesişim boşsa hiçbir karede
+  // etiket/dolaylı hâl basılmaz ve bu hiçbir kapıyı kırmaz — bekçi burada.
+  it("günlük senaryosu: aktif bütçe kalemleri ↔ günlük BOQ kalemleri kesişir (Kendi · Taşeron · dolaylı)", async () => {
+    const revisions = await getJson<{ id: string; status: string }[]>("/sites/s-1/earned-value/budget/revisions");
+    const active = revisions.find((revision) => revision.status === "active");
+    expect(active, "s-1 aktif revizyonu").toBeDefined();
+    const budget = await getJson<{
+      disciplines: { groups: { items: { item_id: string; contractor_type: string; is_direct: boolean }[] }[] }[];
+    }>(`/sites/s-1/earned-value/budget?revision_id=${active?.id}`);
+    const budgetItems = new Map(
+      budget.disciplines.flatMap((d) => d.groups.flatMap((g) => g.items)).map((item) => [item.item_id, item] as const),
+    );
+
+    const list = await getJson<{ items: { id: string; entry_date: string }[] }>("/sites/s-1/diary?year=2026&month=10");
+    const evDays: ReadonlySet<string> = new Set([EV_DAY_SCENARIO_DAYS.full, EV_DAY_SCENARIO_DAYS.locked]);
+    const entries = list.items.filter((item) => evDays.has(item.entry_date));
+    expect(entries, "EV'li senaryo günlerinin günlük kayıtları").toHaveLength(2);
+    const lineItemIds = new Set<string>();
+    for (const entry of entries) {
+      const detail = await getJson<{ lines: { boq_item_id: string }[] }>(`/diary/${entry.id}`);
+      for (const line of detail.lines) lineItemIds.add(line.boq_item_id);
+    }
+    const shared = [...lineItemIds].flatMap((id) => budgetItems.get(id) ?? []);
+    expect(shared.length, "günlük satırı ↔ bütçe kalemi kesişimi").toBeGreaterThan(0);
+    expect(shared.some((item) => item.is_direct && item.contractor_type === "own"), "en az bir Kendi kalem").toBe(true);
+    expect(shared.some((item) => item.is_direct && item.contractor_type === "subcon"), "en az bir Taşeron kalem").toBe(true);
+    expect(shared.some((item) => !item.is_direct), "en az bir dolaylı kalem (G9)").toBe(true);
+
+    // CEO kararı (c): ORANSIZ yaprağın kalemi (K12 · İç Sıva) dolaylı DEĞİLDİR —
+    // karede "Bölümsüz" + oransız uyarısıyla basılır, "Tüm şantiye" olmaz.
+    const tree = await getJson<{ id: string; has_rate: boolean | null }[]>("/sites/s-1/earned-value/code-tree");
+    const unratedItemIds = new Set(
+      tree.filter((node) => node.has_rate === false).map((node) => node.id.split(":")[1]),
+    );
+    const unratedInDays = [...lineItemIds].filter((id) => unratedItemIds.has(id));
+    expect(unratedInDays.length, "senaryo günlerinde oransız yaprak kalemi").toBeGreaterThan(0);
+    for (const id of unratedInDays) {
+      expect(budgetItems.get(id)?.is_direct === false, `oransız kalem ${id} dolaylı OLMAMALI`).toBe(false);
+    }
+  });
 });
 
 // ═══════════════════════════════════════════════════════════════════════════

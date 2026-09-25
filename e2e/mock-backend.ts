@@ -3703,7 +3703,8 @@ function buildEvDiaryScenarioEntries(): MockDiaryEntry[] {
       chief_note: "Beton pompası 07:30'da sahada.",
       status: "draft", submitted_at: null,
       created_at: "2026-10-07T08:00:00Z", updated_at: "2026-10-07T16:45:00Z",
-      lines: evDiaryLines("d-6", [["bi-3", "sec-1", 28], ["bi-4", "sec-1", 3.4], ["bi-5", null, 52], ["bi-6", null, 90]]),
+      // bi-2 = bütçenin DOLAYLI kalemi (`EV_S1_BOQ_ITEM_BRIDGE`) → G9 "Tüm şantiye".
+      lines: evDiaryLines("d-6", [["bi-2", null, 40], ["bi-3", "sec-1", 28], ["bi-4", "sec-1", 3.4], ["bi-5", null, 52], ["bi-6", null, 90]]),
       worker_counts: [
         { id: "d-6-w-1", trade: "Duvarcı", source: "subcontractor", count: 7, subcontractor_id: "sub-2", hours: "8.0" },
         { id: "d-6-w-2", trade: "Elektrikçi", source: "subcontractor", count: 3, subcontractor_id: "sub-1", hours: "8.0" },
@@ -19361,6 +19362,45 @@ const EV_METRICS_S1: EvSchemas["CompositeMetricRead"][] = [
 ];
 
 /**
+ * 🔗 PLN-F2.5e · s-1 EV-BOQ kalemi (şablon sırası `itm(n)`) → günlük BOQ
+ * kalemi (`BOQ_FIXTURE` `bi-*`) KÖPRÜSÜ.
+ *
+ * GEREKÇE: günlük adaptörü kalem bilgisini (Kendi/Taşeron etiketi · G9
+ * dolaylı kalem) aktif bütçe görünümünden `item_id` ile okur
+ * (`earned-value/diary/item-meta.ts`) ve günlük satırının `boq_item_id`'siyle
+ * (`bi-*`) eşler. Gerçek backend'de ikisi AYNI BOQ kalemidir; ikizde bütçe
+ * ağacı mockup-kökenli kimlik taşıdığı için kesişim BOŞTU ve hiçbir karede
+ * etiket/dolaylı hâl basılmıyordu. Köprü YALNIZ kimliği değiştirir: kalemin
+ * adı, kodu, miktarı, oranı, yüklenici tipi ve doğrudan/dolaylı bayrağı
+ * şablondan gelir — bütçe ekranı kimlik BASMAZ, sıralamaz (ölçüm: PLN-F2.5e).
+ *
+ *   itm(3)  KAB.01.03 Beton döküm (Kaba · kendi)    → bi-3 C25/30 Beton  → "Kendi"
+ *   itm(2)  KAB.01.02 Demir       (Kaba · kendi)    → bi-4 Demir Donatı → "Kendi"
+ *   itm(4)  DUV.01.01 Tuğla duvar (Duvar · taşeron) → bi-5 Tuğla Duvar  → "Taşeron"
+ *   itm(10) GEN.01.01 Mobilizasyon (DOLAYLI · kendi) → bi-2 Geri Dolgu   → G9 dolaylı + "Kendi"
+ *
+ * bi-6 (İç Sıva) KÖPRÜSÜZDÜR (CEO kararı c): ORANSIZ kalır, "Bölümsüz"
+ * etiketiyle basılır, dolaylı DEĞİLDİR ve etiket taşımaz. Günlük ekranı BOQ'un
+ * BÜTÜN kalemlerini başlık olarak bastığı için (`buildDiaryLineTree`) etiket
+ * satırsız günde de görünür; dolaylı "Tüm şantiye" satırı ise yalnız bi-2
+ * satırı olan günde (a) 07.10. ⚠️ SAPMA (bilinçli): bi-2'nin bütçe karşılığı
+ * "Mobilizasyon"dur — bütçedeki dolaylı kalemler yalnız GEN grubundadır ve
+ * bütçenin kendi verisini değiştirmek Adam-Saat Bütçesi karelerini oynatırdı.
+ * s-2 köprüsüzdür (günlük senaryosu yalnız s-1).
+ */
+export const EV_S1_BOQ_ITEM_BRIDGE: Readonly<Record<number, string>> = {
+  2: "bi-4",
+  3: "bi-3",
+  4: "bi-5",
+  10: "bi-2",
+};
+
+/** EV-BOQ kalem kimliği: s-1'de köprülü kalem `bi-*`, ötekiler deterministik UUID. */
+function evItemId(site: number, n: number): string {
+  return (site === 1 ? EV_S1_BOQ_ITEM_BRIDGE[n] : undefined) ?? evId("b17", site * 100 + n);
+}
+
+/**
  * Bütçe ağacının EV-BOQ anlık görüntüsü — `Adam-Saat Bütçesi.dc.html:526-553`
  * (`BL`/`T`/`BOL`) + Ek Formlar M1 (IZO.01 Disiplinsiz) / M4 (DUV.01.01
  * Bölümsüz kalan). `site` = kimlik ofseti (s-1 → 1, s-2 → 2): iki şantiye
@@ -19369,7 +19409,7 @@ const EV_METRICS_S1: EvSchemas["CompositeMetricRead"][] = [
 function evSeedBoq(site: number, withDraftExtras: boolean): EvSiteBoq {
   const sec = (n: number) => evId("5ec", site * 100 + n);
   const grp = (n: number) => evId("b0a", site * 100 + n);
-  const itm = (n: number) => evId("b17", site * 100 + n);
+  const itm = (n: number) => evItemId(site, n);
   const TML = sec(1);
   const K15 = sec(2);
   const K610 = sec(3);
@@ -19468,7 +19508,7 @@ function evSeedBoq(site: number, withDraftExtras: boolean): EvSiteBoq {
 function evDraftInputs(site: number): EvInputs {
   const sec = (n: number) => evId("5ec", site * 100 + n);
   const grp = (n: number) => evId("b0a", site * 100 + n);
-  const itm = (n: number) => evId("b17", site * 100 + n);
+  const itm = (n: number) => evItemId(site, n);
   const [TML, K15, K610, CAT] = [sec(1), sec(2), sec(3), sec(4)];
   const { KAB, DUV, MEK, ELK } = EV_DISCIPLINE_IDS;
   const rate = (unitMhr: string | null, rateSource: EvRateSource | null): EvLeafInput => ({ unitMhr, rateSource });
@@ -19534,7 +19574,7 @@ function evDraftInputs(site: number): EvInputs {
 /** Rev 1 = taslağın :537 `REV1` farkıyla hâli (IZO.01 grubu o gün BOQ'da yoktu). */
 function evActiveSnapshot(site: number): EvSnapshot {
   const sec = (n: number) => evId("5ec", site * 100 + n);
-  const itm = (n: number) => evId("b17", site * 100 + n);
+  const itm = (n: number) => evItemId(site, n);
   return {
     qty: { [evLeafKey(itm(3), sec(1))]: "1250" },
     absentLeaves: [evLeafKey(itm(9), sec(4)), evLeafKey(itm(8), sec(5))],
@@ -19544,7 +19584,7 @@ function evActiveSnapshot(site: number): EvSnapshot {
 
 function evActiveInputs(site: number): EvInputs {
   const draft = evDraftInputs(site);
-  const itm = (n: number) => evId("b17", site * 100 + n);
+  const itm = (n: number) => evItemId(site, n);
   const K610 = evId("5ec", site * 100 + 3);
   return {
     ...draft,
@@ -21213,7 +21253,8 @@ function evFreeze(state: EvState, req: EvRequest, site: { id: string; status: st
  *   (c) blocked 2026-10-06 Sal · d-5 taslak · miktar YOK + hava EKSİK → Gönder engelli
  *   (a) full    2026-10-07 Çar · d-6 taslak · dağıtım var, 34 a-s dağıtılmamış,
  *               "puantaj değişti" (Mehmet Demir 9 → 11), iki firma satırı,
- *               oransız yaprak (İç Sıva · Bölümsüz, K12)
+ *               oransız yaprak (İç Sıva · Bölümsüz, K12), dolaylı kalem
+ *               (bi-2 · "Tüm şantiye", G9 — `EV_S1_BOQ_ITEM_BRIDGE`)
  *   (d) noEv    2026-10-08 Per · d-7 taslak · EV YOK (`has_baseline:false`) +
  *               kendi ekip BOŞ (puantaj yok)
  *   🔒 YAZMA HEDEFLERİ (paylaşılan ikiz · fullyParallel — görsel spec BAKMAZ):
@@ -21229,6 +21270,8 @@ function evFreeze(state: EvState, req: EvRequest, site: { id: string; status: st
  *   · Kod ağacı `/sites/{id}/boq` fikstüründen (bi-* · sec-*) türer; bütçe
  *     ekranının mockup-kökenli EV-BOQ ağacından DEĞİL — günlük satırı ↔ yaprak
  *     eşlemesi (`l:<kalem>:<bölüm|none>`) ancak böyle kurulur. Yalnız s-1.
+ *     Kalem bilgisi (Kendi/Taşeron · dolaylı) bütçe görünümünden okunduğu
+ *     için dört bütçe kalemi `bi-*` kimliği taşır: `EV_S1_BOQ_ITEM_BRIDGE`.
  *   · Puantaj kaynağı sabit tablodur (`EV_DAY_TIMESHEET`), puantaj ikizine
  *     BAĞLI DEĞİLDİR (Ekim puantaj hücreleri yalnız W42+ haftalarındadır; EV
  *     senaryo haftası W41'e puantaj hücresi KONMAZ — iki kaynak çelişmesin).
