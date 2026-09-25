@@ -321,6 +321,32 @@ const SECTION_CREATE_SCHEMA = loadBodySchema("SectionCreate");
 const SECTION_UPDATE_SCHEMA = loadBodySchema("SectionUpdate");
 const SITE_DIARY_ENTRY_CREATE_SCHEMA = loadBodySchema("SiteDiaryEntryCreate");
 const SITE_DIARY_ENTRY_UPDATE_SCHEMA = loadBodySchema("SiteDiaryEntryUpdate");
+
+/* CLEAN-B1 (backend#132) · eski tek sıcaklık alanı API'den KALKTI. Backend
+ * `site_diary/schemas.py` (`mode="before"` doğrulayıcısı) onu POST'ta da
+ * PATCH'te de AÇIK 422 ile reddeder: Create'te `extra` serbest olduğundan alan
+ * aksi hâlde SESSİZCE yutulur, sıcaklık kaybolurdu; Update'te genel
+ * `extra_forbidden`dan ÖNCE koşar. Ad openapi'de artık YOK — tek kaynak burası. */
+export const DIARY_REMOVED_TEMPERATURE_FIELD = "temperature_c";
+/** Backend `schemas.TEMPERATURE_C_REMOVED` ile BİREBİR. */
+export const DIARY_TEMPERATURE_REMOVED_MESSAGE =
+  `\`${DIARY_REMOVED_TEMPERATURE_FIELD}\` kaldırıldı — \`temp_min_c\` ve \`temp_max_c\` kullanın`;
+
+/** Pydantic `model_validator(mode="before")` → `ValueError` şekli (`loc: ["body"]`). */
+function diaryRemovedTemperatureViolation(body: Record<string, unknown>): unknown | null {
+  if (!Object.hasOwn(body, DIARY_REMOVED_TEMPERATURE_FIELD)) return null;
+  return {
+    detail: [
+      {
+        type: "value_error",
+        loc: ["body"],
+        msg: `Value error, ${DIARY_TEMPERATURE_REMOVED_MESSAGE}`,
+        input: body,
+        ctx: { error: {} },
+      },
+    ],
+  };
+}
 const SITE_PLAN_CELL_INPUT_SCHEMA = loadBodySchema("SitePlanCellInput");
 /* PLN-F2.5a · günlük iç içe gövdeleri: işçi satırı (firma `hours` ≤ 24 ·
  * `additionalProperties:false`) ve EV günü satırı (bölüm + aşım gerekçesi). */
@@ -3422,8 +3448,12 @@ interface MockDiaryEntry {
   entry_date: string;
   section_id: string | null;
   weather: components["schemas"]["Weather"] | null;
-  temperature_c: string | null;
-  /** PLN-F2.5a · 10'lu hava + min/max/rüzgâr (B2.1). Eski kayıtlarda YOK → `null`. */
+  /**
+   * PLN-F2.5a · 10'lu hava + min/max/rüzgâr (B2.1). Girilmemişse YOK → `null`.
+   * Eski tek sıcaklık alanı CLEAN-B1'de API'den kalktı; backend göçü
+   * (b877270195d8) onu min/max'a kopyalamıştı — ikizde max'ı taşıyan eski
+   * fikstürler değeri doğrudan `temp_max_c`de tutar.
+   */
   temp_min_c?: string | null;
   temp_max_c?: string | null;
   wind_ms?: string | null;
@@ -3677,7 +3707,6 @@ function buildDiaryEntryDetail(
     entry_date: entry.entry_date,
     section_id: entry.section_id,
     weather: entry.weather,
-    temperature_c: entry.temperature_c,
     temp_min_c: entry.temp_min_c ?? null,
     temp_max_c: entry.temp_max_c ?? null,
     wind_ms: entry.wind_ms ?? null,
@@ -3753,7 +3782,7 @@ function buildDiaryEntryFixtures(): MockDiaryEntry[] {
   return [
     {
       id: "d-1", site_id: "s-1", project_id: "p-1", entry_date: "2026-07-15",
-      section_id: "sec-1", weather: "sunny", temperature_c: "28.0",
+      section_id: "sec-1", weather: "sunny", temp_max_c: "28.0",
       work_done: "6. kat döşeme betonu döküldü.", chief_note: "Beton pompası 08:00'de sahada.",
       safety_meeting_held: true, ppe_checked: true, has_incident: false, incident_note: null,
       status: "submitted", submitted_at: "2026-07-15T17:30:00Z", submitted_by: "u-2",
@@ -3772,7 +3801,7 @@ function buildDiaryEntryFixtures(): MockDiaryEntry[] {
     // s-1'in TOPLAM günlük SAYISI değişmedi (sayım iddiaları korunur).
     {
       id: "d-2", site_id: "s-1", project_id: "p-1", entry_date: "2026-07-16",
-      section_id: "sec-2", weather: "rainy", temperature_c: "19.0",
+      section_id: "sec-2", weather: "rainy", temp_max_c: "19.0",
       work_done: "Yağış nedeniyle beton dökümü ertelendi.", chief_note: null,
       safety_meeting_held: true, ppe_checked: false, has_incident: false, incident_note: null,
       status: "draft", submitted_at: null,
@@ -3782,7 +3811,7 @@ function buildDiaryEntryFixtures(): MockDiaryEntry[] {
     },
     {
       id: "d-3", site_id: "s-2", project_id: "p-1", entry_date: "2026-07-15",
-      section_id: null, weather: "partly_cloudy", temperature_c: "26.0",
+      section_id: null, weather: "partly_cloudy", temp_max_c: "26.0",
       work_done: "Duvar örgü ve sıva imalatı sürdü.", chief_note: null,
       safety_meeting_held: true, ppe_checked: true, has_incident: false, incident_note: null,
       status: "submitted", submitted_at: "2026-07-15T18:00:00Z", submitted_by: "u-2",
@@ -3831,7 +3860,7 @@ function buildDiaryLineArmEntry(): MockDiaryEntry {
   const { entryId, day, headerSectionId, lineSectionId } = DIARY_LINE_ARM_FIXTURE;
   return {
     id: entryId, site_id: "s-1", project_id: "p-1", entry_date: day,
-    section_id: headerSectionId, weather: "partly_cloudy", temperature_c: null,
+    section_id: headerSectionId, weather: "partly_cloudy",
     temp_min_c: "9.0", temp_max_c: "17.0", wind_ms: "3.4",
     work_done: "Zemin kat perde duvar betonu döküldü; kat 10 döşeme betonu ve donatısı tamamlandı.",
     chief_note: "Zemin kat kalıpları yarın sökülecek; beton numuneleri laboratuvara gönderildi.",
@@ -3863,7 +3892,7 @@ function buildDiaryLineArmEntry(): MockDiaryEntry {
  */
 function buildEvDiaryScenarioEntries(): MockDiaryEntry[] {
   const base = {
-    site_id: "s-1", project_id: "p-1", section_id: "sec-1", temperature_c: null,
+    site_id: "s-1", project_id: "p-1", section_id: "sec-1",
     chief_note: null, safety_meeting_held: true, ppe_checked: true, has_incident: false,
     incident_note: null, created_by: "u-2", evLines: true, hiddenFromUnfilteredList: true,
   } as const;
@@ -10777,7 +10806,9 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       const site = state.sites.find((s) => s.id === siteDiaryMatch[1]);
       if (!site) return send(404, { detail: "santiye yok" });
       return withBody((body) => {
-        const schemaViolation = bodySchemaViolation(SITE_DIARY_ENTRY_CREATE_SCHEMA, body);
+        const schemaViolation =
+          diaryRemovedTemperatureViolation(body) ??
+          bodySchemaViolation(SITE_DIARY_ENTRY_CREATE_SCHEMA, body);
         if (schemaViolation !== null) return send(422, schemaViolation);
         const entryDate = String(body.entry_date ?? "");
         if (!entryDate) return send(422, { detail: "entry_date zorunlu" });
@@ -10802,9 +10833,6 @@ export function startMockBackend(port: number): { server: Server; close: () => P
             "weather",
             body.weather,
           ),
-          temperature_c: body.temperature_c !== undefined && body.temperature_c !== null
-            ? String(body.temperature_c)
-            : null,
           temp_min_c: diaryDecimal1(body.temp_min_c),
           temp_max_c: diaryDecimal1(body.temp_max_c),
           wind_ms: diaryDecimal1(body.wind_ms),
@@ -10918,6 +10946,7 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       }
       return withBody((body) => {
         const schemaViolation =
+          diaryRemovedTemperatureViolation(body) ??
           bodySchemaViolation(SITE_DIARY_ENTRY_UPDATE_SCHEMA, body) ??
           diaryWorkerCountsViolation(body.worker_counts);
         if (schemaViolation !== null) return send(422, schemaViolation);
@@ -10936,9 +10965,6 @@ export function startMockBackend(port: number): { server: Server; close: () => P
             "weather",
             body.weather,
           );
-        }
-        if (body.temperature_c !== undefined) {
-          entry.temperature_c = body.temperature_c === null ? null : String(body.temperature_c);
         }
         // PLN-F2.5a · B2.1 hava alanları (`Numeric(4,1)` → "17.0").
         if (body.temp_min_c !== undefined) entry.temp_min_c = diaryDecimal1(body.temp_min_c);

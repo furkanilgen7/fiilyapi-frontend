@@ -34,7 +34,6 @@ function entry(overrides: Partial<SiteDiaryEntryDetail> = {}): SiteDiaryEntryDet
     entry_date: "2026-09-24",
     status: "submitted",
     weather: "sunny",
-    temperature_c: null,
     work_done: "6. kat döşeme betonu döküldü.",
     chief_note: null,
     safety_meeting_held: true,

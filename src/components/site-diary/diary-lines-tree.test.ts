@@ -60,7 +60,6 @@ function entryShell(): Omit<SiteDiaryEntryDetail, "lines"> {
     entry_date: "2026-09-24",
     section_id: null,
     weather: null,
-    temperature_c: null,
     work_done: null,
     chief_note: null,
     safety_meeting_held: false,

@@ -26,6 +26,8 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import {
   DIARY_LINE_ARM_FIXTURE,
+  DIARY_REMOVED_TEMPERATURE_FIELD,
+  DIARY_TEMPERATURE_REMOVED_MESSAGE,
   EV_DAY_SCENARIO_DAYS,
   TIMESHEET_LOCK_SCENARIOS,
   startMockBackend,
@@ -941,5 +943,49 @@ describe("🔴 test ikizi ↔ günlük detay bağlamı + Kural A (DET-1.B)", () 
     expect(await detail("d-7", "sec-1")).toMatchObject({ next_id: "d-8", next_entry_date: "2026-10-09" });
     // sec-3'te ne başlık ne satır → komşu yok.
     expect(await detail("d-8", "sec-3")).toMatchObject({ prev_id: null, next_id: null });
+  });
+});
+
+// 🔴 CLEAN-B1 (backend#132) · eski tek sıcaklık alanı API'den KALKTI. Backend onu
+// POST'ta da PATCH'te de `mode="before"` doğrulayıcısıyla AÇIK 422 reddeder
+// (`value_error`, `loc: ["body"]`, metin `TEMPERATURE_C_REMOVED`). İkiz aynısını
+// yapmazsa eski imzalı bir gövde e2e'de 201 alır, canlıda 422 — onaylayıcı ikiz.
+describe("🔴 test ikizi ↔ günlük: eski sıcaklık alanı kaldırıldı (CLEAN-B1)", () => {
+  /** Hiçbir fikstürün dokunmadığı ay: ikiz gövdeyi KABUL ederse kayıt burada doğar. */
+  const FRESH_DAY = "2031-01-06";
+
+  function expectRemovedFieldViolation(json: ValidationBody): void {
+    expect(firstViolation(json)).toMatchObject({
+      type: "value_error",
+      loc: ["body"],
+      msg: `Value error, ${DIARY_TEMPERATURE_REMOVED_MESSAGE}`,
+    });
+  }
+
+  it("POST /sites/{id}/diary — eski alan (yeni alanlarla birlikte bile) 422 döner, kayıt AÇILMAZ", async () => {
+    const { status, json } = await send("POST", "/sites/s-1/diary", {
+      entry_date: FRESH_DAY,
+      temp_max_c: 21.5,
+      [DIARY_REMOVED_TEMPERATURE_FIELD]: 21.5,
+    });
+
+    expect(status).toBe(422);
+    expectRemovedFieldViolation(json);
+    const list = await getJson<{ items: { entry_date: string }[] }>("/sites/s-1/diary?year=2031&month=1");
+    expect(list.items.map((item) => item.entry_date)).not.toContain(FRESH_DAY);
+  });
+
+  it("PATCH /diary/{id} — eski alan genel `extra_forbidden`dan ÖNCE açık metinle 422 döner", async () => {
+    const { status, json } = await send("PATCH", "/diary/d-2", { [DIARY_REMOVED_TEMPERATURE_FIELD]: "14" });
+
+    expect(status).toBe(422);
+    expectRemovedFieldViolation(json);
+  });
+
+  it("GET /diary/{id} — yanıtta eski alan YOK; eski fikstürün max sıcaklığı `temp_max_c`de korunur", async () => {
+    const detail = await getJson<Record<string, unknown>>("/diary/d-1");
+
+    expect(detail).not.toHaveProperty(DIARY_REMOVED_TEMPERATURE_FIELD);
+    expect(detail.temp_max_c).toBe("28.0");
   });
 });

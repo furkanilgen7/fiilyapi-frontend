@@ -49,7 +49,6 @@ const ENTRY = {
   status: "submitted",
   // Kartların içeriği bu entegrasyonun konusu değil — boş/kapalı gün.
   weather: null,
-  temperature_c: null,
   work_done: null,
   chief_note: null,
   safety_meeting_held: false,

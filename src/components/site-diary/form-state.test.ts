@@ -52,7 +52,7 @@ function entry(overrides: Partial<SiteDiaryEntryDetail> = {}): SiteDiaryEntryDet
     entry_date: "2026-07-15",
     section_id: "sec-1",
     weather: "sunny",
-    temperature_c: "28.0",
+    temp_max_c: "28.0",
     work_done: "6. kat döşeme betonu döküldü.",
     chief_note: "Beton pompası sahada.",
     safety_meeting_held: true,
@@ -133,7 +133,7 @@ describe("diaryFormFromEntry", () => {
 
   it("null alanları boş dizeye düşürür (kontrollü girdiler `null` almaz)", () => {
     const form = diaryFormFromEntry(
-      entry({ section_id: null, section_name: null, weather: null, temperature_c: null, work_done: null, chief_note: null }),
+      entry({ section_id: null, section_name: null, weather: null, temp_max_c: null, work_done: null, chief_note: null }),
     );
 
     expect(form.sectionId).toBe("");
@@ -145,10 +145,8 @@ describe("diaryFormFromEntry", () => {
     expect(form.chiefNote).toBe("");
   });
 
-  it("PLN-F2.1: yeni hava alanları (min/max/rüzgâr) forma taşınır; max eski `temperature_c`yi ezer", () => {
-    const form = diaryFormFromEntry(
-      entry({ temperature_c: "30.0", temp_min_c: "12.5", temp_max_c: "30.0", wind_ms: "4.5" }),
-    );
+  it("PLN-F2.1: yeni hava alanları (min/max/rüzgâr) forma taşınır", () => {
+    const form = diaryFormFromEntry(entry({ temp_min_c: "12.5", temp_max_c: "30.0", wind_ms: "4.5" }));
 
     expect(form).toMatchObject({ tempMinC: "12.5", tempMaxC: "30.0", windMs: "4.5" });
   });
@@ -232,8 +230,6 @@ describe("buildDiaryCreateBody", () => {
     expect(body).not.toHaveProperty("lines");
     expect(body).not.toHaveProperty("worker_counts");
     expect(body).not.toHaveProperty("status");
-    // Kullanımdan kalkan alan GÖNDERİLMEZ: backend onu min=max'a yayardı.
-    expect(body).not.toHaveProperty("temperature_c");
   });
 
   it("bölüm/hava seçilmediyse null gider (alanlar nullable)", () => {
@@ -259,7 +255,6 @@ describe("buildDiaryUpdateBody", () => {
     expect(body.worker_counts).toEqual([
       { trade: "Kalıpçılar", source: "company", count: 14, subcontractor_id: null, hours: null },
     ]);
-    expect(body).not.toHaveProperty("temperature_c");
   });
 
   it("PLN-F2.1: kayıttaki FİRMA satırı (kişi × saat) ekranda olmasa da gövdede KORUNUR", () => {
@@ -280,7 +275,7 @@ describe("buildDiaryUpdateBody", () => {
     ]);
   });
 
-  it("PLN-F2.1: hava gövdesi yeni alanlarla gider (min/max/rüzgâr), `temperature_c` gitmez", () => {
+  it("PLN-F2.1 + CLEAN-B1: hava gövdesi yalnız min/max/rüzgârla gider — eski sıcaklık alanı YOK (backend 422)", () => {
     const form: DiaryFormState = {
       ...diaryFormFromEntry(entry()),
       tempMinC: "11",
@@ -291,7 +286,24 @@ describe("buildDiaryUpdateBody", () => {
     const body = buildDiaryUpdateBody(form, entry());
 
     expect(body).toMatchObject({ temp_min_c: 11, temp_max_c: 24.5, wind_ms: 3 });
-    expect(body).not.toHaveProperty("temperature_c");
+    // Anahtar kümesi BİREBİR: tanınmayan her alan (eski sıcaklık dahil) backend'de 422.
+    expect(Object.keys(body).sort()).toEqual(
+      [
+        "chief_note",
+        "entry_date",
+        "has_incident",
+        "incident_note",
+        "ppe_checked",
+        "safety_meeting_held",
+        "section_id",
+        "temp_max_c",
+        "temp_min_c",
+        "weather",
+        "wind_ms",
+        "work_done",
+        "worker_counts",
+      ].sort(),
+    );
   });
 
   it("geçersiz işçi hücresi varsa alan HİÇ gönderilmez (mevcut kırılım korunur)", () => {

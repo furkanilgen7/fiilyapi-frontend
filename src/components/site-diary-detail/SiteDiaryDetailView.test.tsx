@@ -57,7 +57,6 @@ function entry(overrides: Partial<SiteDiaryEntryDetail> = {}): SiteDiaryEntryDet
     updated_at: "2026-09-24T15:40:00Z",
     // İskelet testi: kartların içeriği bu dosyanın konusu değil — boş/kapalı gün.
     weather: null,
-    temperature_c: null,
     work_done: null,
     chief_note: null,
     safety_meeting_held: false,

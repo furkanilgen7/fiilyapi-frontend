@@ -122,7 +122,6 @@ function entry(): SiteDiaryEntryDetail {
     entry_date: TODAY,
     section_id: null,
     weather: "sunny",
-    temperature_c: "28.0",
     temp_min_c: "17.0",
     temp_max_c: "28.0",
     wind_ms: "4.2",

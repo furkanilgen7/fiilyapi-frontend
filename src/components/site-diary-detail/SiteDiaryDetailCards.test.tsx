@@ -86,7 +86,6 @@ function entry(overrides: Partial<SiteDiaryEntryDetail> = {}): SiteDiaryEntryDet
     weather: "partly_cloudy",
     temp_min_c: "17.0",
     temp_max_c: "28.0",
-    temperature_c: "28.0",
     wind_ms: "4.2",
     safety_meeting_held: true,
     ppe_checked: true,

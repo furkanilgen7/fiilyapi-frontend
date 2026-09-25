@@ -38,7 +38,6 @@ function entryDetail(id: string): SiteDiaryEntryDetail {
     entry_date: "2026-07-15",
     section_id: null,
     weather: "sunny",
-    temperature_c: null,
     work_done: null,
     chief_note: null,
     safety_meeting_held: false,

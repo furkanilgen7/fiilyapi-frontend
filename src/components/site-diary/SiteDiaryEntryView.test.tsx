@@ -111,7 +111,7 @@ function entryDetail(overrides: Partial<SiteDiaryEntryDetail> = {}): SiteDiaryEn
     entry_date: TODAY,
     section_id: null,
     weather: "sunny",
-    temperature_c: "28.0",
+    temp_max_c: "28.0",
     work_done: "6. kat döşeme betonu döküldü.",
     chief_note: null,
     safety_meeting_held: true,

@@ -73,7 +73,6 @@ function WeatherGlyph({ value }: { value: SiteDiaryEntryDetail["weather"] }) {
 /** 259-281 — "📅 Temel Bilgiler & Hava" (İ:163-207): yalnız SEÇİLİ hava, girdiler düz metin. */
 export function DiaryDetailBasicInfo({ entry }: { entry: SiteDiaryEntryDetail }) {
   const weatherLabel = WEATHER_ICONS.find((item) => item.value === entry.weather)?.label ?? EMPTY_CELL;
-  const tempMax = entry.temp_max_c ?? entry.temperature_c;
   return (
     <section className="diary-detail-card diary-detail-card--side" aria-labelledby="diary-detail-basic">
       <h2 className="diary-detail-card__title diary-detail-card__title--sm" id="diary-detail-basic">
@@ -98,7 +97,7 @@ export function DiaryDetailBasicInfo({ entry }: { entry: SiteDiaryEntryDetail })
             {formatDecimal(entry.temp_min_c, 1)}
           </Field>
           <Field label="Max °C" mono>
-            {formatDecimal(tempMax, 1)}
+            {formatDecimal(entry.temp_max_c, 1)}
           </Field>
           <Field label="Rüzgâr m/s" mono>
             {formatDecimal(entry.wind_ms, 1)}{" "}

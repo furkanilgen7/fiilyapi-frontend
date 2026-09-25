@@ -19084,12 +19084,6 @@ export interface components {
             temp_max_c?: number | string | null;
             /** Temp Min C */
             temp_min_c?: number | string | null;
-            /**
-             * Temperature C
-             * @deprecated
-             * @description KULLANIMDAN KALKIYOR (PLN-B2.1): `temp_min_c` + `temp_max_c` kullanın. İstekte yeni alanlar YOKSA kabul edilir ve ikisine de yazılır; yeni alanlardan biri gelirse bu alan YOK SAYILIR. Yanıtta `temp_max_c`nin salt okunur kopyasıdır.
-             */
-            temperature_c?: number | string | null;
             weather?: components["schemas"]["Weather"] | null;
             /** Wind Ms */
             wind_ms?: number | string | null;
@@ -19182,12 +19176,6 @@ export interface components {
             temp_max_c?: string | null;
             /** Temp Min C */
             temp_min_c?: string | null;
-            /**
-             * Temperature C
-             * @deprecated
-             * @description KULLANIMDAN KALKIYOR (PLN-B2.1): `temp_min_c` + `temp_max_c` kullanın. İstekte yeni alanlar YOKSA kabul edilir ve ikisine de yazılır; yeni alanlardan biri gelirse bu alan YOK SAYILIR. Yanıtta `temp_max_c`nin salt okunur kopyasıdır.
-             */
-            temperature_c: string | null;
             /**
              * Updated At
              * Format: date-time
@@ -19307,12 +19295,6 @@ export interface components {
             temp_max_c?: number | string | null;
             /** Temp Min C */
             temp_min_c?: number | string | null;
-            /**
-             * Temperature C
-             * @deprecated
-             * @description KULLANIMDAN KALKIYOR (PLN-B2.1): `temp_min_c` + `temp_max_c` kullanın. İstekte yeni alanlar YOKSA kabul edilir ve ikisine de yazılır; yeni alanlardan biri gelirse bu alan YOK SAYILIR. Yanıtta `temp_max_c`nin salt okunur kopyasıdır.
-             */
-            temperature_c?: number | string | null;
             weather?: components["schemas"]["Weather"] | null;
             /** Wind Ms */
             wind_ms?: number | string | null;
