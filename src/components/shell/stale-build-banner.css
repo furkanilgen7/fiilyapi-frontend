@@ -1,0 +1,18 @@
+/* PLN-F2.0 — sürüm bandı. Uzun formun ortasındaki kullanıcı da görsün diye
+   üst çubuğun (52px, `topbar.css`) hemen altına yapışır; üst çubuğun
+   (z-index 100) ALTINDA kalır. */
+.stale-build-banner {
+  position: sticky;
+  top: 52px;
+  z-index: 50;
+  margin-bottom: var(--space-4);
+}
+.stale-build-banner .alert-body {
+  flex: 1;
+}
+.stale-build-banner__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}

@@ -3,6 +3,14 @@ import { proxyAuthenticated, proxyAuthenticatedRaw } from "@/lib/auth/backend";
 import { applyAuthCookies, buildAccessCookie, clearedAuthCookies } from "@/lib/auth/cookies";
 import { ACCESS_COOKIE, REFRESH_COOKIE } from "@/lib/auth/constants";
 import { assertSameOrigin } from "@/lib/auth/csrf";
+import {
+  APP_BUILD_HEADER,
+  STALE_BUILD_CODE,
+  STALE_BUILD_MESSAGE,
+  STALE_BUILD_STATUS,
+  currentBuildId,
+  isBuildMismatch,
+} from "@/lib/api/app-build";
 
 // Yalniz beklenen kokler forward edilir (SSRF/kesif yuzeyini daraltir).
 const ALLOWED_ROOTS = new Set([
@@ -461,6 +469,22 @@ async function handle(request: NextRequest, method: string, routeCtx: RouteCtx):
     return NextResponse.json({ ok: false, code: "forbidden" }, { status: 403 });
   }
 
+  // 🔴 PLN-F2.0 SÜRÜM KAPISI — eski paketin YAZMASI backend'e ULAŞMAZ.
+  // Değiştirme semantiğindeki uçlar (`PUT /diary/{id}/lines`, `worker_counts`)
+  // eski paketin tanımadığı satırları SİLEREK yazar. İstemci her isteğe kendi
+  // build kimliğini koyar; farklıysa 412 döner ve istemci yanıt başlığından
+  // "eski sürüm" bandını açar. Yalnız yanıt başlığına bakmak sürümden sonraki
+  // İLK yazmayı durduramazdı (fark ancak o yazmanın yanıtında görülür).
+  // Başlık YOKSA geçer (fail-open): bu sürümden önce yüklenmiş sekme ya da
+  // tarayıcı dışı çağıran (Playwright `page.request`, curl smoke) — gerekçe
+  // `@/lib/api/app-build` başında.
+  if (isBuildMismatch(request.headers.get(APP_BUILD_HEADER), currentBuildId())) {
+    return NextResponse.json(
+      { ok: false, code: STALE_BUILD_CODE, detail: STALE_BUILD_MESSAGE },
+      { status: STALE_BUILD_STATUS },
+    );
+  }
+
   // F-BC — multipart gövde (belge yükleme) JSON'a ÇEVRİLMEZ: `request.json()`
   // bu gövdeyi çözemez, `body` `undefined`a düşer ve backend'e boundary'si
   // kaybolmuş boş bir istek gider (her yükleme 422). Gövde ham bayt olarak
@@ -515,18 +539,29 @@ async function handle(request: NextRequest, method: string, routeCtx: RouteCtx):
   return res;
 }
 
-export function GET(request: NextRequest, routeCtx: RouteCtx): Promise<NextResponse> {
-  return handle(request, "GET", routeCtx);
+/**
+ * PLN-F2.0 — HER yanıt (404/401/412/502/ikili dahil) sunucunun build
+ * kimliğini taşır; istemci farkı görünce "eski sürüm" bandını açar. Tek yerde
+ * eklenir ki `handle`ın erken dönüşlerinden biri başlıksız kaçmasın.
+ */
+function withBuildHeader(res: NextResponse): NextResponse {
+  const buildId = currentBuildId();
+  if (buildId) res.headers.set(APP_BUILD_HEADER, buildId);
+  return res;
 }
-export function POST(request: NextRequest, routeCtx: RouteCtx): Promise<NextResponse> {
-  return handle(request, "POST", routeCtx);
+
+export async function GET(request: NextRequest, routeCtx: RouteCtx): Promise<NextResponse> {
+  return withBuildHeader(await handle(request, "GET", routeCtx));
 }
-export function PATCH(request: NextRequest, routeCtx: RouteCtx): Promise<NextResponse> {
-  return handle(request, "PATCH", routeCtx);
+export async function POST(request: NextRequest, routeCtx: RouteCtx): Promise<NextResponse> {
+  return withBuildHeader(await handle(request, "POST", routeCtx));
 }
-export function PUT(request: NextRequest, routeCtx: RouteCtx): Promise<NextResponse> {
-  return handle(request, "PUT", routeCtx);
+export async function PATCH(request: NextRequest, routeCtx: RouteCtx): Promise<NextResponse> {
+  return withBuildHeader(await handle(request, "PATCH", routeCtx));
 }
-export function DELETE(request: NextRequest, routeCtx: RouteCtx): Promise<NextResponse> {
-  return handle(request, "DELETE", routeCtx);
+export async function PUT(request: NextRequest, routeCtx: RouteCtx): Promise<NextResponse> {
+  return withBuildHeader(await handle(request, "PUT", routeCtx));
+}
+export async function DELETE(request: NextRequest, routeCtx: RouteCtx): Promise<NextResponse> {
+  return withBuildHeader(await handle(request, "DELETE", routeCtx));
 }

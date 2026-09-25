@@ -1,3 +1,4 @@
+import { guardedFetch } from "@/lib/api/app-build";
 import { BackendError } from "@/lib/api/unwrap";
 import { downloadAttachment } from "@/lib/api/download";
 import type { components } from "@/lib/api/schema";
@@ -86,7 +87,7 @@ function buildImportForm(input: UnitImportUploadInput): FormData {
  * yok") gövdeleri YUTULMAZ — ekran Türkçe `detail` mesajını basar.
  */
 async function postImportForm<T>(path: string, input: UnitImportUploadInput): Promise<T> {
-  const response = await globalThis.fetch(path, {
+  const response = await guardedFetch(path, {
     method: "POST",
     credentials: "same-origin",
     body: buildImportForm(input),
