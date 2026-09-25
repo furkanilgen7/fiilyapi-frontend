@@ -94,6 +94,9 @@
 
 /* ── Yapılan Miktarlar ağacı (İ:217-253 · EF M1-M4) ────────────────────── */
 .diary-lines__scroll {
+  /* Konumlanmış içeren blok: `.diary-lines__sr` (absolute) kabın içinde kalır
+     ve kırpılır — yoksa 1024 px'te sayfayı yatay taşırıyordu (PLN-F2.5). */
+  position: relative;
   overflow-x: auto;
 }
 .diary-lines--tree {
