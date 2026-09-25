@@ -15,7 +15,6 @@ type ManagerView =
   | { kind: "delete"; discipline: EvDisciplineRead };
 
 interface DisciplineManagerProps {
-  itemCounts: ReadonlyMap<string, number> | null;
   canWrite: boolean;
   canDelete: boolean;
   onClose: () => void;
@@ -30,7 +29,7 @@ interface DisciplineManagerProps {
  * Tab'ı birbirinden çalar). Bu yüzden görünümler SIRAYLA açılır; kayıt/silme
  * sonrası listeye bildirimle dönülür (M6:164 başarı bandı).
  */
-export function DisciplineManager({ itemCounts, canWrite, canDelete, onClose }: DisciplineManagerProps) {
+export function DisciplineManager({ canWrite, canDelete, onClose }: DisciplineManagerProps) {
   const disciplines = useEvDisciplines();
   const [view, setView] = useState<ManagerView>({ kind: "list", toast: null });
   const backToList = (toast: string | null = null) => setView({ kind: "list", toast });
@@ -56,7 +55,6 @@ export function DisciplineManager({ itemCounts, canWrite, canDelete, onClose }: 
       isLoading={disciplines.isLoading}
       isError={disciplines.isError}
       onRetry={() => void disciplines.refetch()}
-      itemCounts={itemCounts}
       canWrite={canWrite}
       canDelete={canDelete}
       toast={view.toast}

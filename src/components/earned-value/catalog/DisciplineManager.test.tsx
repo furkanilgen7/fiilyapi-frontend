@@ -5,7 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { backendClient } from "@/lib/api/client";
 import type { AccessLevel } from "@/lib/auth/permissions";
 
-import { BETON, DEMIR, DUV, INC, KAB, SIVA, fail, mockGets, ok, renderScreen } from "./catalog-test-utils";
+import { BETON, DEMIR, DUV, ELK_SITE_ONLY, INC, KAB, SIVA, fail, mockGets, ok, renderScreen } from "./catalog-test-utils";
 
 vi.mock("@/lib/api/client", () => ({
   backendClient: { GET: vi.fn(), POST: vi.fn(), PATCH: vi.fn(), DELETE: vi.fn() },
@@ -42,22 +42,25 @@ function rowOf(dialog: HTMLElement, code: string): HTMLElement {
 }
 
 describe("liste modalı (M6 · Disiplin Yönetimi:147-221)", () => {
-  it("renk karesi VERİDEN, kod, ad, varsayılan rozet, kullanan iş tipi sayısı", async () => {
+  it("renk karesi VERİDEN, kod, ad, varsayılan rozet; kullanım sayıları API'den (M6:190-193)", async () => {
     const dialog = await openManager();
     const kab = within(rowOf(dialog, "KAB"));
     expect(kab.getByText("Kaba İnşaat")).toBeInTheDocument();
     expect(kab.getByText("Kendi")).toBeInTheDocument();
-    expect(kab.getByText("2 iş tipi")).toBeInTheDocument();
+    // Katalog fikstüründe KAB'a bağlı 2 kalem var; ekran API'nin 6'sını basar.
+    expect(kab.getByText("6 iş tipi")).toBeInTheDocument();
+    expect(kab.getByText("4 şantiye")).toBeInTheDocument();
     expect(kab.getByTestId("discipline-swatch")).toHaveStyle({ backgroundColor: "#2563eb" });
     expect(within(rowOf(dialog, "DUV")).getByText("Taşeron")).toBeInTheDocument();
-    expect(within(rowOf(dialog, "INC")).getByText("0 iş tipi")).toBeInTheDocument();
-  });
-
-  it("CEO kararı (f): şantiye sayısı BASILMAZ — '— şantiye' hiçbir satırda yok; açıklama yalnız iş tipini tanımlar", async () => {
-    const dialog = await openManager();
-    expect(within(dialog).queryByText(/şantiye$/)).not.toBeInTheDocument();
+    const inc = within(rowOf(dialog, "INC"));
+    expect(inc.getByText("0 iş tipi")).toBeInTheDocument();
+    expect(inc.getByText("0 şantiye")).toBeInTheDocument();
     expect(within(dialog).queryByText(/—\s*şantiye/)).not.toBeInTheDocument();
-    expect(within(dialog).getByText("Kullanan = bu disipline bağlı iş tipi")).toBeInTheDocument();
+    expect(
+      within(dialog).getByText(
+        "Kullanan = bu disipline bağlı iş tipi · bütçesinde BOQ grubu bu disipline eşlenmiş şantiye",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("kullanımdaki disiplinde Sil PASİF ve gerekçe EKRANDA (title değil)", async () => {
@@ -71,6 +74,28 @@ describe("liste modalı (M6 · Disiplin Yönetimi:147-221)", () => {
     const inc = within(rowOf(dialog, "INC"));
     expect(inc.getByRole("button", { name: "Sil" })).toBeEnabled();
     expect(inc.queryByText("Kullanımda · silinemez")).not.toBeInTheDocument();
+  });
+
+  it("iş tipi 0 ama şantiye > 0 → yine Sil PASİF (B1-9, API sayısı)", async () => {
+    mockGets({ disciplines: [KAB, INC, ELK_SITE_ONLY], catalog: [BETON] });
+    const dialog = await openManager();
+    const elk = within(rowOf(dialog, "ELK"));
+    expect(elk.getByText("0 iş tipi")).toBeInTheDocument();
+    expect(elk.getByText("2 şantiye")).toBeInTheDocument();
+    expect(elk.getByRole("button", { name: "Sil" })).toBeDisabled();
+    expect(elk.getByText("Kullanımda · silinemez")).toBeVisible();
+  });
+
+  it("sil kuralı katalogdan BAĞIMSIZ: katalog yüklenemese de kullanılmayan disiplin silinebilir", async () => {
+    const user = userEvent.setup();
+    vi.mocked(backendClient.GET).mockImplementation((async (path: string) =>
+      path === "/earned-value/disciplines" ? ok([KAB, INC]) : fail(500, "x")) as never);
+    renderScreen();
+    await screen.findByText("Katalog yüklenemedi");
+    await user.click(screen.getByRole("button", { name: "Disiplinleri yönet" }));
+    const dialog = screen.getByRole("dialog", { name: "Disiplinler" });
+    expect(within(rowOf(dialog, "INC")).getByRole("button", { name: "Sil" })).toBeEnabled();
+    expect(within(rowOf(dialog, "KAB")).getByRole("button", { name: "Sil" })).toBeDisabled();
   });
 
   it("full (admin değil): Düzenle var, Sil YOK (B1-9 sil = admin)", async () => {
@@ -209,6 +234,8 @@ describe("silme onayı (M6:307-337)", () => {
 
     const confirm = screen.getByRole("dialog", { name: "İnce İşler disiplini silinsin mi?" });
     expect(within(confirm).getByText("Kullanan iş tipi").nextElementSibling).toHaveTextContent("0");
+    expect(within(confirm).getByText("Kullanan şantiye").nextElementSibling).toHaveTextContent("0");
+    expect(within(confirm).queryByText(/—\s*şantiye/)).not.toBeInTheDocument();
     await user.click(within(confirm).getByRole("button", { name: "Disiplini sil" }));
 
     await waitFor(() =>
@@ -218,16 +245,6 @@ describe("silme onayı (M6:307-337)", () => {
     );
     const list = await screen.findByRole("dialog", { name: "Disiplinler" });
     expect(within(list).getByText("İnce İşler silindi")).toBeInTheDocument();
-  });
-
-  it("CEO kararı (f): onay özetinde 'Kullanan şantiye' satırı YOK", async () => {
-    const user = userEvent.setup();
-    const dialog = await openManager();
-    await user.click(within(rowOf(dialog, "INC")).getByRole("button", { name: "Sil" }));
-    const confirm = screen.getByRole("dialog", { name: "İnce İşler disiplini silinsin mi?" });
-    expect(within(confirm).queryByText("Kullanan şantiye")).not.toBeInTheDocument();
-    expect(within(confirm).queryByText(/—\s*şantiye/)).not.toBeInTheDocument();
-    expect(within(confirm).getByText("Kullanan iş tipi")).toBeInTheDocument();
   });
 
   it("409 (bütçede eşlenmiş) → mesaj onay modalında kalır", async () => {

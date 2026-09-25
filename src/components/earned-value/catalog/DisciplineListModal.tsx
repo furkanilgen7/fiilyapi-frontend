@@ -4,7 +4,6 @@ import { Modal } from "@/components/settings/Modal";
 import { ErrorCard, ReadOnlyStrip, Skeleton, SkeletonRows } from "@/components/earned-value/common/state";
 import { Button } from "@/components/ui";
 import { cx } from "@/lib/cx";
-import { EMPTY_CELL } from "@/lib/format";
 import type { EvDisciplineRead } from "@/lib/api/models";
 
 import { ContractorBadge, DisciplineSwatch } from "./CatalogBits";
@@ -14,8 +13,6 @@ interface DisciplineListModalProps {
   isLoading: boolean;
   isError: boolean;
   onRetry: () => void;
-  /** Disiplin başına katalog iş tipi sayısı; katalog yüklenmediyse null (sil kapalı kalır). */
-  itemCounts: ReadonlyMap<string, number> | null;
   /** B1-8: full ve üstü — ekle / düzenle. */
   canWrite: boolean;
   /** B1-9: admin — sil. */
@@ -34,20 +31,17 @@ const SKELETON_ROWS = 3;
 /**
  * M6:147-221 — "Disiplinler" liste modalı.
  *
- * "Kullanan" sütunu: API `DisciplineRead` kullanım sayısı TAŞIMIYOR. İş tipi
- * sayısı katalogdan türetilir. ŞANTİYE SAYISI BASILMAZ (M6:192 alt satırı yok)
- * — kaynak: CEO kararı (f), PLN-F1.5. Backend `DisciplineRead`'e
- * `used_by_item_count` + `used_by_site_count` ekleyecek (PLN-B2); F2.1 devrinde
- * bu sütun o alanlara bağlanır. Sil yalnız iş tipi sayısı 0 iken açıktır; başka kullanım
- * (BOQ grubu eşlemesi, baseline) varsa backend 409 döner ve onay modalında
- * gösterilir (B1-9).
+ * "Kullanan" sütunu (M6:190-193): `used_by_item_count` iş tipi · altında
+ * `used_by_site_count` şantiye — ikisi de API'den (PLN-B2 sözleşmesi,
+ * PLN-F1.5.2'de bağlandı; önceki turdaki katalogdan türetme kalktı). Sil
+ * yalnız ikisi de 0 iken açıktır (B1-9); gerekçe düğmenin altında düz metin
+ * (M6:204). Yarışta kullanım doğarsa backend 409 döner, onay modalında gösterilir.
  */
 export function DisciplineListModal({
   disciplines,
   isLoading,
   isError,
   onRetry,
-  itemCounts,
   canWrite,
   canDelete,
   toast,
@@ -105,7 +99,6 @@ export function DisciplineListModal({
         {disciplines && disciplines.length > 0 && (
           <DisciplineTable
             disciplines={disciplines}
-            itemCounts={itemCounts}
             canWrite={canWrite}
             canDelete={canDelete}
             onEdit={onEdit}
@@ -113,8 +106,7 @@ export function DisciplineListModal({
           />
         )}
         <div className="ev-cat-dlist__foot">
-          {/* M6:214 ikinci yarısı ("… eşlenmiş şantiye") BASILMAZ — şantiye sayısı gösterilmiyor (CEO kararı f). */}
-          <span>Kullanan = bu disipline bağlı iş tipi</span>
+          <span>Kullanan = bu disipline bağlı iş tipi · bütçesinde BOQ grubu bu disipline eşlenmiş şantiye</span>
           <span>{canWrite ? "Sil yalnız kullanılmayan disiplinde açıktır" : "Değişiklik için tam yetki gerekir"}</span>
         </div>
       </div>
@@ -124,14 +116,13 @@ export function DisciplineListModal({
 
 interface DisciplineTableProps {
   disciplines: readonly EvDisciplineRead[];
-  itemCounts: ReadonlyMap<string, number> | null;
   canWrite: boolean;
   canDelete: boolean;
   onEdit: (discipline: EvDisciplineRead) => void;
   onDelete: (discipline: EvDisciplineRead) => void;
 }
 
-function DisciplineTable({ disciplines, itemCounts, canWrite, canDelete, onEdit, onDelete }: DisciplineTableProps) {
+function DisciplineTable({ disciplines, canWrite, canDelete, onEdit, onDelete }: DisciplineTableProps) {
   return (
     <div className="ev-cat-dlist">
       <table>
@@ -155,9 +146,10 @@ function DisciplineTable({ disciplines, itemCounts, canWrite, canDelete, onEdit,
         </thead>
         <tbody>
           {disciplines.map((discipline) => {
-            const count = itemCounts?.get(discipline.id) ?? (itemCounts ? 0 : null);
-            // Sayı bilinmiyorsa (katalog yüklenmedi) güvenli taraf: kullanımda say.
-            const isInUse = count === null || count > 0;
+            const itemCount = discipline.used_by_item_count;
+            const siteCount = discipline.used_by_site_count;
+            // B1-9: iş tipi YA DA şantiye bütçesi kullanıyorsa silinemez (API sayıları).
+            const isInUse = itemCount > 0 || siteCount > 0;
             return (
               <tr key={discipline.id}>
                 <td>
@@ -172,9 +164,10 @@ function DisciplineTable({ disciplines, itemCounts, canWrite, canDelete, onEdit,
                 </td>
                 <td>
                   <span className="ev-cat-dlist__used">
-                    <span className={cx("ev-cat-dlist__used-main", count === 0 && "ev-cat-dlist__used-main--zero")}>
-                      {`${count ?? EMPTY_CELL} iş tipi`}
+                    <span className={cx("ev-cat-dlist__used-main", !isInUse && "ev-cat-dlist__used-main--zero")}>
+                      {`${itemCount} iş tipi`}
                     </span>
+                    <span className="ev-cat-dlist__used-sub">{`${siteCount} şantiye`}</span>
                   </span>
                 </td>
                 <td>

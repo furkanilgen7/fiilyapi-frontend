@@ -6079,6 +6079,106 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sites/{site_id}/earned-value/code-tree": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Code Tree
+         * @description "+ Is kodu ekle" secicisi: AKTIF baseline agaci (oransiz yaprak `has_rate=false`).
+         */
+        get: operations["get_code_tree_sites__site_id__earned_value_code_tree_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sites/{site_id}/earned-value/days/{day}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Day
+         * @description Gunun dagitim baglami + kilit + ilerleme onizlemesi + Gonder kontrolu (§4.2).
+         */
+        get: operations["get_day_sites__site_id__earned_value_days__day__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sites/{site_id}/earned-value/days/{day}/allocation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Put Day Allocation
+         * @description Gunun saat dagitimi — TAM DEGISTIRME. Kilitli gun 409 · baseline yok 409.
+         */
+        put: operations["put_day_allocation_sites__site_id__earned_value_days__day__allocation_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sites/{site_id}/earned-value/days/{day}/previous-allocation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Previous Allocation
+         * @description B2-7 "Dunku dagilimi kopyala": son GONDERILMIS gunun deseni (satir basina pay).
+         */
+        get: operations["get_previous_allocation_sites__site_id__earned_value_days__day__previous_allocation_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sites/{site_id}/earned-value/days/{day}/unlock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Unlock Day
+         * @description Gun duzeyi kilit istisnasi (B2-6 b) — gerekceli; kilitli degilse 409.
+         */
+        post: operations["unlock_day_sites__site_id__earned_value_days__day__unlock_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sites/{site_id}/earned-value/settings": {
         parameters: {
             query?: never;
@@ -7836,6 +7936,18 @@ export interface components {
             /** Kume */
             kume: string;
         };
+        /**
+         * AllocationSave
+         * @description TAM DEGISTIRME: govde gunun kod + hucre kumesinin TAMAMIDIR.
+         */
+        AllocationSave: {
+            /** Cells */
+            cells: components["schemas"]["CellIn"][];
+            /** Codes */
+            codes: components["schemas"]["CodeIn"][];
+            /** Unallocated Reason */
+            unallocated_reason?: string | null;
+        };
         /** AmbiguousItemOut */
         AmbiguousItemOut: {
             /**
@@ -9090,6 +9202,31 @@ export interface components {
             /** Uom */
             uom?: string | null;
         };
+        /** CellIn */
+        CellIn: {
+            /** Hours */
+            hours: number | string;
+            /** Node Id */
+            node_id: string;
+            row: components["schemas"]["RowRef"];
+        };
+        /** CellOut */
+        CellOut: {
+            /** Hours */
+            hours: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "personnel" | "subcontractor";
+            /** Node Id */
+            node_id: string;
+            /**
+             * Ref Id
+             * Format: uuid
+             */
+            ref_id: string;
+        };
         /**
          * ChartAccountCreate
          * @description `POST /chart-of-accounts` (HP:50 `+ Hesap Ekle`).
@@ -9241,6 +9378,49 @@ export interface components {
             is_contra?: boolean | null;
             /** Name */
             name?: string | null;
+        };
+        /** CodeIn */
+        CodeIn: {
+            /** Node Id */
+            node_id: string;
+            /**
+             * Rule
+             * @enum {string}
+             */
+            rule: "direct" | "prorata_by_daily_qty";
+        };
+        /** CodeNodeOut */
+        CodeNodeOut: {
+            /** Code */
+            code: string | null;
+            /** Has Rate */
+            has_rate: boolean | null;
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            /** Level */
+            level: number;
+            /** Parent Id */
+            parent_id: string | null;
+            /** Unit Mhr */
+            unit_mhr: string | null;
+            /** Uom */
+            uom: string | null;
+        };
+        /** CodeOut */
+        CodeOut: {
+            /** Label */
+            label: string | null;
+            /** Level */
+            level: number | null;
+            /** Node Id */
+            node_id: string;
+            /**
+             * Rule
+             * @enum {string}
+             */
+            rule: "direct" | "prorata_by_daily_qty";
         };
         /**
          * CollectionKpi
@@ -9773,6 +9953,36 @@ export interface components {
             /** Planned Pct Cum */
             planned_pct_cum: string | null;
         };
+        /** DayView */
+        DayView: {
+            /** Cells */
+            cells: components["schemas"]["CellOut"][];
+            /** Codes */
+            codes: components["schemas"]["CodeOut"][];
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            /** Day No */
+            day_no: number | null;
+            /** Has Baseline */
+            has_baseline: boolean;
+            lock: components["schemas"]["LockOut"];
+            progress: components["schemas"]["ProgressOut"] | null;
+            /** Revision Number */
+            revision_number: number | null;
+            /** Rows */
+            rows: components["schemas"]["RowOut"][];
+            submit: components["schemas"]["SubmitCheckOut"] | null;
+            totals: components["schemas"]["TotalsOut"];
+            /** Unallocated Reason */
+            unallocated_reason: string | null;
+            /** Warnings */
+            warnings: string[];
+            /** Week No */
+            week_no: number | null;
+        };
         /**
          * DeedCondition
          * @description F156 "Tapu Devir Kosulu": Tum odeme tamamlaninca · Pesinat sonrasi · Sozlesme imzasinda.
@@ -9868,6 +10078,16 @@ export interface components {
             name: string;
             /** Sort Order */
             sort_order: number;
+            /**
+             * Used By Item Count
+             * @default 0
+             */
+            used_by_item_count: number;
+            /**
+             * Used By Site Count
+             * @default 0
+             */
+            used_by_site_count: number;
         };
         /**
          * DisciplineRef
@@ -13123,6 +13343,19 @@ export interface components {
             /** Unit Mhr */
             unit_mhr?: number | string | null;
         };
+        /** LeafProgressOut */
+        LeafProgressOut: {
+            /** Earned Day */
+            earned_day: string;
+            /** Node Id */
+            node_id: string;
+            /** Pf Day */
+            pf_day: string | null;
+            /** Qty Day */
+            qty_day: string | null;
+            /** Spent Day */
+            spent_day: string;
+        };
         /**
          * LeaveApproveRequest
          * @description Onay gövdesi — **ALAN YOKTUR** (spec §5 K4: onay TEK adım, veri taşımaz).
@@ -13458,6 +13691,17 @@ export interface components {
             items?: string[];
             /** Pending Module */
             pending_module: string;
+        };
+        /** LockOut */
+        LockOut: {
+            /** Approved At */
+            approved_at: string | null;
+            approved_by: components["schemas"]["UserRef"] | null;
+            /** Locked */
+            locked: boolean;
+            /** Report Date */
+            report_date: string | null;
+            unlock: components["schemas"]["UnlockOut"] | null;
         };
         /** LoginRequest */
         LoginRequest: {
@@ -14841,6 +15085,18 @@ export interface components {
             unspreadable: string[];
         };
         /**
+         * PreviousAllocationOut
+         * @description B2-7: son GONDERILMIS gunun deseni. Doldurma/olcekleme istemcide.
+         */
+        PreviousAllocationOut: {
+            /** Codes */
+            codes: components["schemas"]["CodeIn"][];
+            /** Day */
+            day: string | null;
+            /** Rows */
+            rows: components["schemas"]["RowPatternOut"][];
+        };
+        /**
          * PriceIndexType
          * @description Fiyat farki endeks tipi (spec §2.4). Mockup satir 128 sirasi.
          * @enum {string}
@@ -14857,6 +15113,17 @@ export interface components {
             financial_pct: string | null;
             /** Physical Pct */
             physical_pct: string | null;
+        };
+        /** ProgressOut */
+        ProgressOut: {
+            /** Earned Day */
+            earned_day: string;
+            /** Leaves */
+            leaves: components["schemas"]["LeafProgressOut"][];
+            /** Pf Day */
+            pf_day: string | null;
+            /** Spent Day */
+            spent_day: string;
         };
         /**
          * ProgressPaymentCreate
@@ -16947,6 +17214,63 @@ export interface components {
             /** Name */
             name: string;
         };
+        /** RowOut */
+        RowOut: {
+            /** Changed */
+            changed: boolean;
+            /** Headcount */
+            headcount: number | null;
+            /** Hours */
+            hours: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "personnel" | "subcontractor";
+            /** Label */
+            label: string;
+            /**
+             * Ref Id
+             * Format: uuid
+             */
+            ref_id: string;
+            /** Saved Hours */
+            saved_hours: string | null;
+            /** Source */
+            source: string | null;
+            /** Subcontractor Name */
+            subcontractor_name: string | null;
+            /** Trade */
+            trade: string | null;
+        };
+        /** RowPatternOut */
+        RowPatternOut: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "personnel" | "subcontractor";
+            /**
+             * Ref Id
+             * Format: uuid
+             */
+            ref_id: string;
+            /** Shares */
+            shares: components["schemas"]["ShareOut"][];
+        };
+        /** RowRef */
+        RowRef: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "personnel" | "subcontractor";
+            /**
+             * Ref Id
+             * Format: uuid
+             */
+            ref_id: string;
+        };
         /**
          * SaleCancelInput
          * @description `POST /sales/{id}/cancel` gövdesi — gerekçe ZORUNLUDUR.
@@ -17600,6 +17924,13 @@ export interface components {
             /** Weekly Off Days */
             weekly_off_days: number[];
         };
+        /** ShareOut */
+        ShareOut: {
+            /** Node Id */
+            node_id: string;
+            /** Share */
+            share: string;
+        };
         /**
          * ShareholderInput
          * @description P9 spec §4.1: `id` OPSIYONELDIR ve satirin KIMLIGINI korur.
@@ -17890,9 +18221,19 @@ export interface components {
             safety_meeting_held: boolean;
             /** Section Id */
             section_id?: string | null;
-            /** Temperature C */
+            /** Temp Max C */
+            temp_max_c?: number | string | null;
+            /** Temp Min C */
+            temp_min_c?: number | string | null;
+            /**
+             * Temperature C
+             * @deprecated
+             * @description KULLANIMDAN KALKIYOR (PLN-B2.1): `temp_min_c` + `temp_max_c` kullanın. İstekte yeni alanlar YOKSA kabul edilir ve ikisine de yazılır; yeni alanlardan biri gelirse bu alan YOK SAYILIR. Yanıtta `temp_max_c`nin salt okunur kopyasıdır.
+             */
             temperature_c?: number | string | null;
             weather?: components["schemas"]["Weather"] | null;
+            /** Wind Ms */
+            wind_ms?: number | string | null;
             /** Work Done */
             work_done?: string | null;
         };
@@ -17952,7 +18293,15 @@ export interface components {
             status: components["schemas"]["DiaryStatus"];
             /** Submitted At */
             submitted_at: string | null;
-            /** Temperature C */
+            /** Temp Max C */
+            temp_max_c?: string | null;
+            /** Temp Min C */
+            temp_min_c?: string | null;
+            /**
+             * Temperature C
+             * @deprecated
+             * @description KULLANIMDAN KALKIYOR (PLN-B2.1): `temp_min_c` + `temp_max_c` kullanın. İstekte yeni alanlar YOKSA kabul edilir ve ikisine de yazılır; yeni alanlardan biri gelirse bu alan YOK SAYILIR. Yanıtta `temp_max_c`nin salt okunur kopyasıdır.
+             */
             temperature_c: string | null;
             /**
              * Updated At
@@ -17960,6 +18309,8 @@ export interface components {
              */
             updated_at: string;
             weather: components["schemas"]["Weather"] | null;
+            /** Wind Ms */
+            wind_ms?: string | null;
             /** Work Done */
             work_done: string | null;
             /** Worker Counts */
@@ -18063,9 +18414,19 @@ export interface components {
             safety_meeting_held?: boolean | null;
             /** Section Id */
             section_id?: string | null;
-            /** Temperature C */
+            /** Temp Max C */
+            temp_max_c?: number | string | null;
+            /** Temp Min C */
+            temp_min_c?: number | string | null;
+            /**
+             * Temperature C
+             * @deprecated
+             * @description KULLANIMDAN KALKIYOR (PLN-B2.1): `temp_min_c` + `temp_max_c` kullanın. İstekte yeni alanlar YOKSA kabul edilir ve ikisine de yazılır; yeni alanlardan biri gelirse bu alan YOK SAYILIR. Yanıtta `temp_max_c`nin salt okunur kopyasıdır.
+             */
             temperature_c?: number | string | null;
             weather?: components["schemas"]["Weather"] | null;
+            /** Wind Ms */
+            wind_ms?: number | string | null;
             /** Work Done */
             work_done?: string | null;
             /** Worker Counts */
@@ -18089,8 +18450,12 @@ export interface components {
              * Format: uuid
              */
             boq_item_id: string;
+            /** Overrun Reason */
+            overrun_reason?: string | null;
             /** Quantity */
             quantity: number | string;
+            /** Section Id */
+            section_id?: string | null;
         };
         /**
          * SiteDiaryLineRead
@@ -18110,10 +18475,20 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** Leaf Cumulative Quantity */
+            leaf_cumulative_quantity?: string | null;
             /** Line Amount */
             line_amount: string;
+            /** Overrun Reason */
+            overrun_reason?: string | null;
+            /** Planned Quantity */
+            planned_quantity?: string | null;
             /** Quantity */
             quantity: string;
+            /** Remaining Quantity */
+            remaining_quantity?: string | null;
+            /** Section Id */
+            section_id?: string | null;
             /** Unit */
             unit: string;
             /** Unit Price */
@@ -18208,7 +18583,11 @@ export interface components {
         SiteDiaryWorkerCountInput: {
             /** Count */
             count: number;
+            /** Hours */
+            hours?: number | string | null;
             source: components["schemas"]["WorkerSource"];
+            /** Subcontractor Id */
+            subcontractor_id?: string | null;
             /** Trade */
             trade: string;
         };
@@ -18219,12 +18598,16 @@ export interface components {
         SiteDiaryWorkerCountRead: {
             /** Count */
             count: number;
+            /** Hours */
+            hours?: string | null;
             /**
              * Id
              * Format: uuid
              */
             id: string;
             source: components["schemas"]["WorkerSource"];
+            /** Subcontractor Id */
+            subcontractor_id?: string | null;
             /** Trade */
             trade: string;
         };
@@ -20299,6 +20682,13 @@ export interface components {
             /** Tax Number */
             tax_number?: string | null;
         };
+        /** SubmitCheckOut */
+        SubmitCheckOut: {
+            /** Can Submit */
+            can_submit: boolean;
+            /** Reasons */
+            reasons: string[];
+        };
         /** SuggestionsOut */
         SuggestionsOut: {
             /** Catalog */
@@ -20832,6 +21222,15 @@ export interface components {
              * @default bearer
              */
             token_type: string;
+        };
+        /** TotalsOut */
+        TotalsOut: {
+            /** Allocated Hours */
+            allocated_hours: string;
+            /** Source Hours */
+            source_hours: string;
+            /** Unallocated Hours */
+            unallocated_hours: string;
         };
         /**
          * TrialBalanceResponse
@@ -21739,6 +22138,22 @@ export interface components {
          * @enum {string}
          */
         UnitValueBasis: "list_price" | "appraisal_value";
+        /** UnlockBody */
+        UnlockBody: {
+            /** Reason */
+            reason: string;
+        };
+        /** UnlockOut */
+        UnlockOut: {
+            /** Reason */
+            reason: string;
+            /**
+             * Unlocked At
+             * Format: date-time
+             */
+            unlocked_at: string;
+            unlocked_by: components["schemas"]["UserRef"] | null;
+        };
         /**
          * UpcomingCollection
          * @description S220-234'ün tek satırı: "A · Daire 19 — Hasan Demir · Taksit 6 & 7 …".
@@ -22134,7 +22549,7 @@ export interface components {
          *     "Yağışlı" rozeti (GK370) KOLON DEĞİLDİR — frontend `weather == rainy` türevidir.
          * @enum {string}
          */
-        Weather: "sunny" | "partly_cloudy" | "cloudy" | "rainy" | "snowy";
+        Weather: "sunny" | "partly_cloudy" | "cloudy" | "rainy" | "snowy" | "heavy_rain" | "drizzle" | "windy" | "dusty" | "foggy";
         /** WeekOut */
         WeekOut: {
             /** Mhr */
@@ -37305,6 +37720,243 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BudgetView"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_code_tree_sites__site_id__earned_value_code_tree_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CodeNodeOut"][];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_day_sites__site_id__earned_value_days__day__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+                day: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DayView"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_day_allocation_sites__site_id__earned_value_days__day__allocation_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+                day: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AllocationSave"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DayView"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_previous_allocation_sites__site_id__earned_value_days__day__previous_allocation_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+                day: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreviousAllocationOut"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unlock_day_sites__site_id__earned_value_days__day__unlock_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+                day: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UnlockBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LockOut"];
                 };
             };
             /** @description Yetkisiz işlem */

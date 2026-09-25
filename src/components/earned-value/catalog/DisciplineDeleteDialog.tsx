@@ -15,10 +15,9 @@ interface DisciplineDeleteDialogProps {
 }
 
 /**
- * M6:316-335 — silme onayı (yalnız iş tipi sayısı 0 olan disiplinde açılır).
- * Özetteki "Kullanan şantiye" satırı (M6:327) BASILMAZ — CEO kararı (f),
- * PLN-F1.5; backend `DisciplineRead.used_by_site_count` (PLN-B2) F2.1 devrinde
- * bağlanır. Metin şantiye kullanımını iddia etmez; bütçede eşlenmişse backend
+ * M6:316-335 — silme onayı (yalnız kullanılmayan disiplinde açılır). Özetteki
+ * iş tipi / şantiye sayıları API'den (`used_by_item_count` · `used_by_site_count`,
+ * PLN-B2 sözleşmesi, PLN-F1.5.2'de bağlandı). Arada kullanım doğarsa backend
  * 409 döner, mesaj burada kalır.
  */
 export function DisciplineDeleteDialog({ discipline, onClose, onDeleted }: DisciplineDeleteDialogProps) {
@@ -47,8 +46,8 @@ export function DisciplineDeleteDialog({ discipline, onClose, onDeleted }: Disci
       className="ev-cat-modal--confirm"
     >
       <p className="ev-cat-confirm__text">
-        Bu işlem geri alınamaz. Disiplin şirket listesinden kalkar. Bir şantiye bütçesinde eşlenmişse silme
-        reddedilir.
+        Bu işlem geri alınamaz. Disiplin şirket listesinden kalkar; hiçbir iş tipi ve hiçbir şantiye bütçesi bu
+        disiplini kullanmıyor.
       </p>
       <dl className="ev-cat-confirm__grid">
         <dt>Disiplin</dt>
@@ -57,7 +56,9 @@ export function DisciplineDeleteDialog({ discipline, onClose, onDeleted }: Disci
           <span className="ev-cat-mono">{discipline.code}</span> {discipline.name}
         </dd>
         <dt>Kullanan iş tipi</dt>
-        <dd className="ev-cat-mono">0</dd>
+        <dd className="ev-cat-mono">{discipline.used_by_item_count}</dd>
+        <dt>Kullanan şantiye</dt>
+        <dd className="ev-cat-mono">{discipline.used_by_site_count}</dd>
       </dl>
       {remove.isError && (
         <p className="ev-cat-confirm__error" role="alert">

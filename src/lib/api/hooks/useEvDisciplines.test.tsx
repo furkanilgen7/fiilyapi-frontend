@@ -26,6 +26,8 @@ const KAB: EvDisciplineRead = {
   color: "#2563eb",
   default_contractor_type: "own",
   sort_order: 1,
+  used_by_item_count: 6,
+  used_by_site_count: 4,
 };
 
 let client: QueryClient;

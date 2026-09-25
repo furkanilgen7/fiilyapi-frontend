@@ -2,8 +2,8 @@ import type { Weather, WorkerSource } from "@/lib/api/hooks/useSiteDiary";
 
 /**
  * Hava enum'unun Türkçe etiketleri — TEK KAYNAK (F-P6'nin `section-labels.ts`
- * deseni). Backend enum'u BEŞ değerlidir (`sunny`/`partly_cloudy`/`cloudy`/
- * `rainy`/`snowy`); etiketler `Ekran 7 - Şantiye Günlüğü Girişi.dc.html`
+ * deseni). Backend enum'u B2'den beri ON değerlidir (ilk beşi `sunny`/
+ * `partly_cloudy`/`cloudy`/`rainy`/`snowy`); etiketler `Ekran 7 - Şantiye Günlüğü Girişi.dc.html`
  * satır 83-88'den birebir alınır (GK188-189 aynı listeyi DÖRT seçenekle
  * basıyor — `cloudy` orada eksik; beş değerli enum E7'de tamdır).
  */
@@ -13,6 +13,14 @@ export const WEATHER_LABELS: Record<Weather, string> = {
   cloudy: "☁ Bulutlu",
   rainy: "🌧 Yağışlı",
   snowy: "❄ Karlı",
+  // PLN-F1.1b · B2 sözleşmesi enum'u 10 değere genişletti. Etiketler
+  // `Şantiye - Günlük Kayıt (İlerleme).dc.html:611-618`den (emoji YOK — yeni
+  // glifler font alt kümesinde değil; ikonlu hava girişi F2'de gelir).
+  heavy_rain: "Sağanak",
+  drizzle: "Hafif yağmur",
+  windy: "Rüzgârlı",
+  dusty: "Tozlu",
+  foggy: "Sisli",
 };
 
 /** `Select` seçenekleri — sıra E7 83-88 ile birebir. */

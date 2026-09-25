@@ -1,6 +1,7 @@
 /**
  * PLN-F1.5 · Katalog ekran testlerinin ORTAK fikstürü ve istemci taklidi.
- * Veriler KAT:413-432 örnek verisinden (Kaba İnşaat · Duvar & Sıva · İnce İşler).
+ * Veriler KAT:413-432 örnek verisinden (Kaba İnşaat · Duvar & Sıva · İnce İşler);
+ * disiplin kullanım sayıları M6:408-412 (KAB 6/4 · DUV 4/4 · INC 0/0).
  * Yalnız testlerden içe alınır.
  */
 import { render } from "@testing-library/react";
@@ -31,6 +32,8 @@ export const KAB: EvDisciplineRead = {
   color: "#2563eb",
   default_contractor_type: "own",
   sort_order: 1,
+  used_by_item_count: 6,
+  used_by_site_count: 4,
 };
 export const DUV: EvDisciplineRead = {
   id: "d-duv",
@@ -39,6 +42,8 @@ export const DUV: EvDisciplineRead = {
   color: "#93c5fd",
   default_contractor_type: "subcon",
   sort_order: 2,
+  used_by_item_count: 4,
+  used_by_site_count: 4,
 };
 export const INC: EvDisciplineRead = {
   id: "d-inc",
@@ -47,6 +52,19 @@ export const INC: EvDisciplineRead = {
   color: "#e2e8f0",
   default_contractor_type: "subcon",
   sort_order: 3,
+  used_by_item_count: 0,
+  used_by_site_count: 0,
+};
+/** İş tipi YOK ama bir şantiye bütçesinde eşlenmiş (B1-9: yine silinemez). */
+export const ELK_SITE_ONLY: EvDisciplineRead = {
+  id: "d-elk",
+  code: "ELK",
+  name: "Elektrik",
+  color: "#cbd5e1",
+  default_contractor_type: "own",
+  sort_order: 4,
+  used_by_item_count: 0,
+  used_by_site_count: 2,
 };
 
 const NO_ACTUAL = { avg: null, min: null, max: null, site_count: 0, sites: [] };

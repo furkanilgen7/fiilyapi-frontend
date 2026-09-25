@@ -172,6 +172,10 @@
   font-weight: var(--weight-semibold);
 }
 .ev-cat-dlist__used-main--zero { color: var(--color-text-subtle); }
+.ev-cat-dlist__used-sub {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
 .ev-cat-dlist__acts {
   display: flex;
   flex-direction: column;

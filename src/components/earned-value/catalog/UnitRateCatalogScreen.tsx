@@ -164,7 +164,6 @@ export function UnitRateCatalogScreen() {
       )}
       {isManagerOpen && (
         <DisciplineManager
-          itemCounts={catalog.data ? counts : null}
           canWrite={canWrite}
           canDelete={canDelete}
           onClose={() => setIsManagerOpen(false)}
