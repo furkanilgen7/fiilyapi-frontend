@@ -56,6 +56,11 @@ export interface DiaryLineColumns {
   renderItemCells?: (boqItemId: string) => readonly ReactNode[];
   /** Kart alt başlığına ek (İ:213 — ör. "kazanılmış = bugün miktar × birim oran (Rev 1)"). */
   caption?: ReactNode;
+  /**
+   * Satırın HEMEN ALTINA tam genişlik alt satır (İ:241-246 — ör. "✕ Bu kaleme
+   * oran atanmamış …"). `null` dönerse alt satır basılmaz. (PLN-F2.3.1 · S2)
+   */
+  renderSubRow?: (line: DiaryLineRef) => ReactNode | null;
 }
 
 /**
@@ -86,11 +91,29 @@ export interface DiaryExtension {
    * pasif yapar ve gerekçeleri (`reasons`) düğmenin `title`ı ile DEĞİL ekranda
    * gösterir. Backend yine de 422 `reasons[]` ile reddedebilir (tek kaynak).
    */
-  submitGate?: { canSubmit: boolean; reasons: readonly string[] } | null;
+  submitGate?: {
+    canSubmit: boolean;
+    reasons: readonly string[];
+    /**
+     * Çekirdek gerekçeleri KENDİ "Gönderim engelli" kutusunda da listelesin mi?
+     * Varsayılan `true`. Dış modül gerekçeleri kendi bloğunda (ör. İ:493-510 kontrol
+     * çubuğu) gösteriyorsa `false` verir — aynı bilgi iki kez görünmez. (S4)
+     */
+    showReasonsInCore?: boolean;
+  } | null;
   lineColumns?: DiaryLineColumns | null;
   itemMeta?: DiaryItemMeta | null;
   /** Kart ızgarasının ALTINDA tam genişlik blok (Saat Dağıtımı + Gönder kontrol çubuğu). */
   fullWidthBlock?: ReactNode;
+  /** Başlığın ALTINDA, kartlardan önce bant (İ:150-155 — ör. formen bandı). (S3) */
+  topBanner?: ReactNode;
+  /**
+   * Çekirdek KENDİ kaydından (taslak ya da "Kaydet & Gönder") HEMEN ÖNCE çağırır
+   * ve bekler (S1 — mockup'ta tek düğme dağıtımı da yazar). Reddedilirse
+   * (throw) çekirdek KENDİ kaydını YAPMAZ ve hatayı mevcut hata yolunda
+   * gösterir — yarım kayıt olmaz. Kaydedilecek bir şey yoksa hemen çözülür.
+   */
+  onBeforeSave?: () => Promise<void>;
 }
 
 /** `DiaryEntryScreen` ve iki rota sarmalayıcısının kabul ettiği uzantı prop'ları. */
