@@ -6,7 +6,7 @@ import { WeatherStrip } from "@/components/earned-value/reports/kit/WeatherStrip
 import { StatusMark } from "@/components/earned-value/reports/kit/StatusMark";
 import { PfBandCell } from "@/components/earned-value/reports/kit/PfBandCell";
 import { formatDateDots, formatDateTimeDots, formatQuantity, EMPTY_CELL } from "@/lib/format";
-import { formatPercent01, formatPf, formatUnitRate, formatVariancePoints } from "@/lib/earned-value";
+import { compareDecimalStrings, formatPercent01, formatPf, formatUnitRate, formatVariancePoints } from "@/lib/earned-value";
 import type { EvDailyReport, EvQtyTreeRow } from "@/lib/api/models";
 
 import { reportNoLabel } from "./daily-logic";
@@ -46,9 +46,12 @@ function PrintReconciliation({ report }: { report: EvDailyReport }) {
           puantaj {formatQuantity(footer.timesheet_total_day)} a-s
         </div>
       )}
-      {(footer !== null && Number(footer.undistributed_day) > 0) || draftDates !== "" || report.unrated_entries.length > 0 ? (
+      {(footer !== null && compareDecimalStrings(footer.undistributed_day, "0") > 0) ||
+      draftDates !== "" ||
+      report.unrated_entries.length > 0 ? (
         <div className="ev-print-reconciliation__warn">
-          {footer !== null && Number(footer.undistributed_day) > 0 &&
+          {footer !== null &&
+            compareDecimalStrings(footer.undistributed_day, "0") > 0 &&
             `${formatQuantity(footer.undistributed_day)} a-s dağıtılmamış`}
           {draftDates !== "" && ` · ${draftDates} günlükleri gönderilmedi`}
           {report.unrated_entries.map((w) => ` · ${w.item_name ?? w.message} oransız`).join("")}
@@ -158,7 +161,7 @@ export function DailyPrintView({ report, eyebrow }: DailyPrintViewProps) {
               </tr>
             </thead>
             <tbody>
-              {report.kpis.map((row, i) => (
+              {report.kpis.map((row) => (
                 <tr key={row.node_id ?? row.kind} className={row.kind.startsWith("overall") ? "ev-print-kpi__overall" : ""}>
                   <td>{row.name ?? EMPTY_CELL}</td>
                   <td>{row.planned_pct_day === null ? EMPTY_CELL : formatPercent01(row.planned_pct_day)}</td>

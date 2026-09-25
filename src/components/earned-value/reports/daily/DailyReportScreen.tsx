@@ -14,7 +14,7 @@ import { Button, Segmented } from "@/components/ui";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
 import { useApproveDailyReport, useDailyReport } from "@/lib/api/hooks/useEvReports";
 import { backendErrorMessage } from "@/lib/api/error-message";
-import { formatPercent01, formatPf, formatVariancePoints } from "@/lib/earned-value";
+import { compareDecimalStrings, formatPercent01, formatPf, formatVariancePoints } from "@/lib/earned-value";
 import { EMPTY_CELL, formatDateDots, formatDateLong, formatDateTimeDots, formatQuantity } from "@/lib/format";
 import type { EvDailyReport } from "@/lib/api/models";
 
@@ -205,13 +205,13 @@ function FooterSection({ report, diaryHref, weeklyHref }: { report: EvDailyRepor
             Σ harcanan {formatQuantity(footer.spent_total_day)} a-s + dağıtılmamış {formatQuantity(footer.undistributed_day)} a-s = Σ
             puantaj {formatQuantity(footer.timesheet_total_day)} a-s
           </span>
-          {Number(footer.undistributed_day) > 0 && (
+          {compareDecimalStrings(footer.undistributed_day, "0") > 0 && (
             <span className="ev-daily-footer__chip ev-daily-footer__chip--warn">
               {formatQuantity(footer.undistributed_day)} a-s dağıtılmamış · PF hesabına girmedi
               {footer.undistributed_reason !== null && ` · gerekçe: ${footer.undistributed_reason}`}
             </span>
           )}
-          {Number(footer.unallocated_day) > 0 && (
+          {compareDecimalStrings(footer.unallocated_day, "0") > 0 && (
             // S20 — atanamayan saat (miktarsız gün), ayrı satır.
             <span className="ev-daily-footer__chip ev-daily-footer__chip--warn">
               Atanamayan saat (miktarsız gün): {formatQuantity(footer.unallocated_day)} a-s
@@ -301,7 +301,6 @@ function LoadedDailyReport({
   projectName,
   siteCompleted,
   links,
-  picker,
   report,
   date,
   onDateChange,
@@ -315,7 +314,6 @@ function LoadedDailyReport({
   const [modalOpen, setModalOpen] = useState(false);
   const [showArchiveDetail, setShowArchiveDetail] = useState(report.status !== "approved");
 
-  const badge = statusBadge(report);
   const gate = approveGate({
     level: permission.level,
     siteCompleted,
