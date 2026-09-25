@@ -60,7 +60,6 @@ export function SiteDiaryDetailView({ extension, onExtensionContext }: DiaryDeta
   const sectionResolved = section !== undefined || sectionQuery.isError;
   const entryQuery = useSiteDiaryEntry(entryId, { sectionId: section?.id, enabled: sectionResolved });
   const permission = useModulePermission("site_diary");
-  const paymentsPermission = useModulePermission("progress_payments");
 
   const entry = entryQuery.data;
   // Adresteki şantiyeye ait olmayan kayıt (kimlik elle değiştirilmiş) —
@@ -111,7 +110,7 @@ export function SiteDiaryDetailView({ extension, onExtensionContext }: DiaryDeta
   const currentSection = section === undefined ? undefined : { id: section.id, name: section.name };
   const groups = buildDetailLineGroups(entry, currentSection);
   const workers = detailWorkerSummary(entry);
-  const paymentHidden = isPaymentHidden({ canViewPayments: paymentsPermission.canView, linesTotal: entry.lines_total });
+  const paymentHidden = isPaymentHidden({ linesTotal: entry.lines_total });
 
   return (
     <div className="diary-detail">

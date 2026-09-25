@@ -66,16 +66,14 @@ describe("detailWorkerSummary — salt okunur işçi dağılımı", () => {
   });
 });
 
-describe("isPaymentHidden — S10 Hakediş ₺ gizleme", () => {
-  it("hakediş görüntüleme izni yoksa ('none') GİZLİ", () => {
-    expect(isPaymentHidden({ canViewPayments: false, linesTotal: "197765.00" })).toBe(true);
-  });
-
+describe("isPaymentHidden — S10 Hakediş ₺ gizleme YALNIZ veriye bağlı (kullanıcı kararı: izin işleri sonra)", () => {
   it("tutar maskeli gelirse (null) GİZLİ — sıfır sayılmaz", () => {
-    expect(isPaymentHidden({ canViewPayments: true, linesTotal: null })).toBe(true);
+    expect(isPaymentHidden({ linesTotal: null })).toBe(true);
+    expect(isPaymentHidden({ linesTotal: undefined })).toBe(true);
   });
 
-  it("izin var + tutar geldi (sıfır dahil) → görünür", () => {
-    expect(isPaymentHidden({ canViewPayments: true, linesTotal: "0.00" })).toBe(false);
+  it("tutar geldiyse (sıfır dahil) GÖRÜNÜR — izne bakılmaz", () => {
+    expect(isPaymentHidden({ linesTotal: "0.00" })).toBe(false);
+    expect(isPaymentHidden({ linesTotal: "197765.00" })).toBe(false);
   });
 });

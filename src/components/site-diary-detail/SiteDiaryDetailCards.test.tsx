@@ -118,6 +118,11 @@ function mockEntry(data: SiteDiaryEntryDetail) {
   } as never);
 }
 
+/** S10 · tutar backend'den MASKELİ (null) gelmiş kayıt — gizleme veriye bağlı. */
+function mockMaskedEntry() {
+  mockEntry(entry({ lines_total: null as unknown as string }));
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   mockSession({ site_diary: "view", progress_payments: "view" });
@@ -245,9 +250,19 @@ describe("Kural A — önce bu bölüm, sonra diğer bölümler", () => {
   });
 });
 
-describe("S10 — hakediş izni yoksa Hakediş ₺ GİZLİ", () => {
-  it("kolon, hücreler, ara toplam tutarı, katkı satırı, KPI ve hakediş bandı basılmaz", () => {
+describe("S10 — Hakediş ₺ İZNE bağlı DEĞİL (kullanıcı kararı: izin işleri sonra); yalnız tutar null ise gizli", () => {
+  it("hakediş izni olmayan kullanıcı da ₺'yi görür — günlük kayıt ekranıyla aynı", () => {
     mockSession({ site_diary: "view", progress_payments: "none" });
+    render(<SiteDiaryDetailView />);
+
+    expect(columnHeaders()).toContain("Hakediş ₺");
+    expect(screen.getByText("Bugünkü Hakediş Katkısı")).toBeInTheDocument();
+    expect(document.body).toHaveTextContent("17.205");
+  });
+
+  it("tutar null gelirse kolon, hücreler, ara toplam tutarı, katkı satırı, KPI ve hakediş bandı basılmaz", () => {
+    mockSession({ site_diary: "view", progress_payments: "view" });
+    mockMaskedEntry();
     render(<SiteDiaryDetailView />);
 
     expect(columnHeaders()).not.toContain("Hakediş ₺");
@@ -331,8 +346,9 @@ describe("uzantı yuvası VARKEN", () => {
     expect(screen.getByRole("region", { name: "Saat Dağıtımı · özet" })).toBeInTheDocument();
   });
 
-  it("S10 maskede planlama kolonları KALIR, yalnız Hakediş ₺ gider", () => {
-    mockSession({ site_diary: "view", progress_payments: "none" });
+  it("S10 maskede (tutar null) planlama kolonları KALIR, yalnız Hakediş ₺ gider", () => {
+    mockSession({ site_diary: "view", progress_payments: "view" });
+    mockMaskedEntry();
     render(<SiteDiaryDetailView extension={extension} />);
 
     const headers = columnHeaders();

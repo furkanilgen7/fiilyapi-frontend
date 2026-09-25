@@ -86,13 +86,11 @@ export function detailWorkerSummary(entry: WorkerEntry): DetailWorkerSummary {
 /**
  * S10 · Hakediş ₺ kolonu, ara toplam tutarı, katkı satırı ve KPI'sı GİZLENİR mi?
  *
- * ÖLÇÜM (DET-1.3): çekirdek günlük ekranı Hakediş ₺'yi HİÇ gizlemiyor;
- * backend `site_diary` şemaları `core/field_scope` alan maskesine BAĞLI
- * DEĞİL (`line_amount` / `lines_total` maskesiz) ve `/auth/me` kapsam
- * (`limited`) taşımıyor. İstemcinin görebildiği TEK finans sinyali
- * `progress_payments` görüntüleme iznidir → izin `none` ise gizli. Tutar
- * ileride maskeli (`null`) gelirse de gizli — sıfır SAYILMAZ (`maskeli()`).
+ * KULLANICI KARARI (2026-09-25): "izin işleri en son düzenlenecek" → gizleme
+ * İZNE bağlı DEĞİL; detay ₺'yi bugünkü günlük kayıt ekranıyla aynı şekilde
+ * herkese gösterir. Yalnız tutar backend'den maskeli (`null`) gelirse gizli —
+ * sıfır SAYILMAZ (`maskeli()`). İzin/alan maskesi işi kuyrukta.
  */
-export function isPaymentHidden(input: { canViewPayments: boolean; linesTotal: string | null | undefined }): boolean {
-  return !input.canViewPayments || maskeli(input.linesTotal);
+export function isPaymentHidden(input: { linesTotal: string | null | undefined }): boolean {
+  return maskeli(input.linesTotal);
 }
