@@ -489,7 +489,8 @@ describe("SiteDiaryEntryView · kaydetme akışı", () => {
     await waitFor(() => expect(linesMutate).toHaveBeenCalledTimes(1));
     expect(updateMutate).toHaveBeenCalledTimes(1);
     expect(linesMutate.mock.calls[0][0]).toEqual({
-      lines: [{ boq_item_id: "bi-1", quantity: 120 }],
+      // PLN-F2.1: yeni anahtarlar null olsa da AÇIKÇA gider (B2.x-A eski-istemci bekçisi).
+      lines: [{ boq_item_id: "bi-1", section_id: null, quantity: 120, overrun_reason: null }],
     });
   });
 

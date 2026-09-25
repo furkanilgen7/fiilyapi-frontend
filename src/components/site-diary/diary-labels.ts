@@ -89,7 +89,8 @@ export const DIARY_QUANTITY_MAX = 20;
 export const DIARY_WORKER_COUNT_MAX = 4;
 
 /**
- * 🔴 `SiteDiaryEntryCreate.temperature_c` — sözleşme aralığı **-60..60**.
+ * 🔴 `SiteDiaryEntryCreate.temp_max_c` (PLN-F2.1; eski `temperature_c` kullanımdan
+ * kalkıyor, `temp_min_c` aynı aralık) — sözleşme aralığı **-60..60**.
  *
  * Kutuda `maxLength={6}` vardı ama bu YANLIŞ ARAÇTIR: `type="number"` bir
  * input'ta HTML `maxLength` niteliği ETKİSİZDİR (spec: yalnız metin türlerinde

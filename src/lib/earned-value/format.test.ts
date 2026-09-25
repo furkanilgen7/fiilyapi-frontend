@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { EMPTY_CELL } from "@/lib/format";
+import { EMPTY_CELL, formatWindKmh as generalFormatWindKmh } from "@/lib/format";
 
 import {
   formatPercent01,
@@ -104,16 +104,11 @@ describe("formatUnitRate — a-s/birim: ≥ 10 → 1 ondalık, aksi 2 (KAT:410 �
   });
 });
 
-describe("formatWindKmh — m/s → 'X km/sa' (İ:707 · K22)", () => {
-  it("5 m/s → '18 km/sa'", () => {
+describe("formatWindKmh — genel `lib/format`tan YENİDEN İHRAÇ (PLN-F2.1)", () => {
+  // Davranış testleri `src/lib/format.test.ts`e taşındı. Burada yalnız EV
+  // çağıranlarının kırılmadığı kilitlenir: aynı fonksiyon, kopya değil.
+  it("`@/lib/earned-value` üzerinden gelen fonksiyon genel olanın AYNISIDIR", () => {
+    expect(formatWindKmh).toBe(generalFormatWindKmh);
     expect(formatWindKmh("5")).toBe("18 km/sa");
-  });
-
-  it("4,5 m/s → 16,2 → '16 km/sa'", () => {
-    expect(formatWindKmh("4.5")).toBe("16 km/sa");
-  });
-
-  it("veri yok → boş hücre", () => {
-    expect(formatWindKmh(null)).toBe(EMPTY_CELL);
   });
 });

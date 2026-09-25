@@ -20,6 +20,8 @@ import {
   formatPeriodShort,
   formatQuantity,
   formatWeekdayShort,
+  formatWindKmh,
+  EMPTY_CELL,
   PERIOD_MONTHS,
 } from "./format";
 
@@ -317,5 +319,32 @@ describe("formatDateLong", () => {
 
   it("eksik/bozuk ISO girdide değeri OLDUĞU GİBİ döner", () => {
     expect(formatDateLong("2026-07")).toBe("2026-07");
+  });
+});
+
+// PLN-F2.1 · `formatWindKmh` `lib/earned-value`ten buraya TAŞINDI: çekirdek
+// günlük ekranı (hava kartı) kullanacak ve §2.7 gereği planlamayı import
+// EDEMEZ. Davranış birebir (İ:707 tam sayı · K22 etiket "km/sa").
+describe("formatWindKmh — m/s → 'X km/sa' (İ:707 · K22)", () => {
+  it("5 m/s → '18 km/sa'", () => {
+    expect(formatWindKmh("5")).toBe("18 km/sa");
+  });
+
+  it("4,5 m/s → 16,2 → '16 km/sa'", () => {
+    expect(formatWindKmh("4.5")).toBe("16 km/sa");
+  });
+
+  it("tam yarım YUKARI yuvarlanır (ROUND_HALF_UP): 2,5 m/s → 9 km/sa", () => {
+    expect(formatWindKmh("2.5")).toBe("9 km/sa");
+  });
+
+  it("number girdi de kabul edilir: 10 → '36 km/sa'", () => {
+    expect(formatWindKmh(10)).toBe("36 km/sa");
+  });
+
+  it("veri yok / anlamsız girdi → boş hücre", () => {
+    expect(formatWindKmh(null)).toBe(EMPTY_CELL);
+    expect(formatWindKmh(undefined)).toBe(EMPTY_CELL);
+    expect(formatWindKmh("abc")).toBe(EMPTY_CELL);
   });
 });

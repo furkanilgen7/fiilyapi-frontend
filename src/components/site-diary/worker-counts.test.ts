@@ -45,6 +45,16 @@ describe("buildWorkerRows", () => {
     expect(rows).toHaveLength(DIARY_WORKER_PRESETS.length);
   });
 
+  it("PLN-F2.1: FİRMA satırı ön tanımlı (meslek, kaynak) ile çakışmaz — kendi satırı olarak eklenir", () => {
+    const rows = buildWorkerRows([
+      entryRow({ trade: "Demirciler", source: "subcontractor", subcontractor_id: "firm-1", hours: "9.0" }),
+    ]);
+
+    expect(rows).toHaveLength(DIARY_WORKER_PRESETS.length + 1);
+    expect(rows.at(-1)).toEqual({ trade: "Demirciler", source: "subcontractor", subcontractorId: "firm-1" });
+    expect(workerCountKey(rows.at(-1)!)).toBe("firm|firm-1");
+  });
+
   it("aynı meslek FARKLI kaynakta ayrı satırdır (kimlik ikilidir)", () => {
     const rows = buildWorkerRows([entryRow({ trade: "Kalıpçılar", source: "subcontractor" })]);
 
@@ -64,6 +74,14 @@ describe("workerCountsFromEntry", () => {
 
     expect(values["company|Kalıpçılar"]).toBe("");
     expect(values["subcontractor|Demirciler"]).toBe("8");
+  });
+
+  it("PLN-F2.1: firma satırı FİRMA anahtarıyla gelir (ön tanımlı meslek hücresini doldurmaz)", () => {
+    const values = workerCountsFromEntry([
+      entryRow({ trade: "Demirciler", source: "subcontractor", count: 6, subcontractor_id: "firm-1" }),
+    ]);
+
+    expect(values).toEqual({ "firm|firm-1": "6" });
   });
 });
 
@@ -120,28 +138,62 @@ describe("workerCountsTotal", () => {
 describe("buildWorkerCountsBody", () => {
   it("sıfır satırı gövdeye KOYMAZ (DEĞİŞTİRME semantiği → backend'de silinir)", () => {
     const rows = buildWorkerRows([]);
-    const body = buildWorkerCountsBody(rows, {
+    const body = buildWorkerCountsBody([], rows, {
       "company|Kalıpçılar": "12",
       "subcontractor|Demirciler": "0",
       "general|Yardımcı": "",
     });
 
-    expect(body).toEqual([{ trade: "Kalıpçılar", source: "company", count: 12 }]);
+    expect(body).toEqual([
+      { trade: "Kalıpçılar", source: "company", count: 12, subcontractor_id: null, hours: null },
+    ]);
   });
 
   it("geçersiz hücre varsa gövde ÜRETİLMEZ (null) — yanlış sayı yazılmaz", () => {
     const rows = buildWorkerRows([]);
 
-    expect(buildWorkerCountsBody(rows, { "company|Kalıpçılar": "-2" })).toBeNull();
+    expect(buildWorkerCountsBody([], rows, { "company|Kalıpçılar": "-2" })).toBeNull();
   });
 
   it("kayıttan gelen fazladan çift de gövdeye girer (veri kaybı yok)", () => {
     const entryRows = [entryRow({ trade: "Sıvacı", source: "subcontractor", count: 5 })];
-    const body = buildWorkerCountsBody(buildWorkerRows(entryRows), {
+    const body = buildWorkerCountsBody(entryRows, buildWorkerRows(entryRows), {
       "subcontractor|Sıvacı": "5",
     });
 
-    expect(body).toEqual([{ trade: "Sıvacı", source: "subcontractor", count: 5 }]);
+    expect(body).toEqual([
+      { trade: "Sıvacı", source: "subcontractor", count: 5, subcontractor_id: null, hours: null },
+    ]);
+  });
+
+  it("PLN-F2.1: firma satırı gövdede firma kimliği + SAATİYLE gider (saat ekranda düzenlenmese de korunur)", () => {
+    const entryRows = [
+      entryRow({ trade: "Kalıpçılar", source: "company", count: 12 }),
+      entryRow({ id: "w-2", trade: "Demirciler", source: "subcontractor", count: 6, subcontractor_id: "firm-1", hours: "9.0" }),
+    ];
+    const rows = buildWorkerRows(entryRows);
+    const body = buildWorkerCountsBody(entryRows, rows, {
+      ...workerCountsFromEntry(entryRows),
+      "company|Kalıpçılar": "14",
+    });
+
+    expect(body).toEqual([
+      { trade: "Kalıpçılar", source: "company", count: 14, subcontractor_id: null, hours: null },
+      { trade: "Demirciler", source: "subcontractor", count: 6, subcontractor_id: "firm-1", hours: "9.0" },
+    ]);
+  });
+
+  it("PLN-F2.1: ekranda satırı OLMAYAN kayıt satırı da düşmez (tam küme)", () => {
+    const entryRows = [
+      entryRow({ id: "w-2", trade: "Demirciler", source: "subcontractor", count: 6, subcontractor_id: "firm-1", hours: "9.0" }),
+    ];
+    // Çağıran yalnız ön tanımlıları basıyor olsa bile firma satırı korunur.
+    const body = buildWorkerCountsBody(entryRows, [...DIARY_WORKER_PRESETS], { "company|Kalıpçılar": "3" });
+
+    expect(body).toEqual([
+      { trade: "Demirciler", source: "subcontractor", count: 6, subcontractor_id: "firm-1", hours: "9.0" },
+      { trade: "Kalıpçılar", source: "company", count: 3, subcontractor_id: null, hours: null },
+    ]);
   });
 });
 

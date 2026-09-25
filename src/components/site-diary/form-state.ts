@@ -5,6 +5,8 @@ import type {
   SiteDiaryLinesSave,
 } from "@/lib/api/hooks/useSiteDiaryMutations";
 
+import { buildSiteDiaryLinesSave, siteDiaryLineKey } from "@/lib/api/hooks/site-diary-save-bodies";
+
 import {
   areWorkerCountsDirty,
   buildWorkerCountsBody,
@@ -36,8 +38,15 @@ export interface DiaryFormState {
   sectionId: string;
   /** `""` = seçilmedi (alan nullable, GK188). */
   weather: Weather | "";
-  /** Serbest metin; sayıya çevrilemezse gövdeye `null` gider (GK194). */
-  temperatureC: string;
+  /**
+   * PLN-F2.1 hava genişlemesi: min/max °C ve rüzgâr m/s — serbest metin;
+   * sayıya çevrilemezse gövdeye `null` gider. Bugünkü tek "Sıcaklık" kutusu
+   * (GK194) `tempMaxC`yi yazar (backend yanıtında `temperature_c` =
+   * `temp_max_c`); min + rüzgâr kutuları F2.2'de basılır.
+   */
+  tempMinC: string;
+  tempMaxC: string;
+  windMs: string;
   /** GK271. */
   workDone: string;
   /** E7 143 — `chief_note`. */
@@ -48,7 +57,11 @@ export interface DiaryFormState {
   hasIncident: boolean;
   /** GK447 (E7 195). */
   incidentNote: string;
-  /** `boq_item_id` → "Bugün Yapılan" hücresinin HAM metni (GK228). */
+  /**
+   * `boq_item_id` → "Bugün Yapılan" hücresinin HAM metni (GK228). YALNIZ
+   * Bölümsüz (`section_id` null) satırı yazar; bölümlü satırlar (PLN-B2.1)
+   * gövdeye kayıttaki değerleriyle AYNEN girer (F2.2 kendi hücrelerini açar).
+   */
   quantities: Record<string, string>;
   /** `workerCountKey(trade, source)` → işçi sayısı hücresinin HAM metni
    * (GK420/424/428/432). */
@@ -61,7 +74,9 @@ export function emptyDiaryForm(entryDate: string): DiaryFormState {
     entryDate,
     sectionId: "",
     weather: "",
-    temperatureC: "",
+    tempMinC: "",
+    tempMaxC: "",
+    windMs: "",
     workDone: "",
     chiefNote: "",
     safetyMeetingHeld: false,
@@ -82,14 +97,17 @@ export function emptyDiaryForm(entryDate: string): DiaryFormState {
 export function diaryFormFromEntry(entry: SiteDiaryEntryDetail): DiaryFormState {
   const quantities: Record<string, string> = {};
   for (const line of entry.lines) {
-    if (line.boq_item_id === null) continue;
+    if (line.boq_item_id === null || !isUnsectioned(line)) continue;
     quantities[line.boq_item_id] = Number(line.quantity) === 0 ? "" : line.quantity;
   }
   return {
     entryDate: entry.entry_date,
     sectionId: entry.section_id ?? "",
     weather: entry.weather ?? "",
-    temperatureC: entry.temperature_c ?? "",
+    tempMinC: entry.temp_min_c ?? "",
+    // Eski kayıt/ikiz yeni alanı taşımayabilir: backend `temperature_c` = `temp_max_c`.
+    tempMaxC: entry.temp_max_c ?? entry.temperature_c ?? "",
+    windMs: entry.wind_ms ?? "",
     workDone: entry.work_done ?? "",
     chiefNote: entry.chief_note ?? "",
     safetyMeetingHeld: entry.safety_meeting_held,
@@ -99,6 +117,11 @@ export function diaryFormFromEntry(entry: SiteDiaryEntryDetail): DiaryFormState 
     quantities,
     workerCounts: workerCountsFromEntry(entry.worker_counts),
   };
+}
+
+/** Bölümsüz satır mı (kalemin bölüme tahsis edilmemiş kalanı)? */
+function isUnsectioned(line: SiteDiaryEntryDetail["lines"][number]): boolean {
+  return (line.section_id ?? null) === null;
 }
 
 /** Boş/boşluk metni `null`a çevirir — backend nullable alanlarının sözleşmesi. */
@@ -121,12 +144,25 @@ export function parseDiaryQuantity(value: string): number | null {
   return parsed;
 }
 
-/** Sıcaklık: sayıya çevrilemezse `null` (alan zaten opsiyonel). */
-function parseTemperature(value: string): number | null {
+/** Sıcaklık / rüzgâr: sayıya çevrilemezse `null` (alanlar opsiyonel). */
+function parseWeatherNumber(value: string): number | null {
   const trimmed = value.trim().replace(",", ".");
   if (trimmed === "") return null;
   const parsed = Number(trimmed);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+/**
+ * Hava alanları (PLN-B2.1). Kullanımdan kalkan `temperature_c` GÖNDERİLMEZ:
+ * yeni alanlar yokken backend onu min = max'a yayar ve kayıtlı min'i ezerdi.
+ */
+function weatherFields(form: DiaryFormState) {
+  return {
+    weather: form.weather === "" ? null : form.weather,
+    temp_min_c: parseWeatherNumber(form.tempMinC),
+    temp_max_c: parseWeatherNumber(form.tempMaxC),
+    wind_ms: parseWeatherNumber(form.windMs),
+  };
 }
 
 /**
@@ -138,8 +174,7 @@ export function buildDiaryCreateBody(form: DiaryFormState): SiteDiaryEntryCreate
   return {
     entry_date: form.entryDate,
     section_id: form.sectionId === "" ? null : form.sectionId,
-    weather: form.weather === "" ? null : form.weather,
-    temperature_c: parseTemperature(form.temperatureC),
+    ...weatherFields(form),
     work_done: textOrNull(form.workDone),
     chief_note: textOrNull(form.chiefNote),
     safety_meeting_held: form.safetyMeetingHeld,
@@ -163,13 +198,13 @@ export function buildDiaryUpdateBody(
   entry: SiteDiaryEntryDetail,
 ): SiteDiaryEntryUpdate {
   const workerCounts =
-    buildWorkerCountsBody(buildWorkerRows(entry.worker_counts), form.workerCounts) ?? undefined;
+    buildWorkerCountsBody(entry.worker_counts, buildWorkerRows(entry.worker_counts), form.workerCounts) ??
+    undefined;
   return {
     worker_counts: workerCounts,
     entry_date: form.entryDate,
     section_id: form.sectionId === "" ? null : form.sectionId,
-    weather: form.weather === "" ? null : form.weather,
-    temperature_c: parseTemperature(form.temperatureC),
+    ...weatherFields(form),
     work_done: textOrNull(form.workDone),
     chief_note: textOrNull(form.chiefNote),
     safety_meeting_held: form.safetyMeetingHeld,
@@ -181,9 +216,10 @@ export function buildDiaryUpdateBody(
 
 /**
  * `PUT /diary/{entry_id}/lines` gövdesi — DEĞİŞTİRME semantiği: gövdede
- * geçmeyen satır sıfırlanır. Bu yüzden kaydın TÜM satırları (miktarı `0`
- * olanlar dahil) gönderilir; kullanıcı bir hücreyi boşaltınca sıfırlanması
- * gereken satır sessizce eski değerinde kalmaz.
+ * geçmeyen satır SİLİNİR. Gövde `buildSiteDiaryLinesSave` ile kaydın TÜM
+ * satırlarından kurulur (PLN-F2.1 tam küme): Bölümsüz satırın miktarı
+ * formdan (boşaltılan hücre `0`), bölümlü satırlar miktar + aşım gerekçesiyle
+ * AYNEN. Geçersiz hücrede satırın SUNUCUDAKİ miktarı korunur.
  *
  * `boq_item_id === null` olan satır (BOQ pozu silinmiş, öksüz satır)
  * GÖNDERİLEMEZ — şema `boq_item_id`i zorunlu tutar; bu satırlar atlanır.
@@ -192,14 +228,13 @@ export function buildDiaryLinesBody(
   entry: SiteDiaryEntryDetail,
   form: DiaryFormState,
 ): SiteDiaryLinesSave {
-  const lines = entry.lines
-    .filter((line) => line.boq_item_id !== null)
-    .map((line) => {
-      const boqItemId = line.boq_item_id as string;
-      const parsed = parseDiaryQuantity(form.quantities[boqItemId] ?? "");
-      return { boq_item_id: boqItemId, quantity: parsed ?? Number(line.quantity) };
-    });
-  return { lines };
+  const changes: Record<string, { quantity: number }> = {};
+  for (const line of entry.lines) {
+    if (line.boq_item_id === null || !isUnsectioned(line)) continue;
+    const parsed = parseDiaryQuantity(form.quantities[line.boq_item_id] ?? "");
+    changes[siteDiaryLineKey(line.boq_item_id, null)] = { quantity: parsed ?? Number(line.quantity) };
+  }
+  return buildSiteDiaryLinesSave(entry.lines, { changes });
 }
 
 /** Geçersiz miktar girilmiş hücrelerin poz kimlikleri (görünür hata için). */
@@ -234,7 +269,10 @@ export function isDiaryFormDirty(entry: SiteDiaryEntryDetail, form: DiaryFormSta
   ) {
     return true;
   }
-  if (parseTemperature(saved.temperatureC) !== parseTemperature(form.temperatureC)) return true;
+  const weatherKeys = ["tempMinC", "tempMaxC", "windMs"] as const;
+  if (weatherKeys.some((key) => parseWeatherNumber(saved[key]) !== parseWeatherNumber(form[key]))) {
+    return true;
+  }
   if (areWorkerCountsDirty(entry.worker_counts, buildWorkerRows(entry.worker_counts), form.workerCounts)) {
     return true;
   }

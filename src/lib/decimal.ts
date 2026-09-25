@@ -205,3 +205,28 @@ function fromScaledBigInt(scaled: bigint, scale: number): string {
   const unsigned = scale > 0 ? `${intPart}.${fractionPart}` : intPart;
   return negative && magnitude !== 0n ? `-${unsigned}` : unsigned;
 }
+
+/** Ondalık alan girdisi: backend Decimal alanı string, istemci türevi number gelebilir. */
+export type DecimalLike = string | number | null | undefined;
+
+const DECIMAL_LIKE_PATTERN = /^[-+]?(\d+\.?\d*|\.\d+)$/;
+/** Üstel gösterimli number'lar (1e-7) için yedek kesir hassasiyeti. */
+const EXPONENT_FALLBACK_DIGITS = 12;
+
+/**
+ * Geçerli bir ondalık string ya da `null` (veri yok / anlamsız girdi).
+ *
+ * PLN-F2.1: `lib/earned-value/decimal-input`ten buraya taşındı — genel
+ * `lib/format` (rüzgâr km/sa) kullanır ve çekirdek planlamayı import EDEMEZ
+ * (spec §2.7). EV tarafı AYNI fonksiyonu oradan yeniden ihraç eder.
+ */
+export function toDecimalString(value: DecimalLike): string | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) return null;
+    const text = String(value);
+    return text.includes("e") ? value.toFixed(EXPONENT_FALLBACK_DIGITS) : text;
+  }
+  const trimmed = value.trim();
+  return DECIMAL_LIKE_PATTERN.test(trimmed) ? trimmed : null;
+}

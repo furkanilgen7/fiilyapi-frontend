@@ -85,6 +85,9 @@ export function useUpdateSiteDiaryEntry(
  * İş Kalemi Girişi tablosunun kaydi (`PUT /diary/{entry_id}/lines`) —
  * DEGISTIRME semantigi: govdede gecmeyen satir SILINIR, bos liste tum
  * satirlari temizler. Kumulatif/₺ turevleri YANITTAN okunur, ekran hesaplamaz.
+ *
+ * PLN-F2.1: govde `site-diary-save-bodies.buildSiteDiaryLinesSave` ile KAYDIN
+ * tam kumesinden kurulur (bolumlu + Bolumsuz); kismi kume = veri kaybi.
  */
 export function useSaveSiteDiaryLines(
   entryId: string,
@@ -105,6 +108,9 @@ export function useSaveSiteDiaryLines(
 /**
  * "Kaydet & Gönder" (`POST /diary/{entry_id}/submit`) — kaydi `submitted`
  * yapar ve poz bazli aylik ozete SOKAR. Govde YOKTUR.
+ *
+ * PLN-F2.1: EV'li santiyede on-kosul saglanmazsa 422 `{detail, reasons[]}`
+ * doner — gerekce listesi `error-message.submitBlockedReasons(error)` ile okunur.
  */
 export function useSubmitSiteDiaryEntry(
   entryId: string,

@@ -68,7 +68,9 @@ describe("emptyDiaryForm", () => {
       entryDate: "2026-08-03",
       sectionId: "",
       weather: "",
-      temperatureC: "",
+      tempMinC: "",
+      tempMaxC: "",
+      windMs: "",
       workDone: "",
       chiefNote: "",
       safetyMeetingHeld: false,
@@ -89,7 +91,7 @@ describe("diaryFormFromEntry", () => {
       entryDate: "2026-07-15",
       sectionId: "sec-1",
       weather: "sunny",
-      temperatureC: "28.0",
+      tempMaxC: "28.0",
       workDone: "6. kat döşeme betonu döküldü.",
       chiefNote: "Beton pompası sahada.",
       safetyMeetingHeld: true,
@@ -106,9 +108,32 @@ describe("diaryFormFromEntry", () => {
 
     expect(form.sectionId).toBe("");
     expect(form.weather).toBe("");
-    expect(form.temperatureC).toBe("");
+    expect(form.tempMinC).toBe("");
+    expect(form.tempMaxC).toBe("");
+    expect(form.windMs).toBe("");
     expect(form.workDone).toBe("");
     expect(form.chiefNote).toBe("");
+  });
+
+  it("PLN-F2.1: yeni hava alanları (min/max/rüzgâr) forma taşınır; max eski `temperature_c`yi ezer", () => {
+    const form = diaryFormFromEntry(
+      entry({ temperature_c: "30.0", temp_min_c: "12.5", temp_max_c: "30.0", wind_ms: "4.5" }),
+    );
+
+    expect(form).toMatchObject({ tempMinC: "12.5", tempMaxC: "30.0", windMs: "4.5" });
+  });
+
+  it("PLN-F2.1: miktar hücresi YALNIZ Bölümsüz satırdan dolar — bölümlü satır onu ezmez", () => {
+    const form = diaryFormFromEntry(
+      entry({
+        lines: [
+          line({ quantity: "5.000", section_id: null }),
+          line({ id: "l-2", quantity: "12.000", section_id: "sec-9" }),
+        ],
+      }),
+    );
+
+    expect(form.quantities).toEqual({ "bi-1": "5.000" });
   });
 
   it("miktarı 0 olan satırı BOŞ hücre olarak gösterir", () => {
@@ -148,7 +173,9 @@ describe("buildDiaryCreateBody", () => {
       ...emptyDiaryForm("2026-08-03"),
       sectionId: "sec-1",
       weather: "rainy",
-      temperatureC: "19,5",
+      tempMinC: "8",
+      tempMaxC: "19,5",
+      windMs: "4,5",
       workDone: "  Kalıp söküldü  ",
       chiefNote: "   ",
       safetyMeetingHeld: true,
@@ -162,7 +189,9 @@ describe("buildDiaryCreateBody", () => {
       entry_date: "2026-08-03",
       section_id: "sec-1",
       weather: "rainy",
-      temperature_c: 19.5,
+      temp_min_c: 8,
+      temp_max_c: 19.5,
+      wind_ms: 4.5,
       work_done: "Kalıp söküldü",
       chief_note: null,
       safety_meeting_held: true,
@@ -173,6 +202,8 @@ describe("buildDiaryCreateBody", () => {
     expect(body).not.toHaveProperty("lines");
     expect(body).not.toHaveProperty("worker_counts");
     expect(body).not.toHaveProperty("status");
+    // Kullanımdan kalkan alan GÖNDERİLMEZ: backend onu min=max'a yayardı.
+    expect(body).not.toHaveProperty("temperature_c");
   });
 
   it("bölüm/hava seçilmediyse null gider (alanlar nullable)", () => {
@@ -180,7 +211,9 @@ describe("buildDiaryCreateBody", () => {
 
     expect(body.section_id).toBeNull();
     expect(body.weather).toBeNull();
-    expect(body.temperature_c).toBeNull();
+    expect(body.temp_min_c).toBeNull();
+    expect(body.temp_max_c).toBeNull();
+    expect(body.wind_ms).toBeNull();
   });
 });
 
@@ -193,7 +226,42 @@ describe("buildDiaryUpdateBody", () => {
 
     const body = buildDiaryUpdateBody(form, entry());
 
-    expect(body.worker_counts).toEqual([{ trade: "Kalıpçılar", source: "company", count: 14 }]);
+    expect(body.worker_counts).toEqual([
+      { trade: "Kalıpçılar", source: "company", count: 14, subcontractor_id: null, hours: null },
+    ]);
+    expect(body).not.toHaveProperty("temperature_c");
+  });
+
+  it("PLN-F2.1: kayıttaki FİRMA satırı (kişi × saat) ekranda olmasa da gövdede KORUNUR", () => {
+    const detail = entry({
+      worker_counts: [
+        { id: "w-1", trade: "Kalıpçılar", source: "company", count: 12, subcontractor_id: null, hours: null },
+        { id: "w-2", trade: "Demirciler", source: "subcontractor", count: 6, subcontractor_id: "firm-1", hours: "9.0" },
+      ],
+    });
+    const form: DiaryFormState = {
+      ...diaryFormFromEntry(detail),
+      workerCounts: { ...diaryFormFromEntry(detail).workerCounts, "company|Kalıpçılar": "13" },
+    };
+
+    expect(buildDiaryUpdateBody(form, detail).worker_counts).toEqual([
+      { trade: "Kalıpçılar", source: "company", count: 13, subcontractor_id: null, hours: null },
+      { trade: "Demirciler", source: "subcontractor", count: 6, subcontractor_id: "firm-1", hours: "9.0" },
+    ]);
+  });
+
+  it("PLN-F2.1: hava gövdesi yeni alanlarla gider (min/max/rüzgâr), `temperature_c` gitmez", () => {
+    const form: DiaryFormState = {
+      ...diaryFormFromEntry(entry()),
+      tempMinC: "11",
+      tempMaxC: "24,5",
+      windMs: "3",
+    };
+
+    const body = buildDiaryUpdateBody(form, entry());
+
+    expect(body).toMatchObject({ temp_min_c: 11, temp_max_c: 24.5, wind_ms: 3 });
+    expect(body).not.toHaveProperty("temperature_c");
   });
 
   it("geçersiz işçi hücresi varsa alan HİÇ gönderilmez (mevcut kırılım korunur)", () => {
@@ -220,8 +288,8 @@ describe("buildDiaryLinesBody", () => {
 
     expect(buildDiaryLinesBody(detail, form)).toEqual({
       lines: [
-        { boq_item_id: "bi-1", quantity: 12 },
-        { boq_item_id: "bi-2", quantity: 0 },
+        { boq_item_id: "bi-1", section_id: null, quantity: 12, overrun_reason: null },
+        { boq_item_id: "bi-2", section_id: null, quantity: 0, overrun_reason: null },
       ],
     });
   });
@@ -237,7 +305,22 @@ describe("buildDiaryLinesBody", () => {
     const form: DiaryFormState = { ...diaryFormFromEntry(detail), quantities: { "bi-1": "abc" } };
 
     expect(buildDiaryLinesBody(detail, form).lines).toEqual([
-      { boq_item_id: "bi-1", quantity: 120 },
+      { boq_item_id: "bi-1", section_id: null, quantity: 120, overrun_reason: null },
+    ]);
+  });
+
+  it("PLN-F2.1: bölümlü satırlar (miktar + aşım gerekçesi) DOKUNULMADAN gövdede kalır; hücre yalnız Bölümsüz'ü yazar", () => {
+    const detail = entry({
+      lines: [
+        line({ section_id: null, quantity: "0.000" }),
+        line({ id: "l-2", section_id: "sec-9", quantity: "12.000", overrun_reason: "Ek iş emri" }),
+      ],
+    });
+    const form: DiaryFormState = { ...diaryFormFromEntry(detail), quantities: { "bi-1": "4" } };
+
+    expect(buildDiaryLinesBody(detail, form).lines).toEqual([
+      { boq_item_id: "bi-1", section_id: null, quantity: 4, overrun_reason: null },
+      { boq_item_id: "bi-1", section_id: "sec-9", quantity: "12.000", overrun_reason: "Ek iş emri" },
     ]);
   });
 });
@@ -274,9 +357,16 @@ describe("isDiaryFormDirty", () => {
 
   it("sıcaklık aynı sayının farklı yazımıysa kirlilik SAYILMAZ", () => {
     const detail = entry();
-    const form: DiaryFormState = { ...diaryFormFromEntry(detail), temperatureC: "28,0" };
+    const form: DiaryFormState = { ...diaryFormFromEntry(detail), tempMaxC: "28,0" };
 
     expect(isDiaryFormDirty(detail, form)).toBe(false);
+  });
+
+  it("PLN-F2.1: min sıcaklık ya da rüzgâr değişince kirlidir", () => {
+    const detail = entry();
+
+    expect(isDiaryFormDirty(detail, { ...diaryFormFromEntry(detail), tempMinC: "10" })).toBe(true);
+    expect(isDiaryFormDirty(detail, { ...diaryFormFromEntry(detail), windMs: "2" })).toBe(true);
   });
 
   it("miktar hücresi değişince kirlidir (türev sütunları uyarısı açılır)", () => {

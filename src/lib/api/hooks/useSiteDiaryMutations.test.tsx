@@ -16,6 +16,7 @@ import {
   SITE_DIARY_SUMMARY_QUERY_KEY,
 } from "./useSiteDiary";
 import { backendClient } from "@/lib/api/client";
+import { submitBlockedReasons } from "@/lib/api/error-message";
 import { BackendError } from "@/lib/api/unwrap";
 
 // F-SD T6 · T1'in yazma/durum hook'ları. `useProgressPaymentMutations.test.tsx`
@@ -175,6 +176,28 @@ describe.each([
 
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect((result.current.error as BackendError).status).toBe(409);
+    expect(invalidateSpy).not.toHaveBeenCalled();
+  });
+});
+
+// PLN-F2.1 · EV'li şantiyede Gönder ön-koşulu 422 `{detail, reasons[]}` döner;
+// hook gövdeyi BackendError içinde AYNEN taşımalı ki ekran gerekçe listesini
+// `submitBlockedReasons` ile basabilsin.
+describe("useSubmitSiteDiaryEntry · Gönder engeli (422 reasons)", () => {
+  it("422 gövdesi hatada korunur, gerekçeler ayrıştırılır, hiçbir şey tazelenmez", async () => {
+    const reasons = ["Hava bilgisi eksik (durum, min/max sıcaklık, rüzgâr)", "3 a-s dağıtılmamış; gerekçe gerekli"];
+    vi.mocked(backendClient.POST).mockResolvedValue({
+      data: undefined,
+      error: { detail: reasons.join("; "), reasons },
+      response: new Response(null, { status: 422 }),
+    } as never);
+
+    const { result } = renderHook(() => useSubmitSiteDiaryEntry(ENTRY_ID), { wrapper });
+    act(() => result.current.mutate());
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error).toBeInstanceOf(BackendError);
+    expect(submitBlockedReasons(result.current.error)).toEqual(reasons);
     expect(invalidateSpy).not.toHaveBeenCalled();
   });
 });

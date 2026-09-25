@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { backendErrorMessage } from "./error-message";
+import { backendErrorMessage, submitBlockedReasons } from "./error-message";
 import { BackendError } from "@/lib/api/unwrap";
 
 describe("backendErrorMessage", () => {
@@ -13,5 +13,52 @@ describe("backendErrorMessage", () => {
 
   it("bilinmeyen hatada fallback dondurur", () => {
     expect(backendErrorMessage(new Error("x"))).toBe("Beklenmeyen bir hata oluştu.");
+  });
+});
+
+// PLN-F2.1 · EV'li şantiyede `POST /diary/{id}/submit` → 422 `{detail, reasons[]}`
+// (backend `DiarySubmitBlockedError`; `detail` = reasons'ın "; " ile birleşimi).
+describe("submitBlockedReasons", () => {
+  const blocked = new BackendError(422, {
+    detail: "Miktar girilmedi; 3 a-s dağıtılmamış; gerekçe gerekli",
+    reasons: ["Miktar girilmedi", "3 a-s dağıtılmamış; gerekçe gerekli"],
+  });
+
+  it("422 + reasons[] → gerekçeleri SIRASIYLA ve AYRI AYRI döner (detail'i ';'den bölmez)", () => {
+    expect(submitBlockedReasons(blocked)).toEqual([
+      "Miktar girilmedi",
+      "3 a-s dağıtılmamış; gerekçe gerekli",
+    ]);
+  });
+
+  it("yanıt gövdesi aynı kalır — backendErrorMessage birleşik detail'i vermeye devam eder", () => {
+    expect(backendErrorMessage(blocked)).toBe("Miktar girilmedi; 3 a-s dağıtılmamış; gerekçe gerekli");
+  });
+
+  it("FastAPI doğrulama 422'si (reasons yok, detail dizisi) → null", () => {
+    expect(
+      submitBlockedReasons(new BackendError(422, { detail: [{ msg: "x", loc: ["body"] }] })),
+    ).toBeNull();
+  });
+
+  it("422 dışı durum reasons taşısa da → null (409 kilit ayrı daldır)", () => {
+    expect(submitBlockedReasons(new BackendError(409, { detail: "kilitli", reasons: ["a"] }))).toBeNull();
+  });
+
+  it("boş reasons → null (engel yok sayılır, jenerik hata dalı)", () => {
+    expect(submitBlockedReasons(new BackendError(422, { detail: "", reasons: [] }))).toBeNull();
+  });
+
+  it("dizi olmayan / metin olmayan öğeler güvenilmez — metin olmayan öğe atılır, hiç metin yoksa null", () => {
+    expect(submitBlockedReasons(new BackendError(422, { detail: "x", reasons: "Miktar girilmedi" }))).toBeNull();
+    expect(submitBlockedReasons(new BackendError(422, { detail: "x", reasons: [1, null, " "] }))).toBeNull();
+    expect(
+      submitBlockedReasons(new BackendError(422, { detail: "x", reasons: [42, "Hava bilgisi eksik"] })),
+    ).toEqual(["Hava bilgisi eksik"]);
+  });
+
+  it("BackendError olmayan hata → null", () => {
+    expect(submitBlockedReasons(new Error("ağ"))).toBeNull();
+    expect(submitBlockedReasons(undefined)).toBeNull();
   });
 });

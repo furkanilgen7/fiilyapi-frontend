@@ -1,3 +1,5 @@
+import { divideDecimalStrings, multiplyDecimalStrings, toDecimalString } from "@/lib/decimal";
+
 const LOCALE = "tr-TR";
 
 /**
@@ -406,4 +408,22 @@ export function formatPeriodLabel(period: string): string {
   const month = Number(match[1]);
   if (month < 1 || month > 12) return period;
   return formatPeriod(Number(match[2]), month);
+}
+
+/** m/s → km/sa çarpanı (kayıpsız ondalık). */
+const MS_TO_KMH = "3.6";
+
+/**
+ * Rüzgâr m/s → "18 km/sa" (İ:707 tam sayı, ROUND_HALF_UP · K22 etiket "km/sa").
+ *
+ * PLN-F2.1: `lib/earned-value/format`tan buraya taşındı — çekirdek günlük
+ * ekranının hava kartı kullanır ve çekirdek planlamayı import EDEMEZ (spec
+ * §2.7). `lib/earned-value` aynı fonksiyonu buradan yeniden ihraç eder.
+ */
+export function formatWindKmh(metersPerSecond: Maskeli): string {
+  const decimal = toDecimalString(metersPerSecond);
+  if (decimal === null) return EMPTY_CELL;
+  const kmh = divideDecimalStrings(multiplyDecimalStrings(decimal, MS_TO_KMH), "1", 0);
+  if (kmh === null) return EMPTY_CELL;
+  return `${new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 0 }).format(Number(kmh))} km/sa`;
 }

@@ -77,9 +77,9 @@ export function DiaryBasicInfoCard({ form, onChange, disabled, sections }: Diary
               step="0.1"
               min={DIARY_TEMPERATURE_MIN}
               max={DIARY_TEMPERATURE_MAX}
-              value={form.temperatureC}
+              value={form.tempMaxC}
               disabled={disabled}
-              onChange={(event) => onChange({ temperatureC: event.target.value })}
+              onChange={(event) => onChange({ tempMaxC: event.target.value })}
             />
           )}
         </Field>

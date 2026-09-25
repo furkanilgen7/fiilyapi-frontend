@@ -1,3 +1,9 @@
+import {
+  buildSiteDiaryWorkerCountsSave,
+  siteDiaryWorkerKey,
+  type SiteDiaryWorkerChange,
+  type SiteDiaryWorkerKey,
+} from "@/lib/api/hooks/site-diary-save-bodies";
 import type { SiteDiaryWorkerCountRead, WorkerSource } from "@/lib/api/hooks/useSiteDiary";
 import type { SiteDiaryWorkerCountInput } from "@/lib/api/hooks/useSiteDiaryMutations";
 
@@ -12,6 +18,11 @@ import type { SiteDiaryWorkerCountInput } from "@/lib/api/hooks/useSiteDiaryMuta
  * girilebilir. Bu yüzden kartın satırları mockup'ın bu dört çiftidir;
  * kayıtta bunlar DIŞINDA bir çift varsa (başka bir istemciden yazılmış)
  * SİLİNMEZ, listenin sonuna eklenir.
+ *
+ * PLN-F2.1: firma (taşeron) satırı (`subcontractor_id` dolu) kimliğini
+ * FİRMADAN alır — ön tanımlı "Demirciler/Taşeron" hücresiyle ÇAKIŞMAZ, kendi
+ * satırı olarak eklenir. Gövde `buildSiteDiaryWorkerCountsSave` ile KAYDIN
+ * satırlarından kurulur: firma satırı + saati ekranda düzenlenmese de korunur.
  */
 
 /** GK418-430 — mockup'ın dört satırı, aynı sırayla. */
@@ -26,11 +37,27 @@ export interface DiaryWorkerRow {
   /** Backend `trade` (maxLength 100). */
   trade: string;
   source: WorkerSource;
+  /** Firma satırı ise firma kimliği (PLN-F2.1); ön tanımlılarda YOK. */
+  subcontractorId?: string;
 }
 
-/** Form durumunun anahtarı — backend'in (trade, source) ikilisiyle birebir. */
-export function workerCountKey(row: DiaryWorkerRow): string {
-  return `${row.source}|${row.trade}`;
+/**
+ * Form durumunun anahtarı — backend kimliğiyle birebir: firmasız satırda
+ * (kaynak, meslek), firma satırında firma.
+ */
+export function workerCountKey(row: DiaryWorkerRow): SiteDiaryWorkerKey {
+  return siteDiaryWorkerKey({ trade: row.trade, source: row.source, subcontractor_id: row.subcontractorId });
+}
+
+/** Kayıt satırının anahtarı (`subcontractor_id` alanı adıyla). */
+function entryRowKey(row: SiteDiaryWorkerCountRead): SiteDiaryWorkerKey {
+  return siteDiaryWorkerKey(row);
+}
+
+function toWorkerRow(row: SiteDiaryWorkerCountRead): DiaryWorkerRow {
+  return row.subcontractor_id
+    ? { trade: row.trade, source: row.source, subcontractorId: row.subcontractor_id }
+    : { trade: row.trade, source: row.source };
 }
 
 /**
@@ -41,9 +68,7 @@ export function buildWorkerRows(
   entryRows: readonly SiteDiaryWorkerCountRead[] = [],
 ): DiaryWorkerRow[] {
   const presetKeys = new Set(DIARY_WORKER_PRESETS.map(workerCountKey));
-  const extras = entryRows
-    .filter((row) => !presetKeys.has(workerCountKey(row)))
-    .map((row) => ({ trade: row.trade, source: row.source }));
+  const extras = entryRows.filter((row) => !presetKeys.has(entryRowKey(row))).map(toWorkerRow);
   return [...DIARY_WORKER_PRESETS, ...extras];
 }
 
@@ -57,7 +82,7 @@ export function workerCountsFromEntry(
 ): Record<string, string> {
   const values: Record<string, string> = {};
   for (const row of entryRows) {
-    values[workerCountKey(row)] = row.count === 0 ? "" : String(row.count);
+    values[entryRowKey(row)] = row.count === 0 ? "" : String(row.count);
   }
   return values;
 }
@@ -101,23 +126,35 @@ export function workerCountsTotal(
 }
 
 /**
- * `PATCH` gövdesindeki `worker_counts[]`. DEĞİŞTİRME semantiği gereği SIFIR
- * olan satır gövdeye GİRMEZ — böylece backend'de silinir ve ekranda boş
- * hücre olarak yeniden basılır (ön tanımlı satırlar zaten her zaman görünür).
+ * `PATCH` gövdesindeki `worker_counts[]` — KAYDIN satırlarından kurulan TAM
+ * küme (`buildSiteDiaryWorkerCountsSave`). Ekrandaki hücreler yalnız SAYIYI
+ * değiştirir; firma kimliği ve saat kayıttan korunur. SIFIR olan satır
+ * gövdeye GİRMEZ (DEĞİŞTİRME → backend'de silinir, ekranda boş hücre olarak
+ * yeniden basılır). Kayıtta olup ekranda satırı OLMAYAN satır DÜŞMEZ.
  * Geçersiz hücre varsa gövde ÜRETİLMEZ (`null`); çağıran kaydetmeyi durdurur.
  */
 export function buildWorkerCountsBody(
+  entryRows: readonly SiteDiaryWorkerCountRead[],
   rows: readonly DiaryWorkerRow[],
   values: Record<string, string>,
 ): SiteDiaryWorkerCountInput[] | null {
-  const body: SiteDiaryWorkerCountInput[] = [];
+  const savedKeys = new Set(entryRows.map(entryRowKey));
+  const changes: Record<SiteDiaryWorkerKey, SiteDiaryWorkerChange> = {};
+  const removed: SiteDiaryWorkerKey[] = [];
+  const added: SiteDiaryWorkerCountInput[] = [];
   for (const row of rows) {
-    const parsed = parseWorkerCount(values[workerCountKey(row)] ?? "");
-    if (parsed === null) return null;
-    if (parsed === 0) continue;
-    body.push({ trade: row.trade, source: row.source, count: parsed });
+    const key = workerCountKey(row);
+    const count = parseWorkerCount(values[key] ?? "");
+    if (count === null) return null;
+    if (count === 0) {
+      removed.push(key);
+    } else if (savedKeys.has(key)) {
+      changes[key] = { count };
+    } else {
+      added.push({ trade: row.trade, source: row.source, count, subcontractor_id: row.subcontractorId ?? null });
+    }
   }
-  return body;
+  return buildSiteDiaryWorkerCountsSave(entryRows, { changes, added, removed });
 }
 
 /** Yerel işçi değerleri kayıttakinden ayrıştı mı (`isDiaryFormDirty` payı). */
