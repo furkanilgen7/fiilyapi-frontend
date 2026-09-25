@@ -110,10 +110,10 @@ export function DiaryLinesCard({
           <h2 className="diary-card__title" id="diary-lines-title">
             📋 Yapılan Miktarlar
           </h2>
+          {/* Uzantı `caption` (İ:213) alt başlığın TAMAMIdır — verilirse çekirdek
+              metni basılmaz (PLN-F2.5e · karar 3). */}
           <p className="diary-card__subtitle">
-            Kalem × bölüm · girişler otomatik olarak aylık hakedişe işlenir
-            {/* Uzantı eki (İ:213) — çekirdek metni KORUNUR. */}
-            {lineColumns?.caption && <> · {lineColumns.caption}</>}
+            {lineColumns?.caption ?? "Kalem × bölüm · girişler otomatik olarak aylık hakedişe işlenir"}
           </p>
         </div>
         <Badge variant="primary" className="diary-lines__badge">

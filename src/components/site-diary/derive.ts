@@ -1,4 +1,5 @@
 import type { BoqListResponse } from "@/lib/api/hooks/useBoq";
+import { formatDateDots } from "@/lib/format";
 
 /**
  * Yerel takvime göre `YYYY-MM-DD`. `toISOString()` KULLANILMAZ — UTC'ye
@@ -15,6 +16,34 @@ export function isoDate(date: Date): string {
 /** ISO tarihin yıl/ay bileşenleri — liste sorgusunun `year`/`month` süzmesi. */
 export function isoPeriod(iso: string): { year: number; month: number } {
   return { year: Number(iso.slice(0, 4)), month: Number(iso.slice(5, 7)) };
+}
+
+/** Haftanın günleri, tam ad — dizinin sırası `Date.getUTCDay()` ile aynı (0 = Pazar). */
+const TR_WEEKDAYS_LONG = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"] as const;
+
+/**
+ * `YYYY-MM-DD` → "24.09.2026 Perşembe" (PLN-F2.5e · karar 1, İ:113 başlık alt
+ * satırı). Tarih kısmı `formatDateDots` tek kaynağından.
+ *
+ * Gün adı ISO bileşenlerinden UTC'de kurulan tarihle bulunur (`formatWeekdayShort`
+ * ile aynı gerekçe): `new Date(iso)` UTC gece yarısı olarak ayrıştırılıp YEREL
+ * gün okunsaydı UTC'nin batısında bir gün GERİ, yerel gece yarısı + UTC günü
+ * okunsaydı TR saatinde bir gün geri kayardı. Ayrıştırılamayan girdi aynen döner.
+ */
+export function formatDiaryDayLabel(iso: string): string {
+  const { date, weekday } = diaryDayParts(iso);
+  return weekday === "" ? date : `${date} ${weekday}`;
+}
+
+/**
+ * `formatDiaryDayLabel`in parçaları — başlık tarihi mono, gün adını düz basar
+ * (İ:113 `<span JetBrains Mono>24.09.2026</span> Perşembe`).
+ */
+export function diaryDayParts(iso: string): { date: string; weekday: string } {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if (match === null) return { date: iso, weekday: "" };
+  const utcDay = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]))).getUTCDay();
+  return { date: formatDateDots(iso), weekday: TR_WEEKDAYS_LONG[utcDay] ?? "" };
 }
 
 /**

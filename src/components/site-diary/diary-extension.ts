@@ -54,7 +54,11 @@ export interface DiaryLineColumns {
    * Verilirse `headers` ile AYNI uzunlukta; verilmezse başlık satırında boş hücre.
    */
   renderItemCells?: (boqItemId: string) => readonly ReactNode[];
-  /** Kart alt başlığına ek (İ:213 — ör. "kazanılmış = bugün miktar × birim oran (Rev 1)"). */
+  /**
+   * Kart alt başlığının TAMAMI (İ:213 — ör. "İş tipi × bölüm · kazanılmış = bugün
+   * miktar × birim oran (Rev 1)"). Verilirse çekirdeğin kendi alt başlık metni
+   * basılmaz; verilmezse çekirdek metni kalır. (PLN-F2.5e · karar 3)
+   */
   caption?: ReactNode;
   /**
    * Satırın HEMEN ALTINA tam genişlik alt satır (İ:241-246 — ör. "✕ Bu kaleme
@@ -77,15 +81,29 @@ export interface DiaryItemMeta {
   renderItemTag?: (boqItemId: string) => ReactNode;
 }
 
+/**
+ * Çekirdeğin dış modüle verdiği eylemler. `submit`, başlıktaki "Kaydet & Gönder"
+ * düğmesinin çağırdığı akışın AYNISIDIR (`onBeforeSave` → kayıt → gönder);
+ * `canSubmit` o düğmenin etkinlik koşuludur (yazma izni · kayıt var · gönderilmemiş
+ * · kilitsiz · kapı açık · kayıt sürmüyor).
+ */
+export interface DiaryCoreActions {
+  submit: () => void;
+  canSubmit: boolean;
+  isSaving: boolean;
+}
+
 /** Dış modülün çekirdek ekrana verdiği yuvalar. Hepsi opsiyoneldir. */
 export interface DiaryExtension {
   /** Başlık alt satırının sonuna ek (ör. "Gün 142 · H21"). */
   headerSuffix?: ReactNode;
   /**
    * Günün kilidi (rapor onayı). `isLocked` ise çekirdek BÜTÜN alanları salt
-   * okunur yapar ve `banner`ı durum satırında basar.
+   * okunur yapar. `banner` verilirse durum satırında basılır; tam genişlik
+   * bant isteyen dış modül onu `topBanner`da verir ve burada boş bırakır
+   * (PLN-F2.5e · karar 5, İ:143-149).
    */
-  lock?: { isLocked: boolean; banner: ReactNode } | null;
+  lock?: { isLocked: boolean; banner?: ReactNode } | null;
   /**
    * "Gönder" ön koşulu. `canSubmit === false` ise çekirdek Gönder düğmesini
    * pasif yapar ve gerekçeleri (`reasons`) düğmenin `title`ı ile DEĞİL ekranda
@@ -103,8 +121,13 @@ export interface DiaryExtension {
   } | null;
   lineColumns?: DiaryLineColumns | null;
   itemMeta?: DiaryItemMeta | null;
-  /** Kart ızgarasının ALTINDA tam genişlik blok (Saat Dağıtımı + Gönder kontrol çubuğu). */
-  fullWidthBlock?: ReactNode;
+  /**
+   * Kart ızgarasının ALTINDA tam genişlik blok (Saat Dağıtımı + Gönder kontrol
+   * çubuğu). Fonksiyon verilirse çekirdek ona KENDİ eylemlerini geçirir — blok
+   * içindeki "Gönder" düğmeleri (İ:504 kontrol çubuğu, İ:552 tablet çubuğu)
+   * başlıktaki "Kaydet & Gönder" ile AYNI akışı çalıştırır. (PLN-F2.5e · karar 6)
+   */
+  fullWidthBlock?: ReactNode | ((actions: DiaryCoreActions) => ReactNode);
   /** Başlığın ALTINDA, kartlardan önce bant (İ:150-155 — ör. formen bandı). (S3) */
   topBanner?: ReactNode;
   /**

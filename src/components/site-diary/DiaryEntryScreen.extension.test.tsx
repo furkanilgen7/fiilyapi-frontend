@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -6,7 +6,7 @@ import type { ReactElement } from "react";
 
 import { SiteDiaryEntryView } from "./SiteDiaryEntryView";
 import { isoDate } from "./derive";
-import type { DiaryExtension } from "./diary-extension";
+import type { DiaryCoreActions, DiaryExtension } from "./diary-extension";
 import { useSiteDiaryEntries, useSiteDiaryEntry } from "@/lib/api/hooks/useSiteDiary";
 import {
   useCreateSiteDiaryEntry,
@@ -347,14 +347,16 @@ describe("DiaryEntryScreen · uzantı yuvaları (§2.7)", () => {
     expect(screen.getByText("Bugünkü Hakediş Katkısı")).toBeInTheDocument();
   });
 
-  it("fullWidthBlock ızgaranın ALTINDA, headerSuffix başlık alt satırının SONUNDA", () => {
+  it("fullWidthBlock ızgaranın ALTINDA, headerSuffix başlık alt satırının SONUNDA (tarihten sonra)", () => {
     const extension: DiaryExtension = {
       headerSuffix: "Gün 142 · H21",
       fullWidthBlock: <section aria-label="Saat Dağıtımı">dağıtım</section>,
     };
     const { container } = renderScreen(<SiteDiaryEntryView extension={extension} />);
 
-    expect(container.querySelector(".diary__subtitle")?.textContent).toMatch(/Güneşkent · Gün 142 · H21$/);
+    expect(container.querySelector(".diary__subtitle")?.textContent).toMatch(
+      /Güneşkent · \d{2}\.\d{2}\.\d{4} \p{L}+ · Gün 142 · H21$/u,
+    );
     const block = container.querySelector(".diary__full-width") as HTMLElement;
     expect(within(block).getByRole("region", { name: "Saat Dağıtımı" })).toBeInTheDocument();
     expect(container.querySelector(".diary__grid")?.nextElementSibling).toBe(block);
@@ -536,15 +538,29 @@ describe("DiaryEntryScreen · F2.2.1 sözleşme genişlemesi (renderItemCells ·
     expect(ext[0].textContent).toBe("");
   });
 
-  it("caption: çekirdek alt başlığı KORUNUR, caption ' · ' ile sona eklenir", () => {
-    const extension: DiaryExtension = {
-      lineColumns: { ...columns, caption: "kazanılmış = bugün miktar × birim oran (Rev 1)" },
-    };
+  function linesSubtitle(container: HTMLElement) {
+    return container.querySelector("#diary-lines-title")?.parentElement?.querySelector(".diary-card__subtitle");
+  }
+
+  it("caption (karar 3): verilirse alt başlığın TAMAMIdır — çekirdek metni BASILMAZ (İ:213)", () => {
+    const caption = "İş tipi × bölüm · kazanılmış = bugün miktar × birim oran (Rev 1)";
+    const extension: DiaryExtension = { lineColumns: { ...columns, caption } };
     const { container } = renderScreen(<SiteDiaryEntryView extension={extension} />);
 
-    const subtitle = container.querySelector("#diary-lines-title")?.parentElement?.querySelector(".diary-card__subtitle");
-    expect(subtitle?.textContent).toBe(
-      "Kalem × bölüm · girişler otomatik olarak aylık hakedişe işlenir · kazanılmış = bugün miktar × birim oran (Rev 1)",
+    expect(linesSubtitle(container)?.textContent).toBe(caption);
+    expect(screen.queryByText(/girişler otomatik olarak aylık hakedişe işlenir/)).not.toBeInTheDocument();
+  });
+
+  it("caption YOKSA çekirdek alt başlığı aynen kalır (uzantılı ve uzantısız)", () => {
+    const { container, unmount } = renderScreen(<SiteDiaryEntryView extension={{ lineColumns: columns }} />);
+    expect(linesSubtitle(container)?.textContent).toBe(
+      "Kalem × bölüm · girişler otomatik olarak aylık hakedişe işlenir",
+    );
+    unmount();
+
+    const bare = renderScreen(<SiteDiaryEntryView />);
+    expect(linesSubtitle(bare.container)?.textContent).toBe(
+      "Kalem × bölüm · girişler otomatik olarak aylık hakedişe işlenir",
     );
   });
 
@@ -683,5 +699,162 @@ describe("DiaryEntryScreen · F2.3.1 (onBeforeSave · renderSubRow · topBanner 
     expect(screen.queryByText("12 a-s dağıtılmamış")).not.toBeInTheDocument();
     expect(screen.queryByText("Gönderim engelli")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Kaydet & Gönder" })).toBeDisabled();
+  });
+});
+
+describe("DiaryEntryScreen · PLN-F2.5e çekirdek kararları", () => {
+  describe("karar 1 · başlık alt satırı şantiye · proje · seçili gün", () => {
+    beforeEach(() => {
+      // Yalnız `Date` sahte — react-query/userEvent zamanlayıcıları gerçek kalır.
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date(2026, 8, 24, 10, 0));
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("uzantısız (EV'siz) ekranda da tarih + Türkçe gün adı basılır", () => {
+      const { container } = renderScreen(<SiteDiaryEntryView />);
+
+      expect(container.querySelector(".diary__subtitle")?.textContent).toBe(
+        "A-Blok Şantiyesi · Güneşkent · 24.09.2026 Perşembe",
+      );
+    });
+
+    it("İ:113 birebir: headerSuffix tarihten SONRA gelir", () => {
+      const { container } = renderScreen(<SiteDiaryEntryView extension={{ headerSuffix: "Gün 142 · H21" }} />);
+
+      expect(container.querySelector(".diary__subtitle")?.textContent).toBe(
+        "A-Blok Şantiyesi · Güneşkent · 24.09.2026 Perşembe · Gün 142 · H21",
+      );
+    });
+
+    it("yıl sınırında seçili gün (31.12 → Perşembe)", () => {
+      vi.setSystemTime(new Date(2026, 11, 31, 23, 30));
+      const { container } = renderScreen(<SiteDiaryEntryView />);
+
+      expect(container.querySelector(".diary__subtitle")?.textContent).toBe(
+        "A-Blok Şantiyesi · Güneşkent · 31.12.2026 Perşembe",
+      );
+    });
+  });
+
+  describe("karar 5 · banner'sız kilit", () => {
+    it("lock.banner YOKSA durum satırında bant kabı basılmaz; alanlar YİNE salt okunur", () => {
+      const { container } = renderScreen(<SiteDiaryEntryView extension={{ lock: { isLocked: true } }} />);
+
+      const statusRow = container.querySelector(".diary__status-row") as HTMLElement;
+      expect(statusRow.querySelector(".diary__lock-banner")).toBeNull();
+      expect(container.querySelector(".diary__lock-banner")).toBeNull();
+      expect(screen.getByLabelText("Tarih")).toBeDisabled();
+      expect(screen.getByRole("radio", { name: "Güneşli" })).toBeDisabled();
+      expect(screen.queryByLabelText("DUV.01.01 bugün yapılan miktar")).not.toBeInTheDocument();
+      expect(screen.getByLabelText("Taşeron · Kaya Duvar işçi sayısı")).toBeDisabled();
+      expect(screen.getByRole("button", { name: "Kaydet & Gönder" })).toBeDisabled();
+      expect(screen.getByRole("button", { name: "Taslak Kaydet" })).toBeDisabled();
+    });
+  });
+
+  describe("karar 6 · fullWidthBlock fonksiyonu çekirdek eylemlerini alır", () => {
+    function blockExtension(extra: Partial<DiaryExtension> = {}) {
+      const render = vi.fn((actions: DiaryCoreActions) => (
+        <section aria-label="Saat Dağıtımı">
+          <button type="button" disabled={!actions.canSubmit} onClick={actions.submit}>
+            Blok Gönder
+          </button>
+          <span data-testid="block-saving">{actions.isSaving ? "kaydediliyor" : "boşta"}</span>
+        </section>
+      ));
+      const extension: DiaryExtension = { fullWidthBlock: render, ...extra };
+      return { extension, render };
+    }
+
+    it("blok düğmesi başlıktaki 'Kaydet & Gönder' ile AYNI zinciri çalıştırır (onBeforeSave → kayıt → gönder)", async () => {
+      const user = userEvent.setup();
+      const detail = entryDetail();
+      const onBeforeSave = vi.fn().mockResolvedValue(undefined);
+      updateMutate.mockResolvedValue(detail);
+      linesMutate.mockResolvedValue(detail);
+      submitMutate.mockResolvedValue(detail);
+      const { extension } = blockExtension({ onBeforeSave });
+      renderScreen(<SiteDiaryEntryView extension={extension} />);
+
+      await user.click(screen.getByRole("button", { name: "Blok Gönder" }));
+
+      await waitFor(() => expect(submitMutate).toHaveBeenCalledTimes(1));
+      expect(onBeforeSave).toHaveBeenCalledTimes(1);
+      expect(updateMutate).toHaveBeenCalledTimes(1);
+      expect(linesMutate).toHaveBeenCalledTimes(1);
+      expect(onBeforeSave.mock.invocationCallOrder[0]).toBeLessThan(updateMutate.mock.invocationCallOrder[0]);
+      expect(updateMutate.mock.invocationCallOrder[0]).toBeLessThan(linesMutate.mock.invocationCallOrder[0]);
+      expect(linesMutate.mock.invocationCallOrder[0]).toBeLessThan(submitMutate.mock.invocationCallOrder[0]);
+    });
+
+    it("kayıt sürerken isSaving=true ve iki düğme birlikte pasif", async () => {
+      const user = userEvent.setup();
+      let release: () => void = () => {};
+      const onBeforeSave = vi.fn(() => new Promise<void>((resolve) => (release = resolve)));
+      const { extension } = blockExtension({ onBeforeSave });
+      renderScreen(<SiteDiaryEntryView extension={extension} />);
+
+      await user.click(screen.getByRole("button", { name: "Blok Gönder" }));
+
+      expect(await screen.findByText("kaydediliyor")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Blok Gönder" })).toBeDisabled();
+      expect(screen.getByRole("button", { name: "Kaydet & Gönder" })).toBeDisabled();
+      release();
+    });
+
+    const branches: { name: string; arrange: () => Partial<DiaryExtension>; canSubmit: boolean }[] = [
+      { name: "açık gün", arrange: () => ({}), canSubmit: true },
+      { name: "kilitli", arrange: () => ({ lock: { isLocked: true } }), canSubmit: false },
+      {
+        name: "kapı kapalı",
+        arrange: () => ({ submitGate: { canSubmit: false, reasons: ["12 a-s dağıtılmamış"] } }),
+        canSubmit: false,
+      },
+      {
+        name: "kayıt yok",
+        arrange: () => {
+          mockEntry(undefined);
+          return {};
+        },
+        canSubmit: false,
+      },
+    ];
+
+    it.each(branches)("$name: canSubmit başlık düğmesinin disabled'ıyla tutarlı", ({ arrange, canSubmit }) => {
+      const { extension, render } = blockExtension(arrange());
+      renderScreen(<SiteDiaryEntryView extension={extension} />);
+
+      const lastActions = render.mock.calls.at(-1)?.[0] as DiaryCoreActions;
+      expect(lastActions.canSubmit).toBe(canSubmit);
+      expect(lastActions.isSaving).toBe(false);
+      const header = screen.getByRole("button", { name: "Kaydet & Gönder" });
+      expect((header as HTMLButtonElement).disabled).toBe(!canSubmit);
+      expect(screen.getByRole("button", { name: "Blok Gönder" })).toHaveProperty("disabled", !canSubmit);
+    });
+
+    it("yazma izni yoksa canSubmit=false; blokta submit çağrılsa bile istek atılmaz", async () => {
+      mockSession({ site_diary: "view", progress_payments: "view" });
+      const { extension, render } = blockExtension();
+      renderScreen(<SiteDiaryEntryView extension={extension} />);
+
+      const lastActions = render.mock.calls.at(-1)?.[0] as DiaryCoreActions;
+      expect(lastActions.canSubmit).toBe(false);
+      expect(screen.queryByRole("button", { name: "Kaydet & Gönder" })).not.toBeInTheDocument();
+      lastActions.submit();
+      await Promise.resolve();
+      expect(updateMutate).not.toHaveBeenCalled();
+      expect(submitMutate).not.toHaveBeenCalled();
+    });
+
+    it("ReactNode verilirse bugünkü gibi basılır", () => {
+      const { container } = renderScreen(
+        <SiteDiaryEntryView extension={{ fullWidthBlock: <p>düz blok</p> }} />,
+      );
+      const block = container.querySelector(".diary__full-width") as HTMLElement;
+      expect(within(block).getByText("düz blok")).toBeInTheDocument();
+    });
   });
 });

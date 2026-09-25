@@ -43,11 +43,16 @@ import { DiaryRecentEntriesCard } from "./DiaryRecentEntriesCard";
 import { DiarySafetyCard } from "./DiarySafetyCard";
 import { DiaryWorkerCountsCard } from "./DiaryWorkerCountsCard";
 import { DIARY_STATUS_LABELS } from "./diary-labels";
-import { isoDate, isoPeriod } from "./derive";
+import { diaryDayParts, isoDate, isoPeriod } from "./derive";
 import { computeDiaryAccrual } from "./payment-accrual";
 import { buildRecentEntryRows, DIARY_RECENT_ENTRY_LIMIT } from "./recent-entries";
 import { buildDiaryWorkerRows } from "./worker-counts";
-import type { DiaryExtensionContext, DiaryExtensionProps, DiaryLineRef } from "./diary-extension";
+import type {
+  DiaryCoreActions,
+  DiaryExtensionContext,
+  DiaryExtensionProps,
+  DiaryLineRef,
+} from "./diary-extension";
 import { buildDiaryExtensionContext, isSameDiaryExtensionContext } from "./diary-extension-context";
 import { buildDiaryLineTree, diaryTreeLeaves } from "./diary-lines-tree";
 import { boqTreeItems, siteTreeSections } from "./diary-tree-sources";
@@ -268,6 +273,12 @@ export function DiaryEntryScreen({
   const isGateClosed = gate !== null && !gate.canSubmit;
   // S4: uzantı gerekçeleri kendisi gösteriyorsa (kontrol çubuğu) çekirdek listeyi basmaz.
   const showGateReasons = gate?.showReasonsInCore !== false;
+  /**
+   * "Kaydet & Gönder" etkinliği — TEK türetilmiş değer (PLN-F2.5e · karar 6):
+   * başlık düğmesi de, `fullWidthBlock`a verilen `canSubmit` de BUNU okur.
+   */
+  const canSubmit =
+    permission.canWrite && !isSubmitted && entry !== undefined && !isLocked && !isGateClosed && !isSaving;
   const lineRefs = new Map<string, DiaryLineRef>(extensionContext.lines.map((line) => [line.key, line]));
 
   // Sağ panel türevleri — hepsi SAF fonksiyonlarda (ayrı `.ts` dosyaları),
@@ -402,7 +413,8 @@ export function DiaryEntryScreen({
 
   /** Kaydet & Gönder (GK169) — kaydeder, sonra `submit` ile gönderir. */
   async function handleSaveAndSubmit() {
-    if (!entry || isGateClosed || isLocked) return;
+    // Blok düğmesi de bu akışı çağırır — başlıktaki düğmeyle AYNI koşul.
+    if (!canSubmit || !entry) return;
     if (!validateForm()) return;
     setIsSaving(true);
     if (!(await runBeforeSave())) {
@@ -435,6 +447,17 @@ export function DiaryEntryScreen({
     }
   }
 
+  // Uzantı yuvası `fullWidthBlock` (karar 6): fonksiyonsa çekirdek KENDİ
+  // eylemlerini verir — bloktaki "Gönder" başlıktakiyle AYNI akışı çalıştırır.
+  const coreActions: DiaryCoreActions = {
+    submit: () => void handleSaveAndSubmit(),
+    canSubmit,
+    isSaving,
+  };
+  const slot = extension?.fullWidthBlock;
+  const fullWidthBlock = typeof slot === "function" ? slot(coreActions) : slot;
+  const day = diaryDayParts(activeDate);
+
   return (
     <div className="diary">
       {/* Kabuğa özel üst şerit — şantiye rotasında sekme barı (GK148-155),
@@ -445,9 +468,12 @@ export function DiaryEntryScreen({
       <div className="diary__head">
         <div>
           <h1 className="diary__title">Günlük Kayıt &amp; Planlama</h1>
+          {/* İ:113 — "{şantiye} · {proje} · 24.09.2026 Perşembe" (seçili gün;
+              karar 1, EV'siz ekranda da) + uzantı eki. */}
           <p className="diary__subtitle">
-            {site ? `${site.name} · ${site.project.name}` : "Şantiye bilgisi yükleniyor…"}
-            {/* Uzantı yuvası `headerSuffix` (ör. "Gün 142 · H21", İ:112). */}
+            {site ? `${site.name} · ${site.project.name} · ` : "Şantiye bilgisi yükleniyor… · "}
+            <span className="diary__subtitle-date">{day.date}</span> {day.weekday}
+            {/* Uzantı yuvası `headerSuffix` (ör. "Gün 142 · H21", İ:113). */}
             {extension?.headerSuffix && (
               <span className="diary__subtitle-suffix"> · {extension.headerSuffix}</span>
             )}
@@ -478,7 +504,7 @@ export function DiaryEntryScreen({
                   altında EKRANDA listelenir (title değil). */}
               <Button
                 variant="success"
-                disabled={isSaving || !entry || isLocked || isGateClosed}
+                disabled={!canSubmit}
                 title={entry ? undefined : "Önce taslak kaydedin — iş kalemi satırları kayıt açılınca gelir"}
                 onClick={handleSaveAndSubmit}
               >
@@ -512,8 +538,10 @@ export function DiaryEntryScreen({
             Bu modülde yalnız görüntüleme yetkiniz var — form salt-okunur.
           </span>
         )}
-        {/* Uzantı yuvası `lock` — kilit bandı durum satırında (İ:143-149). */}
-        {isLocked && extension?.lock && (
+        {/* Uzantı yuvası `lock` — bant VERİLDİYSE durum satırında (İ:143-149).
+            Verilmezse kap basılmaz (karar 5: tam genişlik bant `topBanner`da);
+            salt okunurluk yine `isLocked`tan gelir. */}
+        {isLocked && extension?.lock?.banner && (
           <div className="diary__lock-banner" role="status">
             <LockIcon width={16} height={16} />
             <div className="diary__lock-banner-body">{extension.lock.banner}</div>
@@ -665,7 +693,7 @@ export function DiaryEntryScreen({
       </div>
 
       {/* Uzantı yuvası `fullWidthBlock` — kart ızgarasının ALTI (İ:384→386). */}
-      {extension?.fullWidthBlock && <div className="diary__full-width">{extension.fullWidthBlock}</div>}
+      {fullWidthBlock && <div className="diary__full-width">{fullWidthBlock}</div>}
     </div>
   );
 }

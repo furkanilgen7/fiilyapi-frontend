@@ -438,6 +438,10 @@
 .diary__subtitle-suffix {
   color: var(--color-text-subtle);
 }
+/* İ:113 — başlık alt satırındaki tarih JetBrains Mono (gün adı sans kalır). */
+.diary__subtitle-date {
+  font-family: var(--font-mono);
+}
 /* Gönder ön koşulu / 422 gerekçeleri — EKRANDA (title değil) */
 .diary__gate {
   font-size: 12px;
