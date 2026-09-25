@@ -610,6 +610,16 @@
   --shadow-sticky-bar: 0 -4px 16px rgba(15, 23, 42, 0.06); /* yapışkan Kaydet çubuğu (Ek 402) */
   --shadow-menu: 0 8px 24px rgba(15, 23, 42, 0.12); /* açılır menü/liste (KAT 112 · BÜT 109) */
   --shadow-popover: 0 10px 28px rgba(15, 23, 42, 0.16); /* popover (KAT 154 · BÜT 245) */
+
+  /* PLN-F2.3 · Günlük ilerleme adaptörü — Şantiye - Günlük Kayıt
+     (İlerleme).dc.html (İ) + (Ek Formlar).dc.html (EF). Beş ızgara tonu mevcut
+     palette yoktu; gölge shadow-menu'den ayrı bir değerdir (opaklık farkı). */
+  --color-ev-diary-grid-line: #eef2f6; /* kod kolonu çizgisi + boş hücre kenarlığı (İ 443, 481, 486, 666) */
+  --color-ev-diary-cell-line: #f5f7fa; /* gövde hücresi dikey çizgisi (İ 469) */
+  --color-ev-diary-group-head-bg: #f5f7ff; /* grup kodu başlık zemini (İ 670) */
+  --color-ev-diary-group-cell-bg: #fafbff; /* grup kodu gövde hücresi zemini (İ 666) */
+  --color-ev-diary-sub-row-bg: #fcfcfd; /* taşeron satırı zemini (İ 664) */
+  --shadow-ev-diary-submit-bar: 0 8px 24px rgba(15, 23, 42, 0.1); /* gönder çubuğu (İ 493 · EF 591) */
 }
 
 @keyframes fadeUp {

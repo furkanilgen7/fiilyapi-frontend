@@ -115,7 +115,7 @@ function rowJob(row: EvDayRow): string {
   return `Taşeron · ${count} kişi × ${formatHours(perPerson)} sa`;
 }
 
-function GridRow({ row, draft, canEdit, selected, onToggleSelect, renderCell }: AllocationGridProps & { row: EvDayRow }) {
+function GridRow({ row, draft, headers, canEdit, selected, onToggleSelect, renderCell }: AllocationGridProps & { row: EvDayRow }) {
   const key = keyOfRow(row);
   const hours = toCenti(row.hours);
   return (
@@ -139,7 +139,7 @@ function GridRow({ row, draft, canEdit, selected, onToggleSelect, renderCell }: 
         </span>
       </th>
       {draft.codes.map((code) => (
-        <td key={code.node_id} className="ev-diary-cell">
+        <td key={code.node_id} className={cx("ev-diary-cell", !headers[code.node_id]?.isLeaf && "ev-diary-cell--group")}>
           {renderCell(row, code.node_id)}
         </td>
       ))}

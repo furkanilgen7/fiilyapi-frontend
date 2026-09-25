@@ -114,6 +114,12 @@ describe("HourAllocationBlock — ızgara (İ:446-489)", () => {
     await user.click(screen.getByRole("button", { name: "Miktara göre dağıtılır" }));
     expect(screen.getByRole("button", { name: "Doğrudan" })).toBeInTheDocument();
   });
+
+  it("üst grup kolonunun gövde hücresi grup zeminini taşır, yaprak hücresi taşımaz (İ:666)", () => {
+    render(<Harness view={dayView()} />);
+    expect(cell("Emre Koç", "Betonarme işleri").closest("td")).toHaveClass("ev-diary-cell--group");
+    expect(cell("Mehmet Demir", "Kalıp · Kat 6–10").closest("td")).not.toHaveClass("ev-diary-cell--group");
+  });
 });
 
 describe("+ İş kodu ekle (İ:404-423)", () => {

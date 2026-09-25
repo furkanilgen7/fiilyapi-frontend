@@ -1,10 +1,8 @@
 /* PLN-F2.3 · Planlama adaptörü — Günlük Kayıt (İlerleme) yuvaları.
    Kaynak: projedesign/Şantiye - Günlük Kayıt (İlerleme).dc.html (İ) + (Ek Formlar).
-   Çıplak hex YOK; mockup değerleri token'a çevrildi. Token'da birebir karşılığı
-   olmayan dört ton en yakın token'a bağlandı (raporda):
-     #eef2f6 → --color-ev-chip-neutral (#eef2f7) · #f5f7fa → --color-divider
-     #f5f7ff → --color-ev-editor-bg (#f8fbff) · #fafbff → --color-ev-row-open-bg
-     #fcfcfd → --color-surface-2 · gönder çubuğu gölgesi .10 → --shadow-menu (.12) */
+   Çıplak hex YOK; mockup değerleri token'a çevrildi. Izgaraya özgü tonlar ve
+   gönder çubuğu gölgesi tokens.css'te `--color-ev-diary-*` / `--shadow-ev-diary-*`
+   (PLN-F2.3 bloğu) olarak birebir tanımlıdır. */
 
 .ev-diary-mono { font-family: var(--font-mono); }
 .ev-diary-muted { color: var(--color-text-subtle); }
@@ -374,11 +372,11 @@
   width: 92px;
   min-width: 92px;
   padding: 6px;
-  border-left: 1px solid var(--color-ev-chip-neutral);
+  border-left: 1px solid var(--color-ev-diary-grid-line); /* İ:443 */
   vertical-align: bottom;
   text-align: left;
 }
-.ev-diary-grid thead .ev-diary-grid__code--group { background: var(--color-ev-editor-bg); }
+.ev-diary-grid thead .ev-diary-grid__code--group { background: var(--color-ev-diary-group-head-bg); } /* İ:670 hbg */
 .ev-diary-grid__code-id { display: block; font-family: var(--font-mono); font-size: 10px; font-weight: var(--weight-regular); color: var(--color-text-muted); }
 .ev-diary-grid__code-name {
   display: block;
@@ -435,7 +433,7 @@
 }
 
 .ev-diary-grid__row > * { border-bottom: 1px solid var(--color-divider); }
-.ev-diary-grid__row--sub > * { background: var(--color-surface-2); }
+.ev-diary-grid__row--sub > * { background: var(--color-ev-diary-sub-row-bg); } /* İ:664 */
 .ev-diary-grid__row--changed > * { background: var(--color-warning-tint); }
 .ev-diary-grid__person { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
 .ev-diary-grid__who { display: flex; flex: 1; flex-direction: column; min-width: 0; }
@@ -454,12 +452,15 @@
 .ev-diary-grid__changed > svg { width: 11px; height: 11px; flex-shrink: 0; }
 .ev-diary-grid__hours { font-family: var(--font-mono); font-size: var(--text-body); font-weight: var(--weight-semibold); color: var(--color-text-secondary); }
 
-.ev-diary-cell { padding: var(--space-1) 5px; border-left: 1px solid var(--color-divider); }
+.ev-diary-cell { padding: var(--space-1) 5px; border-left: 1px solid var(--color-ev-diary-cell-line); } /* İ:469 */
 .ev-diary-grid__row > .ev-diary-cell { background-clip: padding-box; }
+/* İ:666 `bg` — grup kodu kolonunun gövde hücresi satır zemininin üstüne kendi
+   zeminini basar. Sınıfı AllocationGrid.tsx gövde <td>'si taşımalı (grup kodu). */
+.ev-diary-grid__row > .ev-diary-cell--group { background: var(--color-ev-diary-group-cell-bg); }
 .input.ev-diary-cell__input {
   height: 28px;
   padding: 0 6px;
-  border: 1px solid var(--color-ev-chip-neutral);
+  border: 1px solid var(--color-ev-diary-grid-line); /* İ:666 bd */
   border-radius: var(--radius-sm);
   font-size: 12.5px;
 }
@@ -484,7 +485,7 @@
 .ev-diary-remain--under { background: var(--color-warning-soft); color: var(--color-warning-body-text); }
 
 /* İ:481-489 — alt satırlar */
-.ev-diary-grid__num { padding: var(--space-2); border-left: 1px solid var(--color-ev-chip-neutral); font-family: var(--font-mono); font-size: 12.5px; text-align: right; }
+.ev-diary-grid__num { padding: var(--space-2); border-left: 1px solid var(--color-ev-diary-grid-line); font-family: var(--font-mono); font-size: 12.5px; text-align: right; }
 .ev-diary-grid__total > * { background: var(--color-surface-2); border-top: 1.5px solid var(--color-border-strong); font-weight: var(--weight-bold); }
 .ev-diary-grid__total .ev-diary-grid__lead { padding: var(--space-2) 10px var(--space-2) 14px; font-size: 12.5px; }
 .ev-diary-grid__foot-lead { display: flex; justify-content: space-between; }
@@ -506,7 +507,7 @@
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-14);
-  box-shadow: var(--shadow-menu);
+  box-shadow: var(--shadow-ev-diary-submit-bar);
 }
 .ev-diary-submit__checks { display: flex; flex: 1; flex-wrap: wrap; align-items: center; gap: 14px; margin: 0; padding: 0; list-style: none; }
 .ev-diary-check { display: flex; align-items: center; gap: 6px; font-size: var(--text-body); font-weight: var(--weight-medium); color: var(--color-text); }
