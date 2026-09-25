@@ -285,6 +285,22 @@ describe("tokens.css", () => {
     }
   });
 
+  it("puantaj ızgaraları (F-SUBPX) satır aralığı token'ları tanımlı ve tam px", () => {
+    // Gerekçe tokens.css + timesheet.css.test.ts "F-SUBPX".
+    const timesheetTokens: ReadonlyArray<readonly [string, string]> = [
+      ["--leading-timesheet-meta", "15px"], // 10 px
+      ["--leading-timesheet-head", "16px"], // 11 px
+      ["--leading-timesheet-sm", "18px"], // 12 px
+      ["--leading-timesheet-body", "19px"], // 13 px
+      ["--leading-timesheet-total", "21px"], // 14 px
+      ["--leading-timesheet-sum", "22px"], // 15 px
+      ["--leading-timesheet-error", "13px"], // 9 px
+    ];
+    for (const [token, value] of timesheetTokens) {
+      expect(tokensCss).toMatch(new RegExp(`${token}:\\s*${value}\\s*;`));
+    }
+  });
+
   it("bilgi popover'ı genişliği (PLN-F2.5) token'dır; kullanıcı CSS'lerinde çıplak 292px kalmaz", () => {
     // Kaynak: Planlama - Adam-Saat Bütçesi.dc.html:245 (öneri popover'ı) · Şantiye - Puantaj (Kilitli Gün).dc.html:340.
     expect(tokensCss).toMatch(/--width-info-popover:\s*292px\s*;/);
