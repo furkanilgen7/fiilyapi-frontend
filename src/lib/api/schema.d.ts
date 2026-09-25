@@ -39103,6 +39103,13 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Bu günün günlüğü yok — rapor üretilemedi · Tamamlanmış şantiyenin bütçesi salt okunurdur · Şantiyede aktif (dondurulmuş) baseline yok */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -39150,6 +39157,13 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Şantiyede aktif (dondurulmuş) baseline yok */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -39192,6 +39206,13 @@ export interface operations {
             };
             /** @description Kayıt bulunamadı */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Şantiyede aktif (dondurulmuş) baseline yok */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
