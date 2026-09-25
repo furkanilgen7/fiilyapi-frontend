@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { UseQueryResult } from "@tanstack/react-query";
 
+import type { DiaryCoreActions } from "@/components/site-diary/diary-extension";
 import { ClockIcon, WarningTriangleIcon } from "@/components/ui/icons";
 import type { EvCodeNode, EvDayRow, EvDayView } from "@/lib/api/models";
 import { cx } from "@/lib/cx";
@@ -12,6 +13,7 @@ import { keyOfRow, setCell, setReason, setRule, stripValues, toggleCode, type Al
 import { AllocationCell } from "./AllocationCell";
 import { AllocationGrid } from "./AllocationGrid";
 import { AllocationStrip } from "./AllocationStrip";
+import { AllocationTabletActions, AllocationTabletHead } from "./AllocationTabletBars";
 import { AllocationToolbar } from "./AllocationToolbar";
 import { buildCodeIndex, columnHeader, defaultRuleFor, type ColumnHeader } from "./code-tree";
 import { SubmitCheckBar } from "./SubmitCheckBar";
@@ -32,12 +34,17 @@ export interface HourAllocationBlockProps {
   invalidCount: number;
   onDraftChange: DraftUpdater;
   submitState: SubmitState;
+  /** Tablet şeridi (İ:529) — şantiye adı; bilinmiyorsa `null`. */
+  siteName: string | null;
+  /** Çekirdeğin eylemleri (karar 6) — kontrol ve tablet çubuğundaki "Gönder". */
+  coreActions: DiaryCoreActions;
 }
 
 /**
  * Çekirdeğin `fullWidthBlock` yuvası — Saat Dağıtımı kartı (İ:386-491) +
- * Gönder kontrol çubuğu (İ:493-510). Taslak adaptörde durur (Gönder kapısı
- * onu bilmeli); burada yalnız ekran-içi durum (seçim, bildirim) var.
+ * Gönder kontrol çubuğu (İ:493-510); ≤1024 px'te tablet şeridi ve eylem
+ * çubuğu (İ:527-558, F2.6). Taslak adaptörde durur (Gönder kapısı onu
+ * bilmeli); burada yalnız ekran-içi durum (seçim, bildirim) var.
  */
 export function HourAllocationBlock(props: HourAllocationBlockProps) {
   const { view, draft, access, onDraftChange } = props;
@@ -45,9 +52,13 @@ export function HourAllocationBlock(props: HourAllocationBlockProps) {
   const actions = useAllocationActions({ ...props, selected, clearSelection: () => setSelected(new Set()) });
   const headers = buildHeaders(draft, view, props.codeTree.data);
   const strip = stripValues(view, draft, props.isDirty);
+  // Masaüstü araç çubuğu ve tablet eylem çubuğu AYNI seçici girdilerini paylaşır.
+  const tree = { nodes: props.codeTree.data, isLoading: props.codeTree.isLoading, isError: props.codeTree.isError };
+  const handleToggleCode = (node: EvCodeNode) => onDraftChange((d) => toggleCode(d, node.id, defaultRuleFor(node)));
   return (
     <div className="ev-diary-block">
       <section className={cx("ev-diary-alloc", access.isForeman && "ev-diary-alloc--faded")} aria-labelledby="ev-diary-alloc-title">
+        <AllocationTabletHead day={props.day} siteName={props.siteName} strip={strip} />
         <AllocationHead strip={strip} />
         {access.readOnlyText && <p className="ev-diary-alloc__ro">Salt okunur · {access.readOnlyText}</p>}
         <Warnings items={view.warnings} />
@@ -57,8 +68,8 @@ export function HourAllocationBlock(props: HourAllocationBlockProps) {
           codes={draft.codes}
           headers={headers}
           selectedCount={selected.size}
-          tree={{ nodes: props.codeTree.data, isLoading: props.codeTree.isLoading, isError: props.codeTree.isError }}
-          onToggleCode={(node) => onDraftChange((d) => toggleCode(d, node.id, defaultRuleFor(node)))}
+          tree={tree}
+          onToggleCode={handleToggleCode}
           onCopyPrevious={() => void actions.copyPrevious()}
           isCopying={actions.isCopying}
           onDistribute={actions.distribute}
@@ -72,12 +83,21 @@ export function HourAllocationBlock(props: HourAllocationBlockProps) {
           selected={selected}
           onToggleSelect={(key) => setSelected((prev) => toggleKey(prev, key))}
         />
+        <AllocationTabletActions
+          canEdit={access.canEdit}
+          codes={draft.codes}
+          tree={tree}
+          onToggleCode={handleToggleCode}
+          onDistribute={actions.distribute}
+          actions={props.coreActions}
+        />
       </section>
       <SubmitCheckBar
         state={props.submitState}
         reason={draft.reason}
         canEditReason={access.canEdit}
         onReasonChange={(reason) => onDraftChange((d) => setReason(d, reason))}
+        actions={props.coreActions}
       />
     </div>
   );
@@ -144,13 +164,17 @@ function toggleKey(prev: ReadonlySet<RowKey>, key: RowKey): ReadonlySet<RowKey> 
   return next;
 }
 
-/** İ:388-398 — başlık (⏱ yerine SVG saat) + YENİ çipi + alt metin + 4'lü şerit. */
+/**
+ * İ:388-398 — başlık (⏱ yerine SVG saat) + alt metin + 4'lü şerit. Mockup'taki
+ * "YENİ" çipi bir değişiklik işaretidir, ürün UI'ı değil (karar 2). Tablette
+ * yerini `AllocationTabletHead` alır.
+ */
 function AllocationHead({ strip }: { strip: ReturnType<typeof stripValues> }) {
   return (
-    <div className="ev-diary-alloc__head">
+    <div className="ev-diary-alloc__head ev-diary-desktop-only">
       <div className="ev-diary-alloc__title-wrap">
         <h2 id="ev-diary-alloc-title" className="ev-diary-alloc__title">
-          <ClockIcon aria-hidden="true" /> Saat Dağıtımı <span className="ev-diary-chip">YENİ</span>
+          <ClockIcon aria-hidden="true" /> Saat Dağıtımı
         </h2>
         <p className="ev-diary-alloc__subtitle">
           Mühendisin bölümü · günün bütün saatleri iş kodlarına bölünür, harcanan a-s buradan gelir

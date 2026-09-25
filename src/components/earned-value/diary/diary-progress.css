@@ -80,7 +80,20 @@
 }
 .ev-diary-norate__link svg { width: 12px; height: 12px; }
 
-/* ── Kilit bandı içeriği — İ:146-147 (çerçeve + ikon çekirdekte: `diary__lock-banner`) ── */
+/* ── Kilit bandı — İ:143-149; karar 5: `topBanner` yuvasında TAM genişlik
+   (dış boşluk çekirdeğin `diary__top-banner` kabında, İ:144 margin-bottom 16) ── */
+.ev-diary-lock {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-10);
+  font-size: var(--text-body);
+  color: var(--color-slate-700);
+}
+.ev-diary-lock__icon { width: 16px; height: 16px; flex-shrink: 0; }
 .ev-diary-lock__text b { font-weight: var(--weight-bold); }
 .btn.ev-diary-lock__action {
   margin-left: auto;
@@ -144,15 +157,6 @@
   color: var(--color-text);
 }
 .ev-diary-alloc__title svg { width: 15px; height: 15px; }
-.ev-diary-chip {
-  padding: 2px 6px;
-  border-radius: 3px;
-  background: var(--color-primary-soft);
-  color: var(--color-primary);
-  font-size: 9.5px;
-  font-weight: var(--weight-bold);
-  letter-spacing: 0.4px;
-}
 .ev-diary-alloc__subtitle { margin: 0; font-size: var(--text-small); color: var(--color-text-subtle); }
 
 /* İ:392-397 — 4'lü şerit */
@@ -534,6 +538,17 @@
 }
 .ev-diary-check__link:disabled { cursor: not-allowed; opacity: 0.6; }
 .ev-diary-submit__note { font-size: var(--text-xs); font-weight: var(--weight-medium); }
+/* İ:504 — "Gönder" (K15 metni): etkin yeşil, pasif gri zemin (`sendBg`); soluklaştırılmaz. */
+.btn.ev-diary-send {
+  height: 38px;
+  padding: 0 20px;
+  border: none;
+  border-radius: var(--radius-8);
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  color: var(--color-on-brand);
+}
+.btn.ev-diary-send:disabled { opacity: 1; background: var(--color-text-subtle); }
 .ev-diary-submit__reason { flex-basis: 100%; }
 .input.ev-diary-submit__reason-input {
   border: 1px solid var(--color-warning-border-soft);
@@ -542,8 +557,60 @@
   padding: var(--space-2) var(--space-3);
 }
 
-/* ── Tablet 1024 — İ:527-558: yatay kaydırma, ilk kolon sabit, dokunmatik ≥ 36 px ── */
+/* ── Tablet 1024 — İ:527-558 ──
+   Tablet üst şeridi (İ:528-531) ve alt eylem çubuğu (İ:549-553) yalnız ≤1024 px'te
+   görünür; masaüstü eşleri (başlık + 4'lü şerit, "+ İş kodu ekle", "Kalanı orantılı
+   dağıt", kontrol çubuğundaki "Gönder") orada gizlenir. `display: none` ekran
+   okuyucudan da gizler. İki sınıflı seçici: tek sınıflı `.btn` / `__head` display'ini
+   CSS demet sırasından bağımsız ezer. */
+.ev-diary-block .ev-diary-tablet-only { display: none; }
+
+.ev-diary-tablet-head {
+  align-items: center;
+  gap: 10px;
+  padding: var(--space-3) 14px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  border-radius: var(--radius-14) var(--radius-14) 0 0;
+}
+.ev-diary-tablet-head__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.ev-diary-tablet-head__title svg { width: 15px; height: 15px; }
+.ev-diary-tablet-head__meta { font-size: var(--text-xs); color: var(--color-text-muted); }
+.ev-diary-tablet-head__pill {
+  margin-left: auto;
+  padding: 6px 10px;
+  border: 1px solid;
+  border-radius: var(--radius-6);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+}
+.ev-diary-tablet-head__pill--ok { background: var(--color-success-tint); border-color: var(--color-success-tint-border); color: var(--color-success); }
+.ev-diary-tablet-head__pill--warn { background: var(--color-warning-soft); border-color: var(--color-warning-border-soft); color: var(--color-warning-body-text); }
+
+.ev-diary-tablet-actions {
+  align-items: center;
+  gap: var(--space-2);
+  padding: 10px 14px;
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  border-radius: 0 0 var(--radius-14) var(--radius-14);
+}
+.btn.ev-diary-send--tablet { height: 40px; padding: 0 18px; margin-left: auto; }
+/* Çubuk kartın dibinde: seçici yukarı açılır (40 px düğme + 4 px boşluk). */
+.ev-diary-picker.ev-diary-picker--above { top: auto; bottom: 44px; }
+
+/* Izgara: yatay kaydırma, ilk kolon sabit, dokunmatik ≥ 36 px */
 @media (max-width: 1024px) {
+  .ev-diary-block .ev-diary-tablet-only { display: flex; }
+  .ev-diary-block .ev-diary-desktop-only { display: none; }
+
   .ev-diary-grid__lead { width: 230px; min-width: 230px; padding: 6px var(--space-3); box-shadow: var(--shadow-sm); }
   .ev-diary-grid__code { width: 104px; min-width: 104px; padding: var(--space-2); }
   .ev-diary-grid__remain { width: 96px; min-width: 96px; padding: 6px var(--space-3); }

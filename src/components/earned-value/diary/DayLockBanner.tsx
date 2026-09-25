@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Modal } from "@/components/settings/Modal";
 import { Button } from "@/components/ui/button/Button";
 import { Field } from "@/components/ui/field/Field";
+import { LockIcon } from "@/components/ui/icons";
 import { Textarea } from "@/components/ui/textarea/Textarea";
 import { useUnlockDay } from "@/lib/api/hooks/useEvDayMutations";
 import { backendErrorMessage } from "@/lib/api/error-message";
@@ -19,17 +20,18 @@ export interface DayLockBannerProps {
 }
 
 /**
- * Kilit bandının İÇERİĞİ — İ:143-149: "Bu gün 25.09.2026 raporuyla kilitlendi.
- * Bütün alanlar salt okunur." + "Kilidi aç (yetkili)" (approve, K17). Çerçeve
- * ve kilit ikonu çekirdeğin durum satırındadır (`diary__lock-banner`); burada
- * yalnız metin + eylem. Kilit rapor ONAYIYLA gelir (K15: Gönder kilitlemez);
- * açma GÜN düzeyi istisnadır (B2-6).
+ * Kilit bandı — İ:143-149: çerçeve + kilit ikonu + "Bu gün 25.09.2026 raporuyla
+ * kilitlendi. Bütün alanlar salt okunur." + "Kilidi aç (yetkili)" (approve, K17).
+ * Karar 5: `topBanner` yuvasında TAM genişlik (başlığın altı, kartlardan önce);
+ * `lock.banner` boş bırakılır, çekirdeğin durum satırı bandı basılmaz. Kilit
+ * rapor ONAYIYLA gelir (K15: Gönder kilitlemez); açma GÜN düzeyi istisnadır (B2-6).
  */
 export function DayLockBanner({ siteId, day, lock, canUnlock }: DayLockBannerProps) {
   const [isModalOpen, setModalOpen] = useState(false);
   const reportText = lock.report_date ? `Bu gün ${formatDateDots(lock.report_date)} raporuyla kilitlendi.` : "Bu gün rapor onayıyla kilitlendi.";
   return (
-    <>
+    <div className="ev-diary-lock" role="status">
+      <LockIcon className="ev-diary-lock__icon" aria-hidden="true" />
       <span className="ev-diary-lock__text">
         <b>{reportText}</b> Bütün alanlar salt okunur.
       </span>
@@ -39,7 +41,7 @@ export function DayLockBanner({ siteId, day, lock, canUnlock }: DayLockBannerPro
         </Button>
       )}
       {isModalOpen && <UnlockDayModal siteId={siteId} day={day} onClose={() => setModalOpen(false)} />}
-    </>
+    </div>
   );
 }
 

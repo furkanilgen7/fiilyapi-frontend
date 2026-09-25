@@ -18,7 +18,7 @@ export interface LineColumnsInput {
   bands: PfBandSettings;
   /** "Adam-Saat Bütçesi →" (İ:245) — şantiye rotası; kök ikizde de şantiyenin bütçesi. */
   budgetHref: string | null;
-  /** Aktif baseline revizyon no (`days/{day}.revision_number`) — İ:213 alt başlığı. */
+  /** Aktif baseline revizyon no (`days/{day}.revision_number`) — İ:213 alt başlığı (`null` → caption yok). */
   revisionNumber: number | null;
 }
 
@@ -47,8 +47,11 @@ export function buildLineColumns(input: LineColumnsInput): DiaryLineColumns {
     // S2 · İ:241-246 — yalnız oransız satırın hemen altında.
     renderSubRow: (line) =>
       lineProgress(line, progress, index).noRate ? <UnratedNotice budgetHref={input.budgetHref} /> : null,
+    // Karar 3 · İ:213 — alt başlığın TAMAMI; revizyon yoksa verilmez, çekirdek kendi metnini basar.
     caption:
-      input.revisionNumber === null ? undefined : `kazanılmış = bugün miktar × birim oran (Rev ${input.revisionNumber})`,
+      input.revisionNumber === null
+        ? undefined
+        : `İş tipi × bölüm · kazanılmış = bugün miktar × birim oran (Rev ${input.revisionNumber})`,
   };
 }
 

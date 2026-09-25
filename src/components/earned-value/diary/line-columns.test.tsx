@@ -20,9 +20,12 @@ function columns(revision: number | null = 1) {
 }
 
 describe("buildLineColumns — genişletilmiş yuvalar", () => {
-  it("caption: İ:213 'kazanılmış = bugün miktar × birim oran (Rev n)'", () => {
-    render(<>{columns(1).caption}</>);
-    expect(screen.getByText("kazanılmış = bugün miktar × birim oran (Rev 1)")).toBeInTheDocument();
+  it("caption: İ:213 alt başlığın TAMAMI birebir (karar 3)", () => {
+    expect(columns(1).caption).toBe("İş tipi × bölüm · kazanılmış = bugün miktar × birim oran (Rev 1)");
+    expect(columns(7).caption).toBe("İş tipi × bölüm · kazanılmış = bugün miktar × birim oran (Rev 7)");
+  });
+
+  it("revizyon yoksa caption VERİLMEZ (undefined) — çekirdek kendi alt başlığını basar", () => {
     expect(columns(null).caption).toBeUndefined();
   });
 

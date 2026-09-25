@@ -3,7 +3,7 @@
 import type { UseQueryResult } from "@tanstack/react-query";
 
 import { ErrorCard } from "@/components/earned-value/common/state";
-import type { DiaryExtension, DiaryExtensionContext } from "@/components/site-diary/diary-extension";
+import type { DiaryCoreActions, DiaryExtension, DiaryExtensionContext } from "@/components/site-diary/diary-extension";
 import { useEvBudget, useEvBudgetRevisions } from "@/lib/api/hooks/useEvBudget";
 import { useEvCodeTree, useEvDay } from "@/lib/api/hooks/useEvDay";
 import { useSaveDayAllocation } from "@/lib/api/hooks/useEvDayMutations";
@@ -24,7 +24,7 @@ import { HourAllocationBlock } from "./HourAllocationBlock";
 import { formatDayWeek } from "./day-header";
 import { activeRevisionId, buildItemFacts, type ItemFacts } from "./item-meta";
 import { buildLineColumns } from "./line-columns";
-import { buildSubmitState, resolveAllocationAccess } from "./submit-checks";
+import { buildSubmitState, resolveAllocationAccess, type AllocationAccess } from "./submit-checks";
 import { useAllocationDraft, type AllocationDraftApi } from "./useAllocationDraft";
 import { useEvDayFreshness } from "./useEvDayFreshness";
 
@@ -73,6 +73,7 @@ export function useDiaryProgressExtension(ctx: DiaryExtensionContext | null): Di
     evLevel: evPermission.level,
     diaryCanWrite: diaryPermission.canWrite,
     isSiteCompleted: site.data?.status === "completed",
+    siteName: site.data?.name ?? null,
     budgetHref: site.data ? routes.projects.sites.evBudget({ projectId: site.data.project.id, siteId: site.data.id }) : null,
   });
 }
@@ -90,6 +91,8 @@ interface BuildInput {
   evLevel: ReturnType<typeof useModulePermission>["level"];
   diaryCanWrite: boolean;
   isSiteCompleted: boolean;
+  /** Tablet şeridi (İ:529 "24.09 · A-Blok") — şantiye henüz gelmediyse `null`. */
+  siteName: string | null;
   budgetHref: string | null;
 }
 
@@ -108,11 +111,10 @@ function buildExtension(input: BuildInput): DiaryExtension {
   });
   return {
     headerSuffix: formatDayWeek(view.day_no, view.week_no) ?? undefined,
-    lock: isLocked
-      ? { isLocked: true, banner: <DayLockBanner siteId={input.siteId} day={input.day} lock={view.lock} canUnlock={access.canUnlock} /> }
-      : null,
+    // Karar 5 — kilit bandı durum satırında DEĞİL, `topBanner`da tam genişlik (İ:143-149).
+    lock: isLocked ? { isLocked: true } : null,
     submitGate: submitState.gate,
-    topBanner: access.showForemanBand ? <ForemanBand /> : undefined,
+    topBanner: topBannerFor(input, access),
     // S1 — çekirdeğin tek kayıt düğmesi önce dağıtımı yazar; hata çekirdek kaydını durdurur.
     onBeforeSave: () => saveAllocationIfDirty({ ...beforeSaveInput(input), canEdit: access.canEdit }),
     lineColumns: lineColumnsFor(input),
@@ -120,7 +122,8 @@ function buildExtension(input: BuildInput): DiaryExtension {
       indirectItemIds: input.itemFacts.indirectItemIds,
       renderItemTag: (boqItemId) => input.itemFacts.contractorLabel(boqItemId),
     },
-    fullWidthBlock: (
+    // Karar 6 — fonksiyon: bloktaki "Gönder" düğmeleri çekirdeğin akışını çağırır.
+    fullWidthBlock: (actions: DiaryCoreActions) => (
       <HourAllocationBlock
         siteId={input.siteId}
         day={input.day}
@@ -133,9 +136,24 @@ function buildExtension(input: BuildInput): DiaryExtension {
         invalidCount={draftApi.invalidCount}
         onDraftChange={draftApi.update}
         submitState={submitState}
+        siteName={input.siteName}
+        coreActions={actions}
       />
     ),
   };
+}
+
+/**
+ * S3 · `topBanner` — İ:143-155 sırası: önce kilit bandı, sonra formen bandı.
+ * Formen bandı kilitli günde zaten kapalıdır (`showForemanBand`), yani ikisi
+ * birlikte basılmaz.
+ */
+function topBannerFor(input: BuildInput, access: AllocationAccess) {
+  const { view } = input;
+  if (view.lock.locked) {
+    return <DayLockBanner siteId={input.siteId} day={input.day} lock={view.lock} canUnlock={access.canUnlock} />;
+  }
+  return access.showForemanBand ? <ForemanBand /> : undefined;
 }
 
 function beforeSaveInput({ draftApi, view, saveAllocation }: BuildInput) {

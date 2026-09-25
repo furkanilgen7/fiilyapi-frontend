@@ -9,3 +9,14 @@ export function formatDayWeek(dayNo: number | null, weekNo: number | null): stri
   );
   return parts.length === 0 ? null : parts.join(" · ");
 }
+
+/**
+ * F2.6 · Tablet şeridi — İ:529 "24.09 · A-Blok": `YYYY-MM-DD` → "dd.mm".
+ * `new Date(iso)` KULLANILMAZ (UTC yorumlanır, TR saatinde gün kayar —
+ * `formatDateDots` ile aynı gerekçe); ayrıştırılamayan girdi aynen döner.
+ */
+export function formatDayDots(iso: string): string {
+  const [year, month, day] = iso.split("-");
+  if (year === undefined || month === undefined || day === undefined) return iso;
+  return `${day}.${month}`;
+}

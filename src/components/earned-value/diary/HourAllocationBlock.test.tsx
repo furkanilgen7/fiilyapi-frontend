@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import type { UseQueryResult } from "@tanstack/react-query";
 
 import { usePreviousAllocation } from "@/lib/api/hooks/useEvDay";
+import type { DiaryCoreActions } from "@/components/site-diary/diary-extension";
 import type { EvCodeNode, EvDayView } from "@/lib/api/models";
 import { DEFAULT_PF_BANDS } from "@/lib/earned-value";
 
@@ -31,9 +32,12 @@ function treeQuery(nodes: EvCodeNode[] = codeTree()): UseQueryResult<EvCodeNode[
   return { data: nodes, isLoading: false, isError: false, refetch: vi.fn(async () => ({ data: nodes })) } as never;
 }
 
+const coreSubmit = vi.fn();
+const READY: DiaryCoreActions = { submit: coreSubmit, canSubmit: true, isSaving: false };
+
 const ENGINEER: AccessInput = { evLevel: "draft", diaryCanWrite: true, isLocked: false, isSiteCompleted: false };
 
-function Harness({ view, access = ENGINEER }: { view: EvDayView; access?: AccessInput }) {
+function Harness({ view, access = ENGINEER, actions = READY }: { view: EvDayView; access?: AccessInput; actions?: DiaryCoreActions }) {
   const api = useAllocationDraft(SITE_ID, view);
   if (api === null) return null;
   const resolved = resolveAllocationAccess(access);
@@ -59,8 +63,23 @@ function Harness({ view, access = ENGINEER }: { view: EvDayView; access?: Access
       invalidCount={api.invalidCount}
       onDraftChange={api.update}
       submitState={submitState}
+      siteName="A-Blok"
+      coreActions={actions}
     />
   );
+}
+
+/** Masaüstü araç çubuğu (İ:403) — tablet çubuğu aynı eylemin İKİNCİ düğmesini taşır. */
+function toolbar(): HTMLElement {
+  return document.querySelector(".ev-diary-toolbar") as HTMLElement;
+}
+
+function tabletBar(): HTMLElement {
+  return screen.getByRole("group", { name: "Saat Dağıtımı eylemleri" });
+}
+
+function checkBar(): HTMLElement {
+  return screen.getByRole("region", { name: "Gönder kontrolü" });
 }
 
 function cell(person: string, codeShort: string): HTMLInputElement {
@@ -175,7 +194,7 @@ describe("araç çubuğu eylemleri", () => {
   it("Kalanı orantılı dağıt (0,5 sa adım)", async () => {
     const user = userEvent.setup();
     render(<Harness view={dayView()} />);
-    await user.click(screen.getByRole("button", { name: "Kalanı orantılı dağıt" }));
+    await user.click(within(toolbar()).getByRole("button", { name: "Kalanı orantılı dağıt" }));
     expect(cell("Recep Uçar", "Betonarme işleri").value).toBe("4");
     expect(cell("Recep Uçar", "Kalıp · Kat 6–10").value).toBe("4");
   });
@@ -215,5 +234,97 @@ describe("Gönder kontrol çubuğu (İ:493-510)", () => {
     await user.click(screen.getByRole("button", { name: "gerekçe yaz" }));
     await user.type(screen.getByLabelText("Dağıtılmamış saat gerekçesi"), "temizlik");
     expect(screen.getByText("66 a-s dağıtılmamış · gerekçe yazıldı")).toBeInTheDocument();
+  });
+});
+
+describe("karar 2 · mockup değişiklik işaretleri ürün UI'ı değil", () => {
+  it("başlıkta 'YENİ' çipi YOK", () => {
+    render(<Harness view={dayView()} />);
+    expect(screen.getByRole("heading", { name: "Saat Dağıtımı" })).toBeInTheDocument();
+    expect(screen.queryByText("YENİ")).not.toBeInTheDocument();
+    expect(document.querySelector(".ev-diary-chip")).toBeNull();
+  });
+});
+
+describe("karar 6 · kontrol çubuğunda 'Gönder' (İ:504, K15 metni)", () => {
+  it("not metninin SAĞINDA; tıklayınca çekirdeğin submit'i çağrılır", async () => {
+    const user = userEvent.setup();
+    render(<Harness view={dayView()} />);
+    const bar = checkBar();
+    const send = within(bar).getByRole("button", { name: "Gönder" });
+    const note = bar.querySelector(".ev-diary-submit__note") as HTMLElement;
+    expect(note.nextElementSibling).toBe(send);
+    expect(within(bar).queryByRole("button", { name: /kilitle/ })).not.toBeInTheDocument();
+    await user.click(send);
+    expect(coreSubmit).toHaveBeenCalledTimes(1);
+  });
+
+  it("canSubmit=false → pasif, submit çağrılmaz", async () => {
+    const user = userEvent.setup();
+    render(<Harness view={dayView()} actions={{ ...READY, canSubmit: false }} />);
+    const send = within(checkBar()).getByRole("button", { name: "Gönder" });
+    expect(send).toBeDisabled();
+    await user.click(send);
+    expect(coreSubmit).not.toHaveBeenCalled();
+  });
+
+  it("kayıt sürerken aria-busy", () => {
+    render(<Harness view={dayView()} actions={{ ...READY, canSubmit: false, isSaving: true }} />);
+    expect(within(checkBar()).getByRole("button", { name: "Gönder" })).toHaveAttribute("aria-busy", "true");
+  });
+});
+
+describe("F2.6 · tablet düzeni (İ:527-558) — yapı; görünürlük medya sorgusunda (css testi)", () => {
+  it("üst şerit: 'Saat Dağıtımı' + '24.09 · A-Blok' + 'Dağıtılmamış 66 a-s' (uyarı tonu)", () => {
+    render(<Harness view={dayView()} />);
+    const head = document.querySelector(".ev-diary-tablet-head") as HTMLElement;
+    expect(head).toHaveClass("ev-diary-tablet-only");
+    expect(within(head).getByText("Saat Dağıtımı")).toBeInTheDocument();
+    expect(head.querySelector("svg")).not.toBeNull();
+    expect(within(head).getByText("24.09 · A-Blok")).toBeInTheDocument();
+    const pill = within(head).getByText("Dağıtılmamış 66 a-s");
+    expect(pill).toHaveClass("ev-diary-tablet-head__pill--warn");
+  });
+
+  it("hap değeri şeridin CANLI önizlemesini izler; 0 olunca yeşil ton", async () => {
+    const user = userEvent.setup();
+    render(<Harness view={dayView()} />);
+    await user.type(cell("Recep Uçar", "Kalıp · Kat 6–10"), "8");
+    expect(screen.getByText("Dağıtılmamış 58 a-s")).toBeInTheDocument();
+  });
+
+  it("dağıtılmamış 0 → hap yeşil tonda", () => {
+    render(<Harness view={dayView({ totals: { source_hours: "18.00", allocated_hours: "18.00", unallocated_hours: "0.00" } })} />);
+    expect(screen.getByText("Dağıtılmamış 0 a-s")).toHaveClass("ev-diary-tablet-head__pill--ok");
+  });
+
+  it("alt eylem çubuğu: '+ İş kodu' · 'Kalanı orantılı dağıt' · 'Gönder' — mevcut eylemleri çağırır", async () => {
+    const user = userEvent.setup();
+    render(<Harness view={dayView()} />);
+    const bar = tabletBar();
+    expect(bar.closest(".ev-diary-tablet-only")).not.toBeNull();
+    expect(within(bar).getAllByRole("button").map((b) => b.textContent)).toEqual(["+ İş kodu", "Kalanı orantılı dağıt", "Gönder"]);
+    await user.click(within(bar).getByRole("button", { name: "Kalanı orantılı dağıt" }));
+    expect(cell("Recep Uçar", "Kalıp · Kat 6–10").value).toBe("4");
+    await user.click(within(bar).getByRole("button", { name: "+ İş kodu" }));
+    expect(screen.getByRole("dialog", { name: "İş kodu ekle" })).toBeInTheDocument();
+    await user.click(within(bar).getByRole("button", { name: "Gönder" }));
+    expect(coreSubmit).toHaveBeenCalledTimes(1);
+  });
+
+  it("aynı eylemin masaüstü düğmeleri masaüstüne özgü sınıfı taşır (iki düğme aynı anda görünmez)", () => {
+    render(<Harness view={dayView()} />);
+    expect(within(toolbar()).getByRole("button", { name: "+ İş kodu ekle" }).closest(".ev-diary-desktop-only")).not.toBeNull();
+    expect(within(toolbar()).getByRole("button", { name: "Kalanı orantılı dağıt" })).toHaveClass("ev-diary-desktop-only");
+    expect(within(checkBar()).getByRole("button", { name: "Gönder" })).toHaveClass("ev-diary-desktop-only");
+    expect(document.querySelector(".ev-diary-alloc__head")).toHaveClass("ev-diary-desktop-only");
+    // Tablette karşılığı olmayan eylemler iki düzende de görünür kalır.
+    expect(within(toolbar()).getByRole("button", { name: "Dünkü dağılımı kopyala" })).not.toHaveClass("ev-diary-desktop-only");
+  });
+
+  it("salt okunur gün: tablet çubuğunun düzenleme eylemleri de kapalı", () => {
+    render(<Harness view={dayView({ lock: { locked: true, report_date: "2026-09-25", approved_at: null, approved_by: null, unlock: null } })} access={{ ...ENGINEER, isLocked: true }} actions={{ ...READY, canSubmit: false }} />);
+    const bar = tabletBar();
+    for (const button of within(bar).getAllByRole("button")) expect(button).toBeDisabled();
   });
 });

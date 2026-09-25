@@ -26,7 +26,11 @@ export interface AllocationToolbarProps {
   invalidCount: number;
 }
 
-/** İ:403-445 — "+ İş kodu ekle" · "Dünkü dağılımı kopyala" · "Seçili kişilere toplu ata · n" · "Kalanı orantılı dağıt". */
+/**
+ * İ:403-445 — "+ İş kodu ekle" · "Dünkü dağılımı kopyala" · "Seçili kişilere toplu ata · n" · "Kalanı orantılı dağıt".
+ * F2.6: "+ İş kodu ekle" ve "Kalanı orantılı dağıt" tablette alt eylem çubuğundadır
+ * (İ:550-551); buradaki eşleri ≤1024 px'te gizlenir (`ev-diary-desktop-only`).
+ */
 export function AllocationToolbar(props: AllocationToolbarProps) {
   const [isBulkOpen, setBulkOpen] = useState(false);
   const { canEdit, selectedCount } = props;
@@ -34,7 +38,7 @@ export function AllocationToolbar(props: AllocationToolbarProps) {
   return (
     <>
       <div className="ev-diary-toolbar">
-        <CodePickerButton {...props} />
+        <CodePickerButton {...props} anchorClassName="ev-diary-desktop-only" />
         <Button variant="secondary" className="ev-diary-btn" disabled={!canEdit || props.isCopying} onClick={props.onCopyPrevious}>
           Dünkü dağılımı kopyala
         </Button>
@@ -47,7 +51,7 @@ export function AllocationToolbar(props: AllocationToolbarProps) {
         >
           Seçili kişilere toplu ata · {selectedCount}
         </Button>
-        <Button variant="secondary" className="ev-diary-btn" disabled={!canEdit} onClick={props.onDistribute}>
+        <Button variant="secondary" className="ev-diary-btn ev-diary-desktop-only" disabled={!canEdit} onClick={props.onDistribute}>
           Kalanı orantılı dağıt
         </Button>
         {canEdit && props.invalidCount > 0 && (
@@ -69,11 +73,19 @@ export function AllocationToolbar(props: AllocationToolbarProps) {
   );
 }
 
+export interface CodePickerButtonProps extends Pick<AllocationToolbarProps, "canEdit" | "codes" | "tree" | "onToggleCode"> {
+  /** Masaüstü "+ İş kodu ekle" (İ:404), tablet "+ İş kodu" (İ:550). */
+  label?: string;
+  anchorClassName?: string;
+  /** Seçicinin yüzey sınıfına ek (ör. tablet çubuğunda yukarı açılış). */
+  popoverClassName?: string;
+}
+
 /** İ:404-423 — "+ İş kodu ekle" ve açılır ağaç seçicisi. */
-function CodePickerButton({ canEdit, codes, tree, onToggleCode }: AllocationToolbarProps) {
+export function CodePickerButton({ canEdit, codes, tree, onToggleCode, label = "+ İş kodu ekle", anchorClassName, popoverClassName }: CodePickerButtonProps) {
   const [isOpen, setOpen] = useState(false);
   return (
-    <span className="ev-diary-toolbar__anchor">
+    <span className={cx("ev-diary-toolbar__anchor", anchorClassName)}>
       <Button
         variant="light-blue"
         className="ev-diary-btn ev-diary-btn--add"
@@ -81,11 +93,12 @@ function CodePickerButton({ canEdit, codes, tree, onToggleCode }: AllocationTool
         aria-expanded={isOpen}
         onClick={() => setOpen((open) => !open)}
       >
-        + İş kodu ekle
+        {label}
       </Button>
       {isOpen && canEdit && (
         <CodePickerPopover
           {...tree}
+          className={popoverClassName}
           selected={new Set(codes.map((code) => code.node_id))}
           onToggle={onToggleCode}
           onClose={() => setOpen(false)}

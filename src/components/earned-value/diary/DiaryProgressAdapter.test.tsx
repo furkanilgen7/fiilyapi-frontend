@@ -242,7 +242,9 @@ describe("şantiye rotası → adaptör → çekirdek", () => {
   it("Gönder kapısı: backend engeli çekirdeğin Gönder düğmesini kapatır, gerekçe ekranda", () => {
     mockDay(dayView({ day: TODAY, submit: { can_submit: false, reasons: [WEATHER.message], reason_items: [WEATHER] } }));
     renderWithClient(<SiteDiaryPage />);
-    expect(screen.getByRole("button", { name: /^(Kaydet & )?Gönder$/ })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Kaydet & Gönder" })).toBeDisabled();
+    // Karar 6 — bloktaki "Gönder" (kontrol çubuğu + tablet çubuğu) çekirdeğin `canSubmit`ini izler.
+    for (const button of screen.getAllByRole("button", { name: "Gönder" })) expect(button).toBeDisabled();
     // S4 — gerekçe yalnız kontrol çubuğunda; çekirdek kendi kutusunda LİSTELEMEZ.
     expect(screen.queryByText(WEATHER.message)).not.toBeInTheDocument();
     expect(screen.getByText("Hava eksik")).toBeInTheDocument();
@@ -254,6 +256,9 @@ describe("şantiye rotası → adaptör → çekirdek", () => {
     mockDay(dayView({ day: TODAY, lock: { locked: true, report_date: "2026-09-25", approved_at: null, approved_by: null, unlock: null } }));
     renderWithClient(<SiteDiaryPage />);
     expect(screen.getByText("Bu gün 25.09.2026 raporuyla kilitlendi.")).toBeInTheDocument();
+    // Karar 5 — bant `topBanner`da TAM genişlik; durum satırındaki çekirdek bandı basılmaz.
+    expect(screen.getByText("Bu gün 25.09.2026 raporuyla kilitlendi.").closest(".diary__top-banner")).not.toBeNull();
+    expect(document.querySelector(".diary__lock-banner")).toBeNull();
     expect(screen.getByText("Salt okunur · gün kilitli")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Kilidi aç (yetkili)" }));
     const dialog = screen.getByRole("dialog", { name: "Günün kilidini aç" });
@@ -346,7 +351,7 @@ describe("useDiaryProgressExtension — üretilen DiaryExtension", () => {
 
   it("lineColumns: caption (Rev n) + kalem başlık hücreleri headers uzunluğunda; headerSuffix; submitGate", () => {
     const ext = extension();
-    expect(ext?.lineColumns?.caption).toBe("kazanılmış = bugün miktar × birim oran (Rev 1)");
+    expect(ext?.lineColumns?.caption).toBe("İş tipi × bölüm · kazanılmış = bugün miktar × birim oran (Rev 1)");
     expect(ext?.lineColumns?.renderItemCells?.(ITEM_KALIP)).toHaveLength(ext?.lineColumns?.headers.length ?? -1);
     expect(ext?.headerSuffix).toBe("Gün 142 · H21");
     expect(ext?.submitGate).toEqual({ canSubmit: true, reasons: [], showReasonsInCore: false });

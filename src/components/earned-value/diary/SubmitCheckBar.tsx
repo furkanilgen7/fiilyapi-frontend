@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import type { DiaryCoreActions } from "@/components/site-diary/diary-extension";
+import { Button } from "@/components/ui/button/Button";
 import { Input } from "@/components/ui/input/Input";
 import { CheckIcon, WarningTriangleIcon } from "@/components/ui/icons";
 import { cx } from "@/lib/cx";
@@ -13,14 +15,18 @@ export interface SubmitCheckBarProps {
   reason: string;
   canEditReason: boolean;
   onReasonChange: (reason: string) => void;
+  /** Çekirdeğin eylemleri (karar 6) — "Gönder" başlıktaki "Kaydet & Gönder" akışının AYNISI. */
+  actions: DiaryCoreActions;
 }
 
 /**
- * Gönder kontrol çubuğu — İ:493-510 (+ Ek Formlar "(b)"). Düğmenin KENDİSİ
- * çekirdeğindir (`submitGate` ile kapı verilir, K15 metni "Gönder"); burada
- * kontrol çipleri, not ve dağıtılmamış saat gerekçesi (K14) durur.
+ * Gönder kontrol çubuğu — İ:493-510 (+ Ek Formlar "(b)"): kontrol çipleri, not,
+ * "Gönder" (İ:504, notun sağı; K15 metni — mockup'taki "Gönder ve günü kilitle"
+ * DEĞİL) ve dağıtılmamış saat gerekçesi (K14). Gönder çekirdeğin `submit`ini
+ * çağırır, etkinliği çekirdeğin `canSubmit`idir (karar 6). Tablette aynı eylem
+ * alt eylem çubuğundadır; buradaki düğme orada gizlenir (F2.6).
  */
-export function SubmitCheckBar({ state, reason, canEditReason, onReasonChange }: SubmitCheckBarProps) {
+export function SubmitCheckBar({ state, reason, canEditReason, onReasonChange, actions }: SubmitCheckBarProps) {
   const [isReasonOpen, setReasonOpen] = useState(reason.trim() !== "");
   const showReason = isReasonOpen || reason.trim() !== "";
   return (
@@ -36,6 +42,7 @@ export function SubmitCheckBar({ state, reason, canEditReason, onReasonChange }:
         ))}
       </ul>
       <span className={cx("ev-diary-submit__note", `ev-diary-tone--${state.note.tone}`)}>{state.note.text}</span>
+      <SendButton actions={actions} className="ev-diary-desktop-only" />
       {showReason && (
         <div className="ev-diary-submit__reason">
           <Input
@@ -65,5 +72,20 @@ function CheckChip({ item, canWriteReason, onWriteReason }: { item: SubmitCheck;
         </button>
       )}
     </li>
+  );
+}
+
+/** "Gönder" — kontrol çubuğu (İ:504) ve tablet eylem çubuğu (İ:552) ortak düğmesi. */
+export function SendButton({ actions, className }: { actions: DiaryCoreActions; className?: string }) {
+  return (
+    <Button
+      variant="success"
+      className={cx("ev-diary-send", className)}
+      disabled={!actions.canSubmit}
+      aria-busy={actions.isSaving || undefined}
+      onClick={() => actions.submit()}
+    >
+      Gönder
+    </Button>
   );
 }

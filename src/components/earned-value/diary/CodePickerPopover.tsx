@@ -18,6 +18,8 @@ export interface CodePickerPopoverProps {
   selected: ReadonlySet<string>;
   onToggle: (node: EvCodeNode) => void;
   onClose: () => void;
+  /** Yüzey sınıfına ek (tablet eylem çubuğunda yukarı açılış, F2.6). */
+  className?: string;
 }
 
 /**
@@ -25,12 +27,12 @@ export interface CodePickerPopoverProps {
  * disiplin/kalem başlıkları, grup "(üst grup)" ve yaprak seçimi, oransız
  * yaprak PASİF "· oran yok" (K12; backend onu 422 ile reddeder).
  */
-export function CodePickerPopover({ nodes, isLoading, isError, selected, onToggle, onClose }: CodePickerPopoverProps) {
+export function CodePickerPopover({ nodes, isLoading, isError, selected, onToggle, onClose, className }: CodePickerPopoverProps) {
   const [query, setQuery] = useState("");
   const entries = nodes ? pickerEntries(nodes, query, selected) : [];
   const byId = new Map((nodes ?? []).map((node) => [node.id, node]));
   return (
-    <AnchoredPopover label="İş kodu ekle" onClose={onClose} className="ev-diary-picker">
+    <AnchoredPopover label="İş kodu ekle" onClose={onClose} className={cx("ev-diary-picker", className)}>
       <div className="ev-diary-picker__search">
         <Input
           size="row"
