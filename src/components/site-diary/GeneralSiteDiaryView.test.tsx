@@ -6,7 +6,11 @@ import { useSubcontractors } from "@/lib/api/hooks/useSubcontractors";
 import { GeneralSiteDiaryView } from "./GeneralSiteDiaryView";
 import { useSession } from "@/components/shell/SessionProvider";
 import { useSiteOptions } from "@/lib/api/hooks/useSiteOptions";
-import { useSiteDiaryEntries, useSiteDiaryEntry } from "@/lib/api/hooks/useSiteDiary";
+import {
+  useSiteDiaryEntries,
+  useSiteDiaryEntry,
+  type SiteDiaryEntryListResponse,
+} from "@/lib/api/hooks/useSiteDiary";
 import {
   useCreateSiteDiaryEntry,
   useReopenSiteDiaryEntry,
@@ -105,7 +109,7 @@ beforeEach(() => {
   mockSession({ site_diary: "full", progress_payments: "view" });
   mockOptions();
   vi.mocked(useSiteDiaryEntries).mockReturnValue({
-    data: { items: [], total: 0, limit: 50, offset: 0 },
+    data: { items: [], total: 0, limit: 50, offset: 0 } satisfies SiteDiaryEntryListResponse,
     isLoading: false,
     isError: false,
     error: null,

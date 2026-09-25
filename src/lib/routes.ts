@@ -77,6 +77,23 @@ export function routeKeyOf(entity: { id: string; slug?: string | null }): RouteI
  */
 export const PERSONNEL_RETURN_PARAM = "donus";
 
+/**
+ * DET-1.2 · S4 — Bölüm Detay'ın açık sekmesinin sorgu anahtarı (`?sekme=`).
+ *
+ * Sekmeler eskiden YEREL state'ti; günlük kayıt detayından kırıntı/geri ile
+ * dönen kullanıcı "Günlük Kayıt" yerine "İş Kalemleri"ne düşüyordu. Anahtar
+ * `donus` deseninde TEK tanımdır: üreten (`sections.detail`) ile okuyan
+ * (`SectionDetailView`) aynı sabiti paylaşır.
+ */
+export const SECTION_TAB_PARAM = "sekme";
+
+/**
+ * Bölüm Detay sekme kimlikleri — `SectionDetailTabs`in `siteSlug`
+ * değerleriyle BİREBİR aynıdır (şerit bu tipi kullanır; biri değişirse tip
+ * denetimi kırılır). Varsayılan sekme ("is-kalemleri") URL'e yazılmaz.
+ */
+export type SectionTabKey = "is-kalemleri" | "puantaj" | "stok" | "hakedisler" | "gunluk-kayit";
+
 /** Tek bir yol segmentini güvenle kodlar (slug'da Türkçe karakter olabilir). */
 function seg(value: RouteId): string {
   return encodeURIComponent(value);
@@ -114,6 +131,16 @@ export interface SiteParams extends ProjectParams {
 }
 export interface SectionParams extends SiteParams {
   sectionId: RouteId;
+}
+
+/** Bölüm Detay — `sekme` verilmezse `?sekme=` EKLENMEZ (varsayılan sekme). */
+export interface SectionDetailParams extends SectionParams {
+  sekme?: SectionTabKey;
+}
+
+/** DET-1.2 · günlük kayıt detayı — kayıt KİMLİKLE açılır (`GET /diary/{entry_id}`). */
+export interface SectionDiaryEntryParams extends SectionParams {
+  entryId: RouteId;
 }
 
 /** Şantiye puantajı bölüm süzgecini OKUR (`SiteTimesheetView` `?section=`). */
@@ -216,8 +243,17 @@ export const routes = {
 
       sections: {
         new: (p: SiteParams) => `${siteBase(p)}/${SECTIONS_SEGMENT}/yeni`,
-        detail: (p: SectionParams) => sectionBase(p),
+        detail: ({ sekme, ...p }: SectionDetailParams) =>
+          `${sectionBase(p)}${qs({ [SECTION_TAB_PARAM]: sekme })}`,
         edit: (p: SectionParams) => `${sectionBase(p)}/duzenle`,
+        /**
+         * DET-1.2 · salt okunur günlük kayıt detayı. Bölüm bağlamı yolda
+         * taşınır: kırıntı, "Bu bölüm" grubu ve (DET-1.B) önceki/sonraki
+         * gezinmesi bölüme göredir. Şantiye düzeyindeki `gunluk-kayit/{x}`
+         * seçilmedi — `ozet`/`planlama` statik kardeşleriyle çakışırdı.
+         */
+        diaryEntry: ({ entryId, ...p }: SectionDiaryEntryParams) =>
+          `${sectionBase(p)}/gunluk-kayit/${seg(entryId)}`,
       },
     },
   },

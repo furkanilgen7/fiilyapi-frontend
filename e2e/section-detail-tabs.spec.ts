@@ -37,11 +37,43 @@ async function openSection(page: Page, sectionId: string, heading: string) {
   await expect(page.getByRole("heading", { level: 1, name: heading })).toBeVisible();
 }
 
-test("Gunluk Kayit sekmesi YALNIZ bu bolumun kayitlarini basar, disarida kalani SAYAR", async ({
+/**
+ * 🔴 DET-1.1 · Bölüm listesi SUNUCU süzgecidir: `GET /sites/{id}/diary?section_id=`
+ * (Kural A — başlığı bu bölüm ∪ bu bölüme miktar satırı yazılmış gün). Kaldırılan
+ * İSTEMCİ süzgeci (`section-diary.ts`) "başka bölüme atanmış N kayıt bu listede
+ * yok" notunu basıyordu; sunucu süzgecinde dışarıda kalan sayılamaz ve not
+ * artık YALNIZ sayfa kırpılmasında (`items < total`) çıkar. Eski not iddiaları
+ * bu yüzden TERSİNE döndü: not YOK, eski cümle de hiçbir yerde YOK.
+ */
+function sectionDiaryRequest(page: Page, sectionId: string) {
+  return page.waitForRequest((request) => {
+    const url = new URL(request.url());
+    return (
+      request.method() === "GET" &&
+      url.pathname === "/api/backend/sites/s-1/diary" &&
+      url.searchParams.get("section_id") === sectionId
+    );
+  });
+}
+
+/** Satırın detay adresi — yol ADRES anahtarlarıyla (`routes.projects.sites.sections.diaryEntry`). */
+const diaryEntryPath = (sectionId: string, entryId: string) =>
+  `/projeler/p-1/santiyeler/s-1/bolumler/${sectionId}/gunluk-kayit/${entryId}`;
+
+test("Gunluk Kayit sekmesi SUNUCU suzgecini (Kural A) basar: satir detaya baglanir, baska bolum DUSER", async ({
   page,
 }) => {
+  const request = sectionDiaryRequest(page, "sec-1");
   await openSection(page, "sec-1", "Kat 6–10 Kaba İnşaat");
+  // Süzgeç İSTEKTEDİR: `section_id` gider, ay süzgeci GİTMEZ (liste tüm ayları kapsar).
+  const listUrl = new URL((await request).url());
+  expect(listUrl.searchParams.has("year")).toBe(false);
+  expect(listUrl.searchParams.has("month")).toBe(false);
+
   await page.getByRole("tab", { name: "Günlük Kayıt" }).click();
+  // DET-1.2 · S4 — açık sekme URL'dedir (detayın kırıntısı buraya döner).
+  await expect(page).toHaveURL(/\/bolumler\/sec-1\?sekme=gunluk-kayit$/);
+  await expect(page.getByRole("tab", { name: "Günlük Kayıt" })).toHaveAttribute("aria-selected", "true");
 
   const panel = page.getByTestId("section-diary");
   await expect(panel).toBeVisible();
@@ -50,40 +82,46 @@ test("Gunluk Kayit sekmesi YALNIZ bu bolumun kayitlarini basar, disarida kalani 
     "Kat 6–10 Kaba İnşaat · Günlük Kayıtlar",
   );
 
-  // (a) `d-1` (sec-1) BASILIR — tek satır.
+  // (a) `d-1` (başlığı sec-1) BASILIR — tek satır.
   await expect(panel.locator(".section-diary__row")).toHaveCount(1);
   await expect(panel).toContainText("15 Tem");
   // `d-1`in işçi toplamı: 12 + 8 + 6 = 26.
   await expect(panel).toContainText("26 işçi");
   await expect(panel).toContainText("Kat 6–10 Kaba İnşaat");
 
-  // (b) 🔴 KARŞI-KANIT: `d-2` sec-2'dedir ve GÖSTERİLMEZ. Bu iddia olmadan
-  // süzgeci silen mutant hayatta kalırdı (T4 öncesi ikizde ikisi de sec-1'di).
+  // (b) 🔴 KARŞI-KANIT: `d-2` sec-2'dedir (başlık VE satır) ve GÖSTERİLMEZ.
   await expect(panel).not.toContainText("16 Tem");
   await expect(panel).not.toContainText("5 işçi");
   await expect(panel).not.toContainText("Zemin Kat Kaba İnşaat");
 
-  // (c) Sessiz atlama = ihlal: dışarıda kalan SAYILIR ve nerede görüleceği yazılır.
-  const note = panel.getByTestId("section-diary-note");
-  await expect(note).toBeVisible();
-  // 🔴 YALNIZ "başka bölüm" dalı iddia edilir — "atanmamış" dalı İDDİA EDİLEMEZ.
-  // ÖLÇÜLDÜ: bu panel AY SÜZGECİ UYGULAMAZ ve `e2e/site-diary.spec.ts`
-  // 2026-09 · s-1'de BÖLÜMSÜZ (`section_id: null`, mock create varsayılanı)
-  // bir kayıt AÇAR. O kayıt listeye girmez ama `unassignedCount`u 0→1 yapar,
-  // yani "atanmamış" dalının VARLIĞI `fullyParallel` sırasına bağlıdır.
-  // `otherSectionCount` ise sabittir (yalnız `d-2` → sec-2), çünkü açılan kayıt
-  // "atanmamış" sayılır, "başka bölüm" DEĞİL.
-  await expect(note).toContainText("başka bölüme atanmış 1 kayıt bu listede yok");
+  // (c) Satırın TAMAMI detay sayfasına TEK bağlantıdır (`a[href]` ile toplanır).
+  const rowHrefs = await panel.locator(".section-diary__row").evaluateAll((rows) =>
+    rows.flatMap((row) => Array.from(row.querySelectorAll("a[href]")).map((a) => a.getAttribute("href"))),
+  );
+  expect(rowHrefs).toEqual([diaryEntryPath("sec-1", "d-1")]);
+  await expect(panel.getByRole("link", { name: "15.07.2026 günlük kaydını görüntüle · Gönderildi" })).toBeVisible();
 
-  // (d) Notun çıkış yolu GERÇEK bir bağlantıdır (`a[href]` ile toplanır).
-  const noteHrefs = await note.evaluate((el) =>
+  // (d) `d-1` BAŞLIK koluyla bağlıdır → "Satırla bağlı" rozeti ve "Başlık:" metası YOK.
+  // (Satır kolu listede görünmez: kalıcı fikstürü d-10 KASIM'dadır ve ay
+  // süzgeçsiz listeden gizlidir — bekçisi ikiz testinde, görünümü detay karesinde.)
+  await expect(panel.getByText("Satırla bağlı")).toHaveCount(0);
+  await expect(panel).not.toContainText("Başlık:");
+
+  // (e) Kırpılma yok → not YOK; kaldırılan istemci süzgecinin cümlesi de YOK.
+  await expect(panel.getByTestId("section-diary-note")).toHaveCount(0);
+  await expect(panel).not.toContainText("başka bölüme atanmış");
+
+  // (f) Başlığın çıkış yolu şantiye günlüğüdür.
+  const headHrefs = await panel.locator(".section-diary__head").evaluate((el) =>
     Array.from(el.querySelectorAll("a[href]")).map((a) => a.getAttribute("href")),
   );
-  expect(noteHrefs).toContain("/projeler/p-1/santiyeler/s-1/gunluk-kayit");
+  expect(headHrefs).toEqual(["/projeler/p-1/santiyeler/s-1/gunluk-kayit"]);
 });
 
 test("gunlugu olmayan bolumde 'kayit yok' der, 'kirilmiyor' DEMEZ", async ({ page }) => {
+  const request = sectionDiaryRequest(page, "sec-3");
   await openSection(page, "sec-3", "Peyzaj Düzenlemesi (Taslak)");
+  await request;
   await page.getByRole("tab", { name: "Günlük Kayıt" }).click();
 
   const panel = page.getByTestId("section-diary");
@@ -99,10 +137,47 @@ test("gunlugu olmayan bolumde 'kayit yok' der, 'kirilmiyor' DEMEZ", async ({ pag
   await expect(panel.getByRole("heading", { level: 2 })).toHaveText(
     "Peyzaj Düzenlemesi (Taslak) · Günlük Kayıtlar",
   );
-  // s-1'in iki kaydı da BAŞKA bölümlerde → ikisi de sayılır.
-  await expect(panel.getByTestId("section-diary-note")).toContainText(
-    "başka bölüme atanmış 2 kayıt bu listede yok",
+  // DET-1.1 — s-1'in öteki kayıtları SUNUCUDA süzülür; istemci onları SAYMAZ
+  // (eski "başka bölüme atanmış 2 kayıt" notu kalktı).
+  await expect(panel.getByTestId("section-diary-note")).toHaveCount(0);
+  await expect(panel).not.toContainText("başka bölüme atanmış");
+});
+
+/**
+ * DET-1.2 · Liste → detay → geri AKIŞI (davranış; piksel DEĞİL). Kareleri
+ * `site-diary-detail-visual.spec.ts`tedir. READ-ONLY: yalnız GET.
+ */
+test("gunluk satirina tiklamak detaya goturur, kirinti 'Gunluk Kayit' sekmesine DONER", async ({ page }) => {
+  await openSection(page, "sec-1", "Kat 6–10 Kaba İnşaat");
+  await page.getByRole("tab", { name: "Günlük Kayıt" }).click();
+  const panel = page.getByTestId("section-diary");
+  await expect(panel.locator(".section-diary__row")).toHaveCount(1);
+
+  const entryResponse = page.waitForResponse(
+    (response) =>
+      response.request().method() === "GET" &&
+      new URL(response.url()).pathname === "/api/backend/diary/d-1",
   );
+  await panel.getByRole("link", { name: /^15\.07\.2026 günlük kaydını görüntüle/ }).click();
+
+  // Detay adresi + kayıt BÖLÜM bağlamında istenir (önceki/sonraki Kural A kümesinde).
+  await expect(page).toHaveURL(new RegExp(`${diaryEntryPath("sec-1", "d-1")}$`));
+  const response = await entryResponse;
+  expect(response.status()).toBe(200);
+  expect(new URL(response.url()).searchParams.get("section_id")).toBe("sec-1");
+  await expect(page.getByRole("heading", { level: 1, name: "15.07.2026 Çarşamba" })).toBeVisible();
+
+  // Kırıntı: "… / Günlük Kayıt / 15.07.2026" — "Günlük Kayıt" bölümün SEKMESİNE bağlanır.
+  const crumbs = page.getByTestId("topbar-crumbs");
+  await expect(crumbs.locator("li").last()).toHaveText(/15\.07\.2026$/);
+  const diaryCrumb = crumbs.getByRole("link", { name: "Günlük Kayıt", exact: true });
+  await expect(diaryCrumb).toHaveAttribute("href", "/projeler/p-1/santiyeler/s-1/bolumler/sec-1?sekme=gunluk-kayit");
+
+  // Geri: kırıntı → Bölüm Detay, "Günlük Kayıt" sekmesi AÇIK.
+  await diaryCrumb.click();
+  await expect(page).toHaveURL(/\/bolumler\/sec-1\?sekme=gunluk-kayit$/);
+  await expect(page.getByRole("tab", { name: "Günlük Kayıt" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByTestId("section-diary").locator(".section-diary__row")).toHaveCount(1);
 });
 
 test("Hakedis sekmesi bolum + 'Tum Bolumler' satirlarini basar, baska bolumu DUSURUR", async ({
@@ -204,6 +279,9 @@ test("uc sekmenin paneli birbirinden AYIRT EDILEBILIR", async ({ page }) => {
 
   const panelText = async (tab: string) => {
     await page.getByRole("tab", { name: tab }).click();
+    // DET-1.2 · sekme URL'dedir (`?sekme=`, `router.replace`) — geçiş ASENKRON.
+    // Seçili sekme URL'den türediği için panel aynı render'da gelir; önce onu bekle.
+    await expect(page.getByRole("tab", { name: tab })).toHaveAttribute("aria-selected", "true");
     const body = page.locator(".section-panel__body");
     await expect(body).toBeVisible();
     await expect(page.getByText("Yükleniyor…")).toHaveCount(0);

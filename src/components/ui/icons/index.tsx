@@ -346,3 +346,41 @@ export const SparkleIcon = (p: IconProps) => (
     <path d="M18 15.5l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9.9-2.1Z" />
   </svg>
 );
+
+/**
+ * DET-1.2 · Günlük kayıt detayı ikonları. `‹ ›` / `→` glifleri yerine SVG
+ * (F-SEM kanonu: glif alt-kümede yok, sistem yedeğine düşer).
+ *
+ * Sağ/sol ok — `Planlama - Birim Oran Kataloğu.dc.html:109` aşağı ok yolu
+ * ±90° döndürülmüş hâli (mockup `Şantiye - Günlük Kayıt Detay` 198/202/521).
+ */
+export const ChevronRightIcon = (p: IconProps) => (
+  <svg {...base({ viewBox: "0 0 14 14", strokeWidth: 1.5, width: 14, height: 14, ...p })}>
+    <path d="M5.5 4L8.5 7L5.5 10" />
+  </svg>
+);
+
+export const ChevronLeftIcon = (p: IconProps) => (
+  <svg {...base({ viewBox: "0 0 14 14", strokeWidth: 1.5, width: 14, height: 14, ...p })}>
+    <path d="M8.5 4L5.5 7L8.5 10" />
+  </svg>
+);
+
+/**
+ * Asma kilit — `Şantiye - Günlük Kayıt (İlerleme).dc.html:145` kilit bandı /
+ * `Planlama - Panel.dc.html:440` çizimi (gövde dikdörtgeni + halka). Mevcut
+ * `LockIcon` (14'lük, dolgu kutulu) FARKLI bir çizimdir; o yüzden ayrı ad.
+ */
+export const PadlockIcon = (p: IconProps) => (
+  <svg {...base({ viewBox: "0 0 16 16", strokeWidth: 1.5, width: 16, height: 16, ...p })}>
+    <rect x="3" y="7" width="10" height="7" rx="1.5" />
+    <path d="M5.5 7V5a2.5 2.5 0 015 0v2" />
+  </svg>
+);
+
+/** Kesikli belge — boş/bulunamadı hâli (`Planlama - Adam-Saat Bütçesi.dc.html:476`). */
+export const DocumentDashedIcon = (p: IconProps) => (
+  <svg {...base({ viewBox: "0 0 16 16", strokeWidth: 1.3, width: 26, height: 26, ...p })}>
+    <rect x="3" y="2" width="10" height="12" rx="1.5" strokeDasharray="2 2" />
+  </svg>
+);

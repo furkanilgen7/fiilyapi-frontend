@@ -321,6 +321,32 @@ const SECTION_CREATE_SCHEMA = loadBodySchema("SectionCreate");
 const SECTION_UPDATE_SCHEMA = loadBodySchema("SectionUpdate");
 const SITE_DIARY_ENTRY_CREATE_SCHEMA = loadBodySchema("SiteDiaryEntryCreate");
 const SITE_DIARY_ENTRY_UPDATE_SCHEMA = loadBodySchema("SiteDiaryEntryUpdate");
+
+/* CLEAN-B1 (backend#132) · eski tek sıcaklık alanı API'den KALKTI. Backend
+ * `site_diary/schemas.py` (`mode="before"` doğrulayıcısı) onu POST'ta da
+ * PATCH'te de AÇIK 422 ile reddeder: Create'te `extra` serbest olduğundan alan
+ * aksi hâlde SESSİZCE yutulur, sıcaklık kaybolurdu; Update'te genel
+ * `extra_forbidden`dan ÖNCE koşar. Ad openapi'de artık YOK — tek kaynak burası. */
+export const DIARY_REMOVED_TEMPERATURE_FIELD = "temperature_c";
+/** Backend `schemas.TEMPERATURE_C_REMOVED` ile BİREBİR. */
+export const DIARY_TEMPERATURE_REMOVED_MESSAGE =
+  `\`${DIARY_REMOVED_TEMPERATURE_FIELD}\` kaldırıldı — \`temp_min_c\` ve \`temp_max_c\` kullanın`;
+
+/** Pydantic `model_validator(mode="before")` → `ValueError` şekli (`loc: ["body"]`). */
+function diaryRemovedTemperatureViolation(body: Record<string, unknown>): unknown | null {
+  if (!Object.hasOwn(body, DIARY_REMOVED_TEMPERATURE_FIELD)) return null;
+  return {
+    detail: [
+      {
+        type: "value_error",
+        loc: ["body"],
+        msg: `Value error, ${DIARY_TEMPERATURE_REMOVED_MESSAGE}`,
+        input: body,
+        ctx: { error: {} },
+      },
+    ],
+  };
+}
 const SITE_PLAN_CELL_INPUT_SCHEMA = loadBodySchema("SitePlanCellInput");
 /* PLN-F2.5a · günlük iç içe gövdeleri: işçi satırı (firma `hours` ≤ 24 ·
  * `additionalProperties:false`) ve EV günü satırı (bölüm + aşım gerekçesi). */
@@ -3422,8 +3448,12 @@ interface MockDiaryEntry {
   entry_date: string;
   section_id: string | null;
   weather: components["schemas"]["Weather"] | null;
-  temperature_c: string | null;
-  /** PLN-F2.5a · 10'lu hava + min/max/rüzgâr (B2.1). Eski kayıtlarda YOK → `null`. */
+  /**
+   * PLN-F2.5a · 10'lu hava + min/max/rüzgâr (B2.1). Girilmemişse YOK → `null`.
+   * Eski tek sıcaklık alanı CLEAN-B1'de API'den kalktı; backend göçü
+   * (b877270195d8) onu min/max'a kopyalamıştı — ikizde max'ı taşıyan eski
+   * fikstürler değeri doğrudan `temp_max_c`de tutar.
+   */
   temp_min_c?: string | null;
   temp_max_c?: string | null;
   wind_ms?: string | null;
@@ -3435,6 +3465,12 @@ interface MockDiaryEntry {
   incident_note: string | null;
   status: "draft" | "submitted";
   submitted_at: string | null;
+  /**
+   * DET-1.B · gönderen (backend `submitted_by_user_id`): `submitted_at` ile
+   * BİRLİKTE yazılır, reopen temizler. Tanımsız = backend'in DET-1.B ÖNCESİ
+   * gönderimi (geri doldurma yok) → yanıtta `null`.
+   */
+  submitted_by?: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -3494,6 +3530,9 @@ function buildDiaryLineRead(state: MockState, entry: MockDiaryEntry, line: MockD
     quantity: line.quantity,
     cumulative_quantity: qty3(diaryCumulativeQuantity(state, entry, line.boq_item_id)),
     line_amount: money2(Number(line.quantity) * Number(line.unit_price)),
+    // DET-1.B · satır bölümünün ANLIK adı; bölümsüz (ya da bölüm taşımayan
+    // iskelet) satırda `null` = "Bölümsüz" (backend `DetailContext.section_name`).
+    section_name: diarySectionName(state, line.section_id ?? null),
     ...(line.section_id === undefined ? {} : diaryLeafFields(state, entry, line)),
   };
 }
@@ -3544,9 +3583,122 @@ function diaryWorkerTotal(entry: MockDiaryEntry): number {
   return entry.worker_counts.reduce((sum, w) => sum + w.count, 0);
 }
 
-function buildDiaryEntryDetail(
+// --- DET-1.B · salt okunur detay BAĞLAMI (backend `site_diary/detail_context.py`) ---
+
+/** Backend `guards.SECTION_MISMATCH` — BİREBİR (liste süzgeci + detay bağlamı 422'si). */
+const DIARY_SECTION_MISMATCH = "Seçilen bölüm bu şantiyeye ait değil";
+
+/** `repository.section_names` ikizi — ANLIK ad; `null` kimlik ya da bulunamayan bölüm → `null`. */
+function diarySectionName(state: MockState, sectionId: string | null): string | null {
+  if (sectionId === null) return null;
+  return state.sections.find((section) => section.id === sectionId)?.name ?? null;
+}
+
+/** `repository.user_names` ikizi (`User.full_name`). */
+function diaryUserName(state: MockState, userId: string | null): string | null {
+  if (userId === null) return null;
+  return state.users.find((user) => user.id === userId)?.full_name ?? null;
+}
+
+/** `repository.subcontractor_names` ikizi — firmasız satırda `null`. */
+function diarySubcontractorName(state: MockState, subcontractorId: string | null): string | null {
+  if (subcontractorId === null) return null;
+  return state.subcontractors.find((sub) => sub.id === subcontractorId)?.name ?? null;
+}
+
+/**
+ * `service.validate_section` ikizi: `null` = süzgeç/bağlam yok (geçer); var
+ * olmayan ya da BAŞKA şantiyenin bölümü AYNI 422'yi alır → `false`.
+ */
+function diarySectionBelongsToSite(state: MockState, sectionId: string | null, siteId: string): boolean {
+  if (sectionId === null) return true;
+  return state.sections.some((section) => section.id === sectionId && section.site_id === siteId);
+}
+
+/**
+ * DET-1.B KURAL A'nın TEK kopyası (`repository.section_conditions` ikizi) —
+ * liste, sayaç ve önceki/sonraki AYNI yüklemi okur. Bölümün günlüğü = başlığı
+ * bu bölüm olan gün ∪ bu bölüme MİKTAR SATIRI yazılmış gün (`EXISTS`: kayıt
+ * bir kez). Bölüm taşımayan iskelet satırı (`section_id` tanımsız) bölümsüzdür.
+ * `null` = süzgeç yok.
+ */
+function diaryEntryInSection(entry: MockDiaryEntry, sectionId: string | null): boolean {
+  if (sectionId === null) return true;
+  return entry.section_id === sectionId || entry.lines.some((line) => (line.section_id ?? null) === sectionId);
+}
+
+/**
+ * `repository.neighbours` ikizi: aynı şantiyede bu günden hemen ÖNCEKİ /
+ * SONRAKİ kayıt (gün başına tek kayıt → tarih sırası TAM sıra). Bölüm bağlamı
+ * verilirse Kural A kümesinde. 🔴 `hiddenFromUnfilteredList` BURADA UYGULANMAZ:
+ * o bayrak yalnız ay süzgeçsiz LİSTENİN test izolasyonudur; gerçek backend'in
+ * komşu sorgusunda böyle bir dışlama yoktur.
+ */
+function diaryNeighbours(
   state: MockState,
   entry: MockDiaryEntry,
+  sectionId: string | null,
+): { prev: MockDiaryEntry | null; next: MockDiaryEntry | null } {
+  const pool = state.diaryEntries.filter(
+    (candidate) => candidate.site_id === entry.site_id && diaryEntryInSection(candidate, sectionId),
+  );
+  const prev = pool
+    .filter((candidate) => candidate.entry_date < entry.entry_date)
+    .reduce<MockDiaryEntry | null>((best, c) => (best === null || c.entry_date > best.entry_date ? c : best), null);
+  const next = pool
+    .filter((candidate) => candidate.entry_date > entry.entry_date)
+    .reduce<MockDiaryEntry | null>((best, c) => (best === null || c.entry_date < best.entry_date ? c : best), null);
+  return { prev, next };
+}
+
+/**
+ * DET-1.B · detay yanıtına eklenen 12 alan. Gün kilidi EV gün kilidinden
+ * (`evDayLocks` ← `evLockState`, TEK kaynak; backend `day_hooks.day_locks`)
+ * türer — puantaj haftası ve EV gün görünümüyle aynı kaynak.
+ */
+function buildDiaryDetailContext(
+  state: MockState,
+  evState: EvState,
+  entry: MockDiaryEntry,
+  sectionContext: string | null,
+): Pick<
+  components["schemas"]["SiteDiaryEntryDetail"],
+  | "site_name" | "project_name" | "section_name" | "created_by_name" | "submitted_by" | "submitted_by_name"
+  | "locked" | "lock_report_date" | "prev_id" | "prev_entry_date" | "next_id" | "next_entry_date"
+> {
+  const site = state.sites.find((candidate) => candidate.id === entry.site_id);
+  const project = state.projects.find((candidate) => candidate.id === entry.project_id);
+  if (site === undefined || project === undefined) {
+    throw new Error(`günlük ${entry.id}: şantiye/proje fikstürü yok (${entry.site_id}/${entry.project_id})`);
+  }
+  const locks = evDayLocks(evState, entry.site_id, [entry.entry_date]);
+  const { prev, next } = diaryNeighbours(state, entry, sectionContext);
+  const submittedBy = entry.submitted_by ?? null;
+  return {
+    site_name: site.name,
+    project_name: project.name,
+    section_name: diarySectionName(state, entry.section_id),
+    created_by_name: diaryUserName(state, entry.created_by),
+    submitted_by: submittedBy,
+    submitted_by_name: diaryUserName(state, submittedBy),
+    locked: locks.length > 0,
+    lock_report_date: locks[0]?.report_date ?? null,
+    prev_id: prev?.id ?? null,
+    prev_entry_date: prev?.entry_date ?? null,
+    next_id: next?.id ?? null,
+    next_entry_date: next?.entry_date ?? null,
+  };
+}
+
+/**
+ * `sectionContext` YALNIZ önceki/sonraki bağlamıdır (`GET /diary/{id}?section_id=`);
+ * yazma uçları vermez (backend `build_detail` → şantiye bağlamı).
+ */
+function buildDiaryEntryDetail(
+  state: MockState,
+  evState: EvState,
+  entry: MockDiaryEntry,
+  sectionContext: string | null = null,
 ): components["schemas"]["SiteDiaryEntryDetail"] {
   return {
     id: entry.id,
@@ -3555,7 +3707,6 @@ function buildDiaryEntryDetail(
     entry_date: entry.entry_date,
     section_id: entry.section_id,
     weather: entry.weather,
-    temperature_c: entry.temperature_c,
     temp_min_c: entry.temp_min_c ?? null,
     temp_max_c: entry.temp_max_c ?? null,
     wind_ms: entry.wind_ms ?? null,
@@ -3570,8 +3721,12 @@ function buildDiaryEntryDetail(
     created_by: entry.created_by,
     created_at: entry.created_at,
     updated_at: entry.updated_at,
+    ...buildDiaryDetailContext(state, evState, entry, sectionContext),
     lines: entry.lines.map((l) => buildDiaryLineRead(state, entry, l)),
-    worker_counts: entry.worker_counts,
+    worker_counts: entry.worker_counts.map((row) => ({
+      ...row,
+      subcontractor_name: diarySubcontractorName(state, row.subcontractor_id ?? null),
+    })),
     lines_total: money2(diaryLinesTotal(entry)),
     worker_total: diaryWorkerTotal(entry),
     dropped_orphan_count: 0,
@@ -3581,8 +3736,15 @@ function buildDiaryEntryDetail(
   };
 }
 
+/**
+ * DET-1.B ek (backend#130) · liste öğesi: `section_name` = başlık bölümünün adı
+ * (başlıksız → null) · `section_line_count` = YALNIZ `?section_id=` verilince o
+ * bölüme düşen miktar satırı sayısı (backend `read.section_line_count`), süzgeçsiz null.
+ */
 function buildDiaryEntryListItem(
+  state: MockState,
   entry: MockDiaryEntry,
+  sectionFilter: string | null,
 ): components["schemas"]["SiteDiaryEntryListItem"] {
   return {
     id: entry.id,
@@ -3597,6 +3759,9 @@ function buildDiaryEntryListItem(
     lines_total: money2(diaryLinesTotal(entry)),
     created_by: entry.created_by,
     created_at: entry.created_at,
+    section_name: diarySectionName(state, entry.section_id),
+    section_line_count:
+      sectionFilter === null ? null : entry.lines.filter((line) => line.section_id === sectionFilter).length,
   };
 }
 
@@ -3617,10 +3782,10 @@ function buildDiaryEntryFixtures(): MockDiaryEntry[] {
   return [
     {
       id: "d-1", site_id: "s-1", project_id: "p-1", entry_date: "2026-07-15",
-      section_id: "sec-1", weather: "sunny", temperature_c: "28.0",
+      section_id: "sec-1", weather: "sunny", temp_max_c: "28.0",
       work_done: "6. kat döşeme betonu döküldü.", chief_note: "Beton pompası 08:00'de sahada.",
       safety_meeting_held: true, ppe_checked: true, has_incident: false, incident_note: null,
-      status: "submitted", submitted_at: "2026-07-15T17:30:00Z",
+      status: "submitted", submitted_at: "2026-07-15T17:30:00Z", submitted_by: "u-2",
       created_by: "u-2", created_at: "2026-07-15T08:00:00Z", updated_at: "2026-07-15T17:30:00Z",
       lines: buildDiaryLineSkeleton("d-1", { "bi-3": 120, "bi-4": 8.5, "bi-5": 240 }),
       worker_counts: [
@@ -3636,7 +3801,7 @@ function buildDiaryEntryFixtures(): MockDiaryEntry[] {
     // s-1'in TOPLAM günlük SAYISI değişmedi (sayım iddiaları korunur).
     {
       id: "d-2", site_id: "s-1", project_id: "p-1", entry_date: "2026-07-16",
-      section_id: "sec-2", weather: "rainy", temperature_c: "19.0",
+      section_id: "sec-2", weather: "rainy", temp_max_c: "19.0",
       work_done: "Yağış nedeniyle beton dökümü ertelendi.", chief_note: null,
       safety_meeting_held: true, ppe_checked: false, has_incident: false, incident_note: null,
       status: "draft", submitted_at: null,
@@ -3646,16 +3811,75 @@ function buildDiaryEntryFixtures(): MockDiaryEntry[] {
     },
     {
       id: "d-3", site_id: "s-2", project_id: "p-1", entry_date: "2026-07-15",
-      section_id: null, weather: "partly_cloudy", temperature_c: "26.0",
+      section_id: null, weather: "partly_cloudy", temp_max_c: "26.0",
       work_done: "Duvar örgü ve sıva imalatı sürdü.", chief_note: null,
       safety_meeting_held: true, ppe_checked: true, has_incident: false, incident_note: null,
-      status: "submitted", submitted_at: "2026-07-15T18:00:00Z",
+      status: "submitted", submitted_at: "2026-07-15T18:00:00Z", submitted_by: "u-2",
       created_by: "u-2", created_at: "2026-07-15T08:00:00Z", updated_at: "2026-07-15T18:00:00Z",
       lines: buildDiaryLineSkeleton("d-3", { "bi-5": 320, "bi-6": 260 }),
       worker_counts: [{ id: "d-3-w-1", trade: "Duvarcı", source: "subcontractor", count: 10 }],
     },
     ...buildEvDiaryScenarioEntries(),
+    buildDiaryLineArmEntry(),
   ];
+}
+
+/**
+ * DET-1.4 · Kural A SATIR KOLU fikstürünün kimliği — görsel spec ve ikiz
+ * bekçisi BURADAN okur (tarih/kimlik iki yerde yazılmaz).
+ */
+export const DIARY_LINE_ARM_FIXTURE = {
+  entryId: "d-10",
+  day: "2026-11-12",
+  /** Başlık bölümü (Zemin Kat Kaba İnşaat). */
+  headerSectionId: "sec-2",
+  /** YALNIZ satırla bağlı olduğu bölüm (Kat 6–10 Kaba İnşaat) — iki miktar satırı. */
+  lineSectionId: "sec-1",
+} as const;
+
+/**
+ * DET-1.4 · Kural A SATIR KOLU — başlığı `sec-2`, iki miktar satırı `sec-1`e,
+ * bir satırı `sec-2`ye yazılmış GÖNDERİLMİŞ gün (s-1 · 12.11.2026 Perşembe).
+ * Bu kayıt olmadan hiçbir fikstür "Satırla bağlı" hâlini kalıcı olarak
+ * taşımıyordu (ikiz testi d-8'i PATCH'le geçici olarak taşıyordu).
+ *
+ * 🔒 İZOLASYON (ölçüldü, DET-1.4):
+ *   · KASIM — Temmuz (görsel/okuma) · Eylül (`site-diary.spec` mutasyonu) ·
+ *     Ekim (EV senaryoları) aylarından hiçbirine girmez; 12.11 kilitli DEĞİL
+ *     (Kasım kilitleri 01.11 · 02–03.11) ve EV gün kaydı YOK (`has_baseline:
+ *     false` → çekirdek detay). Özet/öneri uçları hep ay süzgeçli çağrılır.
+ *   · `hiddenFromUnfilteredList` — Bölüm Detay'ın ay süzgeçsiz listesine
+ *     (sec-1 "1 satır" karesi) SIZMAZ.
+ *   · Bölümsüz satır YOK: bölümsüz yaprağın kümülatifi `site-diary.spec`in
+ *     Eylül'de açtığı iskelet kaydını sayardı (koşu sırasına bağlı sayı).
+ *   · Tek bilinçli yan etki: d-8'in (09.10) sonrakisi — şantiye ve sec-1
+ *     bağlamında — artık bu kayıt (`diaryNeighbours` gizlemeyi uygulamaz).
+ *     Hiçbir kare d-8'in gezinmesine bakmaz.
+ */
+function buildDiaryLineArmEntry(): MockDiaryEntry {
+  const { entryId, day, headerSectionId, lineSectionId } = DIARY_LINE_ARM_FIXTURE;
+  return {
+    id: entryId, site_id: "s-1", project_id: "p-1", entry_date: day,
+    section_id: headerSectionId, weather: "partly_cloudy",
+    temp_min_c: "9.0", temp_max_c: "17.0", wind_ms: "3.4",
+    work_done: "Zemin kat perde duvar betonu döküldü; kat 10 döşeme betonu ve donatısı tamamlandı.",
+    chief_note: "Zemin kat kalıpları yarın sökülecek; beton numuneleri laboratuvara gönderildi.",
+    safety_meeting_held: true, ppe_checked: true, has_incident: false, incident_note: null,
+    status: "submitted", submitted_at: "2026-11-12T17:10:00Z", submitted_by: "u-2",
+    created_by: "u-2", created_at: "2026-11-12T08:00:00Z", updated_at: "2026-11-12T17:10:00Z",
+    // Satırlar (kalem × bölüm) yapraklarıdır → `evLines` (PUT tam değiştirme semantiği).
+    evLines: true,
+    hiddenFromUnfilteredList: true,
+    lines: evDiaryLines(entryId, [
+      ["bi-3", lineSectionId, 24],
+      ["bi-4", lineSectionId, 2.6],
+      ["bi-3", headerSectionId, 18],
+    ]),
+    worker_counts: [
+      { id: `${entryId}-w-1`, trade: "Betoncu", source: "company", count: 10 },
+      { id: `${entryId}-w-2`, trade: "Kalıpçı", source: "subcontractor", count: 6 },
+    ],
+  };
 }
 
 /**
@@ -3668,7 +3892,7 @@ function buildDiaryEntryFixtures(): MockDiaryEntry[] {
  */
 function buildEvDiaryScenarioEntries(): MockDiaryEntry[] {
   const base = {
-    site_id: "s-1", project_id: "p-1", section_id: "sec-1", temperature_c: null,
+    site_id: "s-1", project_id: "p-1", section_id: "sec-1",
     chief_note: null, safety_meeting_held: true, ppe_checked: true, has_incident: false,
     incident_note: null, created_by: "u-2", evLines: true, hiddenFromUnfilteredList: true,
   } as const;
@@ -3678,7 +3902,7 @@ function buildEvDiaryScenarioEntries(): MockDiaryEntry[] {
       ...base, id: "d-4", entry_date: EV_DAY_SCENARIO_DAYS.locked,
       weather: "sunny", temp_min_c: "15.0", temp_max_c: "26.0", wind_ms: "3.1",
       work_done: "Kat 7 döşeme betonu döküldü, kolon demirleri bağlandı.",
-      status: "submitted", submitted_at: "2026-10-05T17:20:00Z",
+      status: "submitted", submitted_at: "2026-10-05T17:20:00Z", submitted_by: "u-2",
       created_at: "2026-10-05T08:00:00Z", updated_at: "2026-10-05T17:20:00Z",
       lines: evDiaryLines("d-4", [["bi-3", "sec-1", 30], ["bi-4", "sec-1", 2.8], ["bi-5", null, 60]]),
       worker_counts: [
@@ -3735,7 +3959,7 @@ function buildEvDiaryScenarioEntries(): MockDiaryEntry[] {
       ...base, id: "d-9", entry_date: EV_DAY_SCENARIO_DAYS.unlockTarget,
       weather: "sunny", temp_min_c: "14.0", temp_max_c: "25.0", wind_ms: "2.0",
       work_done: "Kat 7 kalıp hazırlığı.",
-      status: "submitted", submitted_at: "2026-10-02T17:00:00Z",
+      status: "submitted", submitted_at: "2026-10-02T17:00:00Z", submitted_by: "u-2",
       created_at: "2026-10-02T08:00:00Z", updated_at: "2026-10-02T17:00:00Z",
       lines: evDiaryLines("d-9", [["bi-3", "sec-1", 10]]),
       worker_counts: [],
@@ -10558,14 +10782,21 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       const { year, month } = diaryPeriod();
       const limit = Number(parsed.searchParams.get("limit") ?? "50");
       const offset = Number(parsed.searchParams.get("offset") ?? "0");
+      // DET-1.B · `?section_id=` Kural A süzgeci (`diaryEntryInSection`); başka
+      // şantiyenin / olmayan bölüm SESSİZCE boş liste değil 422.
+      const sectionFilter = parsed.searchParams.get("section_id");
+      if (!diarySectionBelongsToSite(state, sectionFilter, site.id)) {
+        return send(422, { detail: DIARY_SECTION_MISMATCH });
+      }
       const isUnfiltered = year === null && month === null;
       const filtered = state.diaryEntries
         .filter((e) => e.site_id === site.id && diaryEntryInPeriod(e, year, month))
+        .filter((e) => diaryEntryInSection(e, sectionFilter))
         // 🔒 PLN-F2.5a test izolasyonu — bkz. `MockDiaryEntry.hiddenFromUnfilteredList`.
         .filter((e) => !(isUnfiltered && e.hiddenFromUnfilteredList === true))
         .sort((a, b) => b.entry_date.localeCompare(a.entry_date) || a.id.localeCompare(b.id));
       return send(200, {
-        items: filtered.slice(offset, offset + limit).map(buildDiaryEntryListItem),
+        items: filtered.slice(offset, offset + limit).map((entry) => buildDiaryEntryListItem(state, entry, sectionFilter)),
         total: filtered.length,
         limit,
         offset,
@@ -10575,7 +10806,9 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       const site = state.sites.find((s) => s.id === siteDiaryMatch[1]);
       if (!site) return send(404, { detail: "santiye yok" });
       return withBody((body) => {
-        const schemaViolation = bodySchemaViolation(SITE_DIARY_ENTRY_CREATE_SCHEMA, body);
+        const schemaViolation =
+          diaryRemovedTemperatureViolation(body) ??
+          bodySchemaViolation(SITE_DIARY_ENTRY_CREATE_SCHEMA, body);
         if (schemaViolation !== null) return send(422, schemaViolation);
         const entryDate = String(body.entry_date ?? "");
         if (!entryDate) return send(422, { detail: "entry_date zorunlu" });
@@ -10600,9 +10833,6 @@ export function startMockBackend(port: number): { server: Server; close: () => P
             "weather",
             body.weather,
           ),
-          temperature_c: body.temperature_c !== undefined && body.temperature_c !== null
-            ? String(body.temperature_c)
-            : null,
           temp_min_c: diaryDecimal1(body.temp_min_c),
           temp_max_c: diaryDecimal1(body.temp_max_c),
           wind_ms: diaryDecimal1(body.wind_ms),
@@ -10627,7 +10857,7 @@ export function startMockBackend(port: number): { server: Server; close: () => P
           ...(isEvDay ? { evLines: true, hiddenFromUnfilteredList: true } : {}),
         };
         state.diaryEntries.push(entry);
-        return send(201, buildDiaryEntryDetail(state, entry));
+        return send(201, buildDiaryEntryDetail(state, evState, entry));
       });
     }
 
@@ -10643,8 +10873,10 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       if (blockers.length > 0) return send(422, evSubmitBlockedBody(blockers));
       entry.status = "submitted";
       entry.submitted_at = new Date().toISOString();
+      // DET-1.B · gönderen `submitted_at` ile BİRLİKTE (ikizin oturumu = u-1, POST'un `created_by`u).
+      entry.submitted_by = "u-1";
       entry.updated_at = entry.submitted_at;
-      return send(200, buildDiaryEntryDetail(state, entry));
+      return send(200, buildDiaryEntryDetail(state, evState, entry));
     }
 
     // POST /diary/{entry_id}/reopen — gönderilmiş kaydı yeniden taslağa alır.
@@ -10657,8 +10889,9 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       }
       entry.status = "draft";
       entry.submitted_at = null;
+      entry.submitted_by = null;
       entry.updated_at = new Date().toISOString();
-      return send(200, buildDiaryEntryDetail(state, entry));
+      return send(200, buildDiaryEntryDetail(state, evState, entry));
     }
 
     // PUT /diary/{entry_id}/lines — DEĞİŞTİRME semantiği: gövdede geçmeyen
@@ -10675,7 +10908,7 @@ export function startMockBackend(port: number): { server: Server; close: () => P
           const rejected = diaryReplaceEvLines(entry, body);
           if (rejected !== null) return send(rejected.status, rejected.body);
           entry.updated_at = new Date().toISOString();
-          return send(200, buildDiaryEntryDetail(state, entry));
+          return send(200, buildDiaryEntryDetail(state, evState, entry));
         }
         const rawLines = Array.isArray(body.lines) ? (body.lines as Array<Record<string, unknown>>) : [];
         const quantities: Record<string, number> = {};
@@ -10688,7 +10921,7 @@ export function startMockBackend(port: number): { server: Server; close: () => P
         }
         entry.lines = buildDiaryLineSkeleton(entry.id, quantities);
         entry.updated_at = new Date().toISOString();
-        return send(200, buildDiaryEntryDetail(state, entry));
+        return send(200, buildDiaryEntryDetail(state, evState, entry));
       });
     }
 
@@ -10697,7 +10930,13 @@ export function startMockBackend(port: number): { server: Server; close: () => P
     if (method === "GET" && diaryEntryIdMatch) {
       const entry = state.diaryEntries.find((e) => e.id === diaryEntryIdMatch[1]);
       if (!entry) return send(404, { detail: "gunluk kayit yok" });
-      return send(200, buildDiaryEntryDetail(state, entry));
+      // DET-1.B · `?section_id=` = önceki/sonraki BÖLÜM bağlamı (Kural A);
+      // backend sırası: kapsam (404) → bölüm şantiyeye ait mi (422) → detay.
+      const sectionContext = parsed.searchParams.get("section_id");
+      if (!diarySectionBelongsToSite(state, sectionContext, entry.site_id)) {
+        return send(422, { detail: DIARY_SECTION_MISMATCH });
+      }
+      return send(200, buildDiaryEntryDetail(state, evState, entry, sectionContext));
     }
     if (method === "PATCH" && diaryEntryIdMatch) {
       const entry = state.diaryEntries.find((e) => e.id === diaryEntryIdMatch[1]);
@@ -10707,6 +10946,7 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       }
       return withBody((body) => {
         const schemaViolation =
+          diaryRemovedTemperatureViolation(body) ??
           bodySchemaViolation(SITE_DIARY_ENTRY_UPDATE_SCHEMA, body) ??
           diaryWorkerCountsViolation(body.worker_counts);
         if (schemaViolation !== null) return send(422, schemaViolation);
@@ -10725,9 +10965,6 @@ export function startMockBackend(port: number): { server: Server; close: () => P
             "weather",
             body.weather,
           );
-        }
-        if (body.temperature_c !== undefined) {
-          entry.temperature_c = body.temperature_c === null ? null : String(body.temperature_c);
         }
         // PLN-F2.5a · B2.1 hava alanları (`Numeric(4,1)` → "17.0").
         if (body.temp_min_c !== undefined) entry.temp_min_c = diaryDecimal1(body.temp_min_c);
@@ -10761,7 +10998,7 @@ export function startMockBackend(port: number): { server: Server; close: () => P
           }));
         }
         entry.updated_at = new Date().toISOString();
-        return send(200, buildDiaryEntryDetail(state, entry));
+        return send(200, buildDiaryEntryDetail(state, evState, entry));
       });
     }
 

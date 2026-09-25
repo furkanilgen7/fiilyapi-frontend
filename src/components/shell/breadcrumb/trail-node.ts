@@ -71,12 +71,16 @@ export const EMPTY_KEYS: RouteKeys = {
  *     Şantiyenin ON BİR alt ekranının hepsi bu hook'u çağırır (ölçüldü).
  *   • `section` → `useSection(sectionKey, { site, project })`.
  *
+ *   • `diaryEntry` → DET-1.2 · `useSiteDiaryEntry(entryId, { sectionId })`
+ *     (`siteDiaryEntryQueryKey`); etiket kaydın TARİHİDİR ("24.09.2026").
+ *     Günlük kayıt detay sayfası bu sorguyu zaten atar.
+ *
  * Kalan dinamik segmentler (personel/makine/fatura/hakediş/sözleşme kimlikleri)
  * ADLARINI DEĞİL, sabit ve DOĞRU bir etiket taşır ("Personel Kartı" gibi).
  * Bu bir yalan değildir: kullanıcı gerçekten o yüzeydedir. Adı basmak için
  * ikinci bir sorgu açmak K5'i ihlal ederdi.
  */
-export type NamedEntity = "project" | "site" | "section";
+export type NamedEntity = "project" | "site" | "section" | "diaryEntry";
 
 export interface DynamicChild {
   /** URL segmentinin yazılacağı anahtar. */
@@ -94,6 +98,22 @@ export interface TrailNode {
   readonly named?: NamedEntity;
   /** Segmentin KENDİ sayfası varsa `routes` üreticisi; yoksa YAPISAL segment. */
   readonly href?: (keys: RouteKeys) => string;
+  /**
+   * DET-1.2 · S4 — sayfası OLMAYAN (yapısal) segment yine de kırıntıda
+   * görünür ve ATASININ bir görünümüne bağlanır: `bolumler/<b>/gunluk-kayit`
+   * → Bölüm Detay `?sekme=gunluk-kayit`. `href` ile BİRLİKTE verilmez
+   * (`href` = "bu segmentin sayfası var" iddiasıdır, bekçisi dosya sistemidir).
+   * Yol kısmı adresin gerçek önekidir; yalnız sorgu dizesi ekler.
+   */
+  readonly crumbHref?: (keys: RouteKeys) => string;
+  /**
+   * DET-1.3 · adı ÇÖZÜLEMEYEN (`CrumbNames.unresolved`) bu düğüm kırıntıda
+   * HİÇ basılmaz — yedek etiketine düşmez. Günlük kayıt detayı 404/403'te
+   * mockup (hâl e) kırıntıyı "Günlük Kayıt"ta bırakır: tarih bilinmiyor ve
+   * "Kayıt Detayı" diye bir yüzey yok (ekranda "bulunamadı" kartı var).
+   * Bekleme hâli (iskelet) etkilenmez.
+   */
+  readonly omitWhenUnresolved?: boolean;
   readonly children?: Readonly<Record<string, TrailNode>>;
   /** Statik kardeşi eşleşmeyen segmenti yakalayan dinamik çocuk. */
   readonly dynamic?: DynamicChild;

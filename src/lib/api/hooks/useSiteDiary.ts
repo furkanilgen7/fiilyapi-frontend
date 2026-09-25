@@ -38,6 +38,13 @@ export interface SiteDiaryListFilter {
   month?: number;
   limit?: number;
   offset?: number;
+  /**
+   * DET-1.1 · Kural A — sunucu süzgeci (`?section_id=`): başlığı bu bölüm
+   * olan gün ∪ bu bölüme miktar satırı yazılmış gün. VERİLİP BOŞSA ("")
+   * sorgu ağa ÇIKMAZ: bölüm kimliği henüz çözülmemiştir ve süzgeçsiz çağrı
+   * şantiyenin TAMAMINI bölüm listesi gibi basardı.
+   */
+  sectionId?: string;
 }
 
 /** `GET /sites/{site_id}/diary/summary` — YALNIZ ay/yil suzmesi alir. */
@@ -62,7 +69,9 @@ export function useSiteDiaryEntries(
   filter: SiteDiaryListFilter = {},
 ): UseQueryResult<SiteDiaryEntryListResponse, Error> {
   return useQuery({
-    enabled: siteId.length > 0,
+    enabled: siteId.length > 0 && filter.sectionId !== "",
+    // Bölüm süzgeci anahtarın SONUNA eklenir: süzgeçsiz çağıranların anahtarı
+    // (ve `[KEY, siteId]` önekli geçersizleştirmeler) DEĞİŞMEZ.
     queryKey: [
       SITE_DIARY_ENTRIES_QUERY_KEY,
       siteId,
@@ -70,6 +79,7 @@ export function useSiteDiaryEntries(
       filter.month ?? null,
       filter.limit ?? null,
       filter.offset ?? null,
+      ...(filter.sectionId !== undefined ? [filter.sectionId] : []),
     ],
     queryFn: async () =>
       unwrap(
@@ -80,6 +90,7 @@ export function useSiteDiaryEntries(
               ...periodQuery(filter),
               ...(filter.limit !== undefined ? { limit: filter.limit } : {}),
               ...(filter.offset !== undefined ? { offset: filter.offset } : {}),
+              ...(filter.sectionId !== undefined ? { section_id: filter.sectionId } : {}),
             },
           },
         }),
@@ -92,14 +103,43 @@ export function useSiteDiaryEntries(
  * (`worker_counts`) ve turevler (`lines_total`/`worker_total`) bu yanittan
  * gelir; ekran ikinci istek atmaz.
  */
-export function useSiteDiaryEntry(entryId: string): UseQueryResult<SiteDiaryEntryDetail, Error> {
+export interface SiteDiaryEntryOptions {
+  /**
+   * DET-1.1 — bölüm bağlamı (`?section_id=`): `prev_id`/`next_id` bu
+   * bölümün Kural A kümesine göre döner. Verilmezse şantiye geneli.
+   */
+  sectionId?: string;
+  /** Varsayılan `true`; bölüm kimliği çözülmeden istek atmamak için. */
+  enabled?: boolean;
+}
+
+/**
+ * Tekil kaydın önbellek anahtarı — TEK üretici. Kırıntı (`useCrumbNames`)
+ * aynı anahtara `skipToken` ile bağlanır; elle kopyalansaydı anahtar bir gün
+ * ayrıştığında kırıntı sessizce iskelette kalırdı. Bölümsüz çağrının anahtarı
+ * BUGÜNKÜYLE aynıdır (`[KEY, id]`).
+ */
+export function siteDiaryEntryQueryKey(entryId: string, sectionId?: string): readonly unknown[] {
+  return sectionId === undefined
+    ? [SITE_DIARY_ENTRY_QUERY_KEY, entryId]
+    : [SITE_DIARY_ENTRY_QUERY_KEY, entryId, sectionId];
+}
+
+export function useSiteDiaryEntry(
+  entryId: string,
+  options: SiteDiaryEntryOptions = {},
+): UseQueryResult<SiteDiaryEntryDetail, Error> {
+  const { sectionId, enabled = true } = options;
   return useQuery({
-    enabled: entryId.length > 0,
-    queryKey: [SITE_DIARY_ENTRY_QUERY_KEY, entryId],
+    enabled: enabled && entryId.length > 0,
+    queryKey: siteDiaryEntryQueryKey(entryId, sectionId),
     queryFn: async () =>
       unwrap(
         await backendClient.GET("/diary/{entry_id}", {
-          params: { path: { entry_id: entryId } },
+          params: {
+            path: { entry_id: entryId },
+            ...(sectionId !== undefined ? { query: { section_id: sectionId } } : {}),
+          },
         }),
       ),
   });

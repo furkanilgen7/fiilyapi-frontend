@@ -17,6 +17,7 @@ import type { PersonnelListItem } from "@/lib/api/hooks/usePersonnel";
 import { BackendError } from "@/lib/api/unwrap";
 import type { SectionDetailResponse } from "@/lib/api/hooks/useSection";
 import type { SiteDetail } from "@/lib/api/hooks/useSites";
+import { sectionNav } from "./section-nav.testkit";
 
 vi.mock("@/lib/api/hooks/useSection", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api/hooks/useSection")>()),
@@ -48,9 +49,15 @@ const PROJECT_ID = "11111111-1111-1111-1111-111111111111";
 const SITE_ID = "44444444-4444-4444-4444-444444444444";
 const SECTION_ID = "55555555-5555-5555-5555-555555555555";
 
-vi.mock("next/navigation", () => ({
-  useParams: () => ({ projectId: PROJECT_ID, siteId: SITE_ID, sectionId: SECTION_ID }),
-}));
+// DET-1.2 · S4 — sekme `?sekme=` URL parametresidir; durumlu ikiz `replace`i uygular.
+vi.mock("next/navigation", async () =>
+  (await import("./section-nav.testkit")).sectionNavModule(() => ({
+    projectId: PROJECT_ID,
+    siteId: SITE_ID,
+    sectionId: SECTION_ID,
+  })),
+);
+beforeEach(() => sectionNav.reset());
 
 /** `level` verilmezse alanı taşımayan eski oturum (bilinmezlik dalı, §2.5.3). */
 function mockPermission(level?: string) {

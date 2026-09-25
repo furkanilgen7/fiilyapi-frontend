@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import type { SiteDiaryLineRead } from "@/lib/api/hooks/useSiteDiary";
+import type { SiteDiaryEntryDetail, SiteDiaryLineRead } from "@/lib/api/hooks/useSiteDiary";
 
 import {
   buildDiaryLineTree,
@@ -18,6 +18,8 @@ function line(overrides: Partial<SiteDiaryLineRead> = {}): SiteDiaryLineRead {
     id: "l-1",
     boq_item_id: "duv",
     section_id: null,
+    // DET-1.1 sözleşmesi: satır bölüm ADINI da taşır (zorunlu, `section_id` null ise null).
+    section_name: null,
     code: "DUV.01.01",
     description: "Tuğla duvar",
     unit: "m²",
@@ -45,17 +47,19 @@ const BOQ: DiaryTreeBoqItem[] = [
 ];
 
 function formFor(lines: SiteDiaryLineRead[], patch: Partial<DiaryFormState> = {}): DiaryFormState {
-  const seeded = diaryFormFromEntry({ ...entryShell(), lines } as never);
+  const seeded = diaryFormFromEntry({ ...entryShell(), lines });
   return { ...seeded, ...patch };
 }
 
-function entryShell() {
+/** Satırlar DIŞINDAKİ tam detay zarfı — `lines` her testte ayrıca verilir. */
+function entryShell(): Omit<SiteDiaryEntryDetail, "lines"> {
   return {
     id: "d-1",
+    site_id: "s-1",
+    project_id: "p-1",
     entry_date: "2026-09-24",
     section_id: null,
     weather: null,
-    temperature_c: null,
     work_done: null,
     chief_note: null,
     safety_meeting_held: false,
@@ -63,7 +67,27 @@ function entryShell() {
     has_incident: false,
     incident_note: null,
     worker_counts: [],
-  };
+    status: "draft",
+    submitted_at: null,
+    created_by: "u-2",
+    created_at: "2026-09-24T08:00:00Z",
+    updated_at: "2026-09-24T09:00:00Z",
+    lines_total: "0.00",
+    worker_total: 0,
+    // DET-1.B salt-okunur detay alanları — başlıksız taslak: gönderen yok, kilit yok.
+    site_name: "A-Blok Şantiyesi",
+    project_name: "Güneşkent",
+    section_name: null,
+    created_by_name: "Mühendis",
+    submitted_by: null,
+    submitted_by_name: null,
+    locked: false,
+    lock_report_date: null,
+    prev_id: null,
+    next_id: null,
+    prev_entry_date: null,
+    next_entry_date: null,
+  } satisfies Omit<SiteDiaryEntryDetail, "lines">;
 }
 
 const TUGLA = [

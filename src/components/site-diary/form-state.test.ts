@@ -1,6 +1,10 @@
 import { describe, it, expect } from "vitest";
 
-import type { SiteDiaryEntryDetail } from "@/lib/api/hooks/useSiteDiary";
+import type {
+  SiteDiaryEntryDetail,
+  SiteDiaryLineRead,
+  SiteDiaryWorkerCountRead,
+} from "@/lib/api/hooks/useSiteDiary";
 
 import {
   buildDiaryCreateBody,
@@ -23,7 +27,7 @@ import {
 // F-SD T6 · "Kayıt Gir" formunun saf durumu (T2). Kapsam sınırı (pending
 // sızıntısı yok) ve DEĞİŞTİRME semantiği burada kanıtlanır.
 
-function line(overrides: Record<string, unknown> = {}) {
+function line(overrides: Partial<SiteDiaryLineRead> = {}): SiteDiaryLineRead {
   return {
     id: "l-1",
     boq_item_id: "bi-1",
@@ -34,11 +38,13 @@ function line(overrides: Record<string, unknown> = {}) {
     quantity: "120.000",
     cumulative_quantity: "900.000",
     line_amount: "182400.00",
+    // DET-1.B: bölümsüz satırda bölüm adı `null`.
+    section_name: null,
     ...overrides,
-  };
+  } satisfies SiteDiaryLineRead;
 }
 
-function entry(overrides: Record<string, unknown> = {}): SiteDiaryEntryDetail {
+function entry(overrides: Partial<SiteDiaryEntryDetail> = {}): SiteDiaryEntryDetail {
   return {
     id: "d-1",
     site_id: "s-1",
@@ -46,7 +52,7 @@ function entry(overrides: Record<string, unknown> = {}): SiteDiaryEntryDetail {
     entry_date: "2026-07-15",
     section_id: "sec-1",
     weather: "sunny",
-    temperature_c: "28.0",
+    temp_max_c: "28.0",
     work_done: "6. kat döşeme betonu döküldü.",
     chief_note: "Beton pompası sahada.",
     safety_meeting_held: true,
@@ -59,12 +65,25 @@ function entry(overrides: Record<string, unknown> = {}): SiteDiaryEntryDetail {
     created_at: "2026-07-15T08:00:00Z",
     updated_at: "2026-07-15T09:00:00Z",
     lines: [line()],
-    worker_counts: [{ id: "w-1", trade: "Kalıpçılar", source: "company", count: 12 }],
+    worker_counts: [{ id: "w-1", trade: "Kalıpçılar", source: "company", count: 12, subcontractor_name: null }],
     lines_total: "182400.00",
     worker_total: 12,
     dropped_orphan_count: 0,
+    // DET-1.B salt-okunur detay alanları — taslak: gönderen yok, kilit yok, komşu yok.
+    site_name: "A-Blok Şantiyesi",
+    project_name: "Güneşkent Konutları",
+    section_name: "Kat 6–10 Kaba İnşaat",
+    created_by_name: "Mehmet Demir",
+    submitted_by: null,
+    submitted_by_name: null,
+    locked: false,
+    lock_report_date: null,
+    prev_id: null,
+    next_id: null,
+    prev_entry_date: null,
+    next_entry_date: null,
     ...overrides,
-  } as unknown as SiteDiaryEntryDetail;
+  } satisfies SiteDiaryEntryDetail;
 }
 
 describe("emptyDiaryForm", () => {
@@ -114,7 +133,7 @@ describe("diaryFormFromEntry", () => {
 
   it("null alanları boş dizeye düşürür (kontrollü girdiler `null` almaz)", () => {
     const form = diaryFormFromEntry(
-      entry({ section_id: null, weather: null, temperature_c: null, work_done: null, chief_note: null }),
+      entry({ section_id: null, section_name: null, weather: null, temp_max_c: null, work_done: null, chief_note: null }),
     );
 
     expect(form.sectionId).toBe("");
@@ -126,10 +145,8 @@ describe("diaryFormFromEntry", () => {
     expect(form.chiefNote).toBe("");
   });
 
-  it("PLN-F2.1: yeni hava alanları (min/max/rüzgâr) forma taşınır; max eski `temperature_c`yi ezer", () => {
-    const form = diaryFormFromEntry(
-      entry({ temperature_c: "30.0", temp_min_c: "12.5", temp_max_c: "30.0", wind_ms: "4.5" }),
-    );
+  it("PLN-F2.1: yeni hava alanları (min/max/rüzgâr) forma taşınır", () => {
+    const form = diaryFormFromEntry(entry({ temp_min_c: "12.5", temp_max_c: "30.0", wind_ms: "4.5" }));
 
     expect(form).toMatchObject({ tempMinC: "12.5", tempMaxC: "30.0", windMs: "4.5" });
   });
@@ -213,8 +230,6 @@ describe("buildDiaryCreateBody", () => {
     expect(body).not.toHaveProperty("lines");
     expect(body).not.toHaveProperty("worker_counts");
     expect(body).not.toHaveProperty("status");
-    // Kullanımdan kalkan alan GÖNDERİLMEZ: backend onu min=max'a yayardı.
-    expect(body).not.toHaveProperty("temperature_c");
   });
 
   it("bölüm/hava seçilmediyse null gider (alanlar nullable)", () => {
@@ -240,14 +255,13 @@ describe("buildDiaryUpdateBody", () => {
     expect(body.worker_counts).toEqual([
       { trade: "Kalıpçılar", source: "company", count: 14, subcontractor_id: null, hours: null },
     ]);
-    expect(body).not.toHaveProperty("temperature_c");
   });
 
   it("PLN-F2.1: kayıttaki FİRMA satırı (kişi × saat) ekranda olmasa da gövdede KORUNUR", () => {
     const detail = entry({
       worker_counts: [
-        { id: "w-1", trade: "Kalıpçılar", source: "company", count: 12, subcontractor_id: null, hours: null },
-        { id: "w-2", trade: "Demirciler", source: "subcontractor", count: 6, subcontractor_id: "firm-1", hours: "9.0" },
+        { id: "w-1", trade: "Kalıpçılar", source: "company", count: 12, subcontractor_id: null, hours: null, subcontractor_name: null },
+        { id: "w-2", trade: "Demirciler", source: "subcontractor", count: 6, subcontractor_id: "firm-1", hours: "9.0", subcontractor_name: "Demir Taşeron" },
       ],
     });
     const form: DiaryFormState = {
@@ -261,7 +275,7 @@ describe("buildDiaryUpdateBody", () => {
     ]);
   });
 
-  it("PLN-F2.1: hava gövdesi yeni alanlarla gider (min/max/rüzgâr), `temperature_c` gitmez", () => {
+  it("PLN-F2.1 + CLEAN-B1: hava gövdesi yalnız min/max/rüzgârla gider — eski sıcaklık alanı YOK (backend 422)", () => {
     const form: DiaryFormState = {
       ...diaryFormFromEntry(entry()),
       tempMinC: "11",
@@ -272,7 +286,24 @@ describe("buildDiaryUpdateBody", () => {
     const body = buildDiaryUpdateBody(form, entry());
 
     expect(body).toMatchObject({ temp_min_c: 11, temp_max_c: 24.5, wind_ms: 3 });
-    expect(body).not.toHaveProperty("temperature_c");
+    // Anahtar kümesi BİREBİR: tanınmayan her alan (eski sıcaklık dahil) backend'de 422.
+    expect(Object.keys(body).sort()).toEqual(
+      [
+        "chief_note",
+        "entry_date",
+        "has_incident",
+        "incident_note",
+        "ppe_checked",
+        "safety_meeting_held",
+        "section_id",
+        "temp_max_c",
+        "temp_min_c",
+        "weather",
+        "wind_ms",
+        "work_done",
+        "worker_counts",
+      ].sort(),
+    );
   });
 
   it("geçersiz işçi hücresi varsa alan HİÇ gönderilmez (mevcut kırılım korunur)", () => {
@@ -492,7 +523,15 @@ describe("PLN-F2.2 · satır ekleme / kaldırma (G3 · G6) — TAM küme", () =>
 });
 
 describe("PLN-F2.2 · taşeron FİRMA satırları (kişi × saat · G10)", () => {
-  const firmRow = { id: "w-2", trade: "Kaya Duvar", source: "subcontractor", count: 7, subcontractor_id: "firm-1", hours: "8.0" };
+  const firmRow = {
+    id: "w-2",
+    trade: "Kaya Duvar",
+    source: "subcontractor",
+    count: 7,
+    subcontractor_id: "firm-1",
+    hours: "8.0",
+    subcontractor_name: "Kaya Duvar",
+  } satisfies SiteDiaryWorkerCountRead;
 
   it("kayıttaki firma saati forma taşınır", () => {
     const detail = entry({ worker_counts: [firmRow] });
@@ -516,7 +555,7 @@ describe("PLN-F2.2 · taşeron FİRMA satırları (kişi × saat · G10)", () =>
 
   it("eklenen firma `added` olarak gider; kaldırılan firma YALNIZ kendisi düşer", () => {
     const detail = entry({
-      worker_counts: [{ id: "w-1", trade: "Kalıpçılar", source: "company", count: 12 }, firmRow],
+      worker_counts: [{ id: "w-1", trade: "Kalıpçılar", source: "company", count: 12, subcontractor_name: null }, firmRow],
     });
     const withFirm = addDiaryFirm(diaryFormFromEntry(detail), { subcontractorId: "firm-2", trade: "Deniz Tesisat" });
     const form: DiaryFormState = {

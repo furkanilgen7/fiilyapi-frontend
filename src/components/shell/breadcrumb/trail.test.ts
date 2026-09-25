@@ -132,6 +132,60 @@ describe("buildTrail — kırıntı kümesi", () => {
   });
 });
 
+/* ─── DET-1.2 · günlük kayıt detayı: sekmeye dönen ara parça ─────────── */
+
+describe("buildTrail — günlük kayıt detayı (DET-1.2 · S4)", () => {
+  const ENTRY = "/projeler/p1/santiyeler/s1/bolumler/b1/gunluk-kayit/e-24";
+  const NAMES = { project: "Güneşkent", site: "A-Blok", section: "Kat 6–10", diaryEntry: "24.09.2026" };
+
+  it("mockup kırıntısını birebir üretir: … / bölüm / Günlük Kayıt (SEKME) / tarih", () => {
+    // Kanon: Günlük Kayıt Detay (Salt Okunur).dc.html 142-155.
+    expect(buildTrail(ENTRY, NAMES)).toEqual([
+      { label: "Projeler", href: "/projeler", pending: false },
+      { label: "Güneşkent", href: "/projeler/p1", pending: false },
+      { label: "A-Blok", href: "/projeler/p1/santiyeler/s1", pending: false },
+      { label: "Kat 6–10", href: "/projeler/p1/santiyeler/s1/bolumler/b1", pending: false },
+      {
+        label: "Günlük Kayıt",
+        href: "/projeler/p1/santiyeler/s1/bolumler/b1?sekme=gunluk-kayit",
+        pending: false,
+      },
+      { label: "24.09.2026", href: ENTRY, pending: false },
+    ]);
+  });
+
+  it("geri tuşu bölümün Günlük Kayıt SEKMESİNE döner (İş Kalemleri'ne değil)", () => {
+    expect(backTarget(buildTrail(ENTRY, NAMES))?.href).toBe(
+      "/projeler/p1/santiyeler/s1/bolumler/b1?sekme=gunluk-kayit",
+    );
+  });
+
+  it("tarih gelmeden parça BEKLEMEDE (iskelet; yedek etiket yalnız ekran okuyucuya)", () => {
+    const pending = buildTrail(ENTRY, { project: "P", site: "S", section: "B" });
+    expect(pending[pending.length - 1]).toMatchObject({ pending: true, label: "Kayıt Detayı" });
+    expect(pending.map((c) => c.label).join(" ")).not.toContain("e-24");
+  });
+
+  it("DET-1.3 · kayıt okunamazsa (404/403) son parça HİÇ basılmaz — kırıntı 'Günlük Kayıt'ta kalır (mockup hâl e)", () => {
+    const failed = buildTrail(ENTRY, { project: "P", site: "S", section: "B", unresolved: new Set(["diaryEntry"] as const) });
+
+    expect(failed.map((c) => c.label)).toEqual(["Projeler", "P", "S", "B", "Günlük Kayıt"]);
+    expect(failed.map((c) => c.label)).not.toContain("Kayıt Detayı");
+    // Geri tuşu bir seviye yukarı: bölüm (Günlük Kayıt artık SON parça).
+    expect(backTarget(failed)?.href).toBe("/projeler/p1/santiyeler/s1/bolumler/b1");
+  });
+
+  it("başka düğümlerin çözülemeyen adı yine yedek etikete düşer (yalnız işaretli düğüm atlanır)", () => {
+    const failed = buildTrail(ENTRY, { unresolved: new Set(["section"] as const), diaryEntry: "24.09.2026" });
+    expect(failed[3]).toMatchObject({ pending: false, label: "Bölüm" });
+  });
+
+  it("`gunluk-kayit` segmentinin KENDİ sayfası yok: çıplak yol 'yakında' kırıntısına düşer", () => {
+    // Ara parça yalnız kırıntıda görünür (`crumbHref`); adres olarak sayfa DEĞİLDİR.
+    expect(buildTrail("/projeler/p1/santiyeler/s1/bolumler/b1/gunluk-kayit")).toHaveLength(1);
+  });
+});
+
 /* ─── B2 · geri tuşu hedefi ───────────────────────────────────────────── */
 
 describe("backTarget — deterministik bir seviye yukarı", () => {
@@ -190,7 +244,10 @@ describe("href üretimi — URL-1", () => {
       const hrefs = buildTrail(pathname).map((crumb) => crumb.href);
       expect(hrefs, `href taşımayan parça: ${pathname}`).not.toContain(undefined);
       for (const href of hrefs) {
-        expect(pathname.startsWith(String(href)), `önek değil: ${href} ⊄ ${pathname}`).toBe(true);
+        // DET-1.2: `crumbHref` parçası atasının bir GÖRÜNÜMÜNE (`?sekme=`)
+        // bağlanır — YOL kısmı yine adresin gerçek önekidir; sorgu serbesttir.
+        const [pathPart] = String(href).split("?");
+        expect(pathname.startsWith(pathPart), `önek değil: ${href} ⊄ ${pathname}`).toBe(true);
       }
     }
   });

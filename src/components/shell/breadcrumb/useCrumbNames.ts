@@ -17,6 +17,7 @@
  *   useProject(projectKey)                       ["project", <p>]
  *   useSite(siteKey, { project: projectKey })    ["site", <s>, <p>]
  *   useSection(secKey, { site, project })        ["section", <sec>, <s>, <p>]
+ *   useSiteDiaryEntry(id, { sectionId })         siteDiaryEntryQueryKey(id, <sec uuid>)
  *
  * Anahtar parçaları hook modüllerinden İTHAL EDİLİR (`PROJECT_QUERY_KEY` …),
  * elle yazılmaz: string kopyalansaydı sorgu anahtarı bir gün değiştiğinde
@@ -34,7 +35,9 @@ import { skipToken, useQuery } from "@tanstack/react-query";
 
 import { PROJECT_QUERY_KEY, type ProjectDetail } from "@/lib/api/hooks/useProjects";
 import { SECTION_QUERY_KEY, type SectionDetailResponse } from "@/lib/api/hooks/useSection";
+import { siteDiaryEntryQueryKey, type SiteDiaryEntryDetail } from "@/lib/api/hooks/useSiteDiary";
 import { SITE_QUERY_KEY, type SiteDetail } from "@/lib/api/hooks/useSites";
+import { formatDateDots } from "@/lib/format";
 
 import type { CrumbNames } from "./trail";
 import type { NamedEntity, RouteKeys } from "./trail-node";
@@ -53,6 +56,15 @@ export function useCrumbNames(keys: RouteKeys): CrumbNames {
     queryFn: skipToken,
   });
 
+  // DET-1.2 — günlük kayıt detayı: anahtar SAYFANIN anahtarıdır (tek üretici
+  // `siteDiaryEntryQueryKey`). Sayfa kaydı bölümün kanonik kimliğiyle ister;
+  // o kimlik AYNI önbellekteki bölüm yanıtından okunur (bölüm okunamadıysa
+  // ikisi de bölümsüz anahtara düşer).
+  const diaryEntry = useQuery<SiteDiaryEntryDetail>({
+    queryKey: siteDiaryEntryQueryKey(keys.entityId, section.data?.id),
+    queryFn: skipToken,
+  });
+
   const projectName = project.data?.name ?? site.data?.project.name;
 
   /**
@@ -65,11 +77,13 @@ export function useCrumbNames(keys: RouteKeys): CrumbNames {
   if (projectName === undefined && (project.isError || site.isError)) unresolved.add("project");
   if (site.data === undefined && site.isError) unresolved.add("site");
   if (section.data === undefined && section.isError) unresolved.add("section");
+  if (diaryEntry.data === undefined && diaryEntry.isError) unresolved.add("diaryEntry");
 
   return {
     project: projectName,
     site: site.data?.name,
     section: section.data?.name,
+    diaryEntry: diaryEntry.data === undefined ? undefined : formatDateDots(diaryEntry.data.entry_date),
     unresolved,
   };
 }

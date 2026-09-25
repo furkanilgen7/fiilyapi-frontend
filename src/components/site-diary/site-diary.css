@@ -575,9 +575,11 @@
   background: var(--color-success-soft);
   color: var(--color-success);
 }
+/* İ:316 — taslak AMBER (DET-1.3 · CEO kararı b: detay hapı ve Bölüm Detay
+   listesiyle tutarlı; etiket "Taslak" diary-labels.ts) */
 .diary-recent__badge--draft {
-  background: var(--color-neutral-soft);
-  color: var(--color-text-muted);
+  background: var(--color-warning-soft);
+  color: var(--color-warning-strong);
 }
 /* GK372 — kırmızı "Yağışlı" */
 .diary-recent__badge--rain {

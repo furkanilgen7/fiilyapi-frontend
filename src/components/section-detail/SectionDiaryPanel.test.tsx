@@ -27,9 +27,14 @@ function listItem(overrides: Partial<SiteDiaryEntryListItem> = {}): SiteDiaryEnt
     lines_total: "182400.00",
     created_by: "u-2",
     created_at: "2026-07-15T08:00:00Z",
+    section_name: SECTION_NAME,
+    section_line_count: 3,
     ...overrides,
-  } as SiteDiaryEntryListItem;
+  } satisfies SiteDiaryEntryListItem;
 }
+
+/** Detay rotası üreticisinin test ikizi — kimliği yola AYNEN yazar. */
+const entryHref = (entryId: string) => `/detay/${entryId}`;
 
 const SECTIONS = [
   { id: SECTION_ID, name: SECTION_NAME },
@@ -46,6 +51,7 @@ function renderPanel(props: Partial<React.ComponentProps<typeof SectionDiaryPane
       isLoading={false}
       isError={false}
       diaryHref={DIARY_HREF}
+      entryHref={entryHref}
       {...props}
     />,
   );
@@ -101,16 +107,22 @@ describe("SectionDiaryPanel", () => {
     expect(screen.queryByText("Yükleniyor…")).not.toBeInTheDocument();
   });
 
-  it("hedef bölümün kayıtlarını basar, BAŞKA bölümünkini basmaz", () => {
+  it("DET-1.1 · Kural A — SUNUCU yanıtı neyse o: başlığı başka bölüm olan gün listede KALIR", () => {
+    // İstemci süzgeci (`section-diary.ts`) KALKTI: liste `?section_id=` ile
+    // sunucuda süzülür ve "başlığı bu bölüm ∪ bu bölüme satır yazılmış gün"
+    // kümesini döner. İstemci yeniden süzseydi satır kolu SESSİZCE kaybolurdu.
     renderPanel({
       items: [
         listItem({ id: "hedef", entry_date: "2026-07-15" }),
-        listItem({ id: "baska", section_id: "sec-other", entry_date: "2026-07-16" }),
+        listItem({ id: "satirli", section_id: "sec-other", section_name: "Peyzaj", entry_date: "2026-07-16" }),
+        listItem({ id: "basliksiz", section_id: null, section_name: null, entry_date: "2026-07-17" }),
       ],
     });
 
     expect(screen.getByText("15 Temmuz")).toBeInTheDocument();
-    expect(screen.queryByText("16 Temmuz")).not.toBeInTheDocument();
+    expect(screen.getByText("16 Temmuz")).toBeInTheDocument();
+    expect(screen.getByText("17 Temmuz")).toBeInTheDocument();
+    expect(screen.queryByTestId("section-diary-note")).not.toBeInTheDocument();
   });
 
   it("üç satırdan FAZLASINI da basar — 'Son Kayıtlar' kırpması buraya MİRAS KALMAZ", () => {
@@ -143,37 +155,113 @@ describe("SectionDiaryPanel", () => {
     expect(screen.getByText("Bu bölüme atanmış günlük kayıt bulunmuyor")).toBeInTheDocument();
   });
 
-  it("atanmamış kayıtlar SESSİZCE düşürülmez — sayısı ve yeri görünür basılır", () => {
-    renderPanel({
-      items: [
-        listItem({ id: "hedef" }),
-        listItem({ id: "atanmamis-1", section_id: null, entry_date: "2026-07-01" }),
-        listItem({ id: "atanmamis-2", section_id: null, entry_date: "2026-07-02" }),
-      ],
-    });
+  it("sunucu toplamı listeden BÜYÜKSE kırpılma notu GÖRÜNÜR basılır (sessiz kırpma yok)", () => {
+    renderPanel({ items: [listItem({ id: "a" }), listItem({ id: "b", entry_date: "2026-07-16" })], total: 5 });
 
     const note = screen.getByTestId("section-diary-note");
-    expect(note).toHaveTextContent("Bölüme atanmamış 2 kayıt bu listede yok");
-    expect(note).toHaveTextContent("şantiye günlüğünde görünür");
-    // Bağlantı NOTUN İÇİNDE olmalı — başlıktaki genel bağlantı bu iddiayı
-    // karşılamaz (kullanıcı "nerede görünür" cevabını notta okur).
+    expect(note).toHaveTextContent("İlk 2 kayıt gösteriliyor (toplam 5) — liste eksik.");
     expect(within(note).getByRole("link")).toHaveAttribute("href", DIARY_HREF);
   });
 
-  it("başka bölümün kayıtları da not satırında SAYILIR", () => {
+  it("liste TAMKEN kırpılma notu BASILMAZ", () => {
+    renderPanel({ items: [listItem({ id: "hedef" })], total: 1 });
+
+    expect(screen.queryByTestId("section-diary-note")).not.toBeInTheDocument();
+  });
+});
+
+// DET-1.2 — satır ARTIK tıklanabilir: tamamı detay sayfasına tek bağlantı.
+describe("SectionDiaryPanel — tıklanabilir satır (DET-1.2)", () => {
+  it("satırın TAMAMI tek bağlantıdır ve DOĞRU kaydın detayına gider", () => {
     renderPanel({
       items: [
-        listItem({ id: "hedef" }),
-        listItem({ id: "baska", section_id: "sec-other", entry_date: "2026-07-03" }),
+        listItem({ id: "d-15", entry_date: "2026-07-15" }),
+        listItem({ id: "d-16", entry_date: "2026-07-16" }),
       ],
     });
 
-    expect(screen.getByTestId("section-diary-note")).toHaveTextContent("başka bölüme atanmış 1");
+    const rows = screen.getAllByRole("listitem");
+    expect(rows).toHaveLength(2);
+    for (const row of rows) {
+      // Satırda TEK bağlantı vardır ve içerik (tarih/rozet/meta) onun İÇİNDEDİR.
+      const links = within(row).getAllByRole("link");
+      expect(links).toHaveLength(1);
+      expect(links[0]).toHaveTextContent(/Temmuz/);
+    }
+    expect(screen.getByRole("link", { name: /^16\.07\.2026 / })).toHaveAttribute("href", "/detay/d-16");
+    expect(screen.getByRole("link", { name: /^15\.07\.2026 / })).toHaveAttribute("href", "/detay/d-15");
   });
 
-  it("dışarıda kalan kayıt YOKKEN not satırı BASILMAZ", () => {
-    renderPanel({ items: [listItem({ id: "hedef" })] });
+  it("erişilebilir ad TARİH + DURUM taşır", () => {
+    renderPanel({
+      items: [
+        listItem({ id: "g", entry_date: "2026-07-15", status: "submitted" }),
+        listItem({ id: "t", entry_date: "2026-07-14", status: "draft" }),
+      ],
+    });
 
-    expect(screen.queryByTestId("section-diary-note")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "15.07.2026 günlük kaydını görüntüle · Gönderildi" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "14.07.2026 günlük kaydını görüntüle · Taslak" }),
+    ).toBeInTheDocument();
+  });
+
+  it("satır sonu ok SVG ikonudur ve dekoratiftir (aria-hidden)", () => {
+    renderPanel({ items: [listItem()] });
+
+    const link = screen.getByRole("link", { name: /günlük kaydını görüntüle/ });
+    const arrow = link.querySelector("svg.section-diary__entry-arrow");
+    expect(arrow).not.toBeNull();
+    expect(arrow).toHaveAttribute("aria-hidden", "true");
+  });
+
+  it("S1 — taslak rozeti bu listede AMBER sınıfını taşır", () => {
+    renderPanel({ items: [listItem({ status: "draft" })] });
+
+    const badge = screen.getByText("Taslak");
+    expect(badge).toHaveClass("diary-recent__badge--draft");
+    // Amber tonu bölüm listesine KAPSAMLI kuraldan gelir (bkz. section-detail.css.test.ts).
+    expect(badge.closest(".section-diary__entry-link")).not.toBeNull();
+  });
+
+  it("Kural A — başlık bu bölüm olan günde 'Satırla bağlı' rozeti BASILMAZ", () => {
+    renderPanel({ items: [listItem()] });
+
+    expect(screen.queryByText("Satırla bağlı")).not.toBeInTheDocument();
+  });
+
+  it("Kural A — başlığı BAŞKA bölüm olan gün: 'Satırla bağlı' rozeti + başlık bölümü adı", () => {
+    renderPanel({
+      items: [
+        listItem({ id: "k", section_id: "sec-other", section_name: "Peyzaj", section_line_count: 2, entry_date: "2026-07-15" }),
+      ],
+    });
+
+    const link = screen.getByRole("link", {
+      name: "15.07.2026 günlük kaydını görüntüle · Gönderildi — başlık bölümü Peyzaj",
+    });
+    expect(within(link).getByText("Satırla bağlı")).toHaveClass("section-diary__linkage-badge");
+    // Mockup Detay 571: "Başlık: Kat 1–5 · bu bölüme 2 satır" — sayı sunucudan (backend#130).
+    expect(link).toHaveTextContent("Başlık: Peyzaj · bu bölüme 2 satır");
+  });
+
+  it("Kural A — başlık adı SUNUCUDAN (`section_name`) gelir; sayı yoksa (null) uydurulmaz", () => {
+    renderPanel({
+      items: [listItem({ id: "k", section_id: "sec-other", section_name: "Peyzaj (yeni ad)", section_line_count: null })],
+    });
+
+    const link = screen.getByRole("link", { name: /başlık bölümü Peyzaj \(yeni ad\)$/ });
+    expect(link).toHaveTextContent("Başlık: Peyzaj (yeni ad)");
+    expect(link).not.toHaveTextContent(/bu bölüme \d+ satır/);
+  });
+
+  it("Kural A — başlık bölümü SEÇİLMEMİŞ gün de satırla bağlıdır ('Bölüm seçilmedi')", () => {
+    renderPanel({ items: [listItem({ id: "n", section_id: null, section_name: null, section_line_count: 1, entry_date: "2026-07-15" })] });
+
+    const link = screen.getByRole("link", { name: /başlık bölümü Bölüm seçilmedi$/ });
+    expect(within(link).getByText("Satırla bağlı")).toBeInTheDocument();
+    expect(link).toHaveTextContent("Başlık: Bölüm seçilmedi · bu bölüme 1 satır");
   });
 });

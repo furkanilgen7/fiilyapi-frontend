@@ -11,7 +11,8 @@ import { useSession } from "@/components/shell/SessionProvider";
 import { useTimesheetData } from "@/components/timesheet/useTimesheetData";
 import { buildTimesheetView } from "@/components/timesheet/derive";
 import { useSiteDiaryEntries, SITE_DIARY_LIST_MAX_LIMIT } from "@/lib/api/hooks/useSiteDiary";
-import type { SiteDiaryEntryListItem } from "@/lib/api/hooks/useSiteDiary";
+import type { SiteDiaryEntryListItem, SiteDiaryEntryListResponse } from "@/lib/api/hooks/useSiteDiary";
+import { SECTION_NAV_PATHNAME, sectionNav } from "./section-nav.testkit";
 
 // F-BLMSEK · Bölüm Detay › "Günlük Kayıt" sekmesinin EKRAN BAĞLANTISI.
 // AYRI dosyadır: `SectionDetailView.test.tsx` 767 satırla 800 tavanına yakın.
@@ -46,9 +47,15 @@ const SECTION_ID = "55555555-5555-5555-5555-555555555555";
 const OTHER_SECTION_ID = "66666666-6666-6666-6666-666666666666";
 const SECTION_NAME = "Kat 6–10 Kaba İnşaat";
 
-vi.mock("next/navigation", () => ({
-  useParams: () => ({ projectId: PROJECT_ID, siteId: SITE_ID, sectionId: SECTION_ID }),
-}));
+// DET-1.2 · S4 — sekme `?sekme=` URL parametresidir; durumlu ikiz `replace`i uygular.
+vi.mock("next/navigation", async () =>
+  (await import("./section-nav.testkit")).sectionNavModule(() => ({
+    projectId: PROJECT_ID,
+    siteId: SITE_ID,
+    sectionId: SECTION_ID,
+  })),
+);
+beforeEach(() => sectionNav.reset());
 
 function listItem(overrides: Partial<SiteDiaryEntryListItem> = {}): SiteDiaryEntryListItem {
   return {
@@ -64,8 +71,11 @@ function listItem(overrides: Partial<SiteDiaryEntryListItem> = {}): SiteDiaryEnt
     lines_total: "182400.00",
     created_by: "u-2",
     created_at: "2026-07-15T08:00:00Z",
+    // DET-1.B (#129): liste `?section_id=` ile istenir → sayım DOLU; başlık bu bölüm.
+    section_name: SECTION_NAME,
+    section_line_count: 3,
     ...overrides,
-  } as SiteDiaryEntryListItem;
+  } satisfies SiteDiaryEntryListItem;
 }
 
 function mockAll(items: SiteDiaryEntryListItem[]) {
@@ -130,7 +140,7 @@ function mockAll(items: SiteDiaryEntryListItem[]) {
     personnelTruncation: { isTruncated: false, shownCount: 0, totalCount: 0 },
   }));
   vi.mocked(useSiteDiaryEntries).mockReturnValue({
-    data: { items, total: items.length },
+    data: { items, total: items.length, limit: SITE_DIARY_LIST_MAX_LIMIT, offset: 0 } satisfies SiteDiaryEntryListResponse,
     isLoading: false,
     isError: false,
     error: null,
@@ -160,18 +170,28 @@ describe("SectionDetailView — Günlük Kayıt sekmesi (F-BLMSEK)", () => {
     expect(within(panel).queryByText(/kırılmıyor/)).not.toBeInTheDocument();
   });
 
-  it("BU bölümün kaydını basar, BAŞKA bölümünkini basmaz (ekran doğru kimliği geçiriyor)", async () => {
+  it("DET-1.1 · liste SUNUCUDA bölüm süzgeciyle istenir; yanıt OLDUĞU GİBİ basılır (Kural A)", async () => {
+    // Başlığı başka bölüm olan gün (bu bölüme satırı yazılmış) sunucu
+    // yanıtındaysa listede KALIR — istemci ikinci kez süzmez.
     mockAll([
       listItem({ id: "hedef", entry_date: "2026-07-15" }),
-      listItem({ id: "baska", section_id: OTHER_SECTION_ID, entry_date: "2026-07-16" }),
+      listItem({
+        id: "satirli",
+        section_id: OTHER_SECTION_ID,
+        section_name: "Peyzaj",
+        section_line_count: 2,
+        entry_date: "2026-07-16",
+      }),
     ]);
     const panel = await openDiaryTab();
 
-    expect(within(panel).getByText("15 Temmuz")).toBeInTheDocument();
-    expect(within(panel).queryByText("16 Temmuz")).not.toBeInTheDocument();
-    expect(within(panel).getByTestId("section-diary-note")).toHaveTextContent(
-      "başka bölüme atanmış 1",
+    expect(useSiteDiaryEntries).toHaveBeenCalledWith(
+      SITE_ID,
+      expect.objectContaining({ sectionId: SECTION_ID }),
     );
+    expect(within(panel).getByText("15 Temmuz")).toBeInTheDocument();
+    expect(within(panel).getByText("16 Temmuz")).toBeInTheDocument();
+    expect(within(panel).getByText("Satırla bağlı")).toBeInTheDocument();
   });
 
   it("satır alt metni bölüm ADINI çözer — `site.sections` gerçekten geçirilir", async () => {
@@ -188,11 +208,10 @@ describe("SectionDetailView — Günlük Kayıt sekmesi (F-BLMSEK)", () => {
   });
 
   it("günlük listesi DÖNEM süzgeçsiz ama TAVAN ile çekilir (kalan-4 #281)", async () => {
-    // 🔴 Dönem süzgeci hâlâ verilmez (`section_id` liste ucunda YOK, süzgeç
-    // GÖRÜNÜME uygulanır). Ama TAVAN açıkça gönderilmeli: verilmezse sunucu
-    // varsayılanı 50'dir ve 51. kayıt SESSİZCE düşer (TB3/F-TH dersi) — bu
-    // ekranın süzgeçsiz çağrısı `section-diary.ts`nin girdisidir, kırpılmış
-    // 50 kayıt üzerinde çalışırsa bölüm kartoteksi eksik kalır.
+    // 🔴 Dönem süzgeci verilmez (bölümün TÜM günleri). TAVAN açıkça
+    // gönderilmeli: verilmezse sunucu varsayılanı 50'dir ve 51. kayıt
+    // SESSİZCE düşer (TB3/F-TH dersi). Tavanı aşan küme panelde GÖRÜNÜR bir
+    // kırpılma notuyla bildirilir (`total`).
     mockAll([listItem()]);
     await openDiaryTab();
 
@@ -220,5 +239,68 @@ describe("SectionDetailView — Günlük Kayıt sekmesi (F-BLMSEK)", () => {
     expect(within(panel).queryByTestId("section-diary")).not.toBeInTheDocument();
     // Malzeme paneli KENDİ kabuğunu basar (boş bir tabpanel değil).
     expect(within(panel).getByTestId("section-stock")).toBeInTheDocument();
+  });
+});
+
+// DET-1.2 · S4 — sekme URL'dedir (`?sekme=`). Kırıntı/geri "Günlük Kayıt"a döner.
+function renderScreen() {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <QueryClientProvider client={client}>
+      <SectionDetailView />
+    </QueryClientProvider>,
+  );
+}
+
+describe("SectionDetailView — sekme `?sekme=` ile senkron (DET-1.2 · S4)", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("`?sekme=gunluk-kayit` ile açılınca Günlük Kayıt sekmesi SEÇİLİ gelir (tık yok)", () => {
+    sectionNav.reset("sekme=gunluk-kayit");
+    mockAll([listItem()]);
+    renderScreen();
+
+    expect(screen.getByRole("tab", { name: "Günlük Kayıt" })).toHaveAttribute("aria-selected", "true");
+    expect(within(screen.getByRole("tabpanel")).getByTestId("section-diary")).toBeInTheDocument();
+  });
+
+  it("tanınmayan `sekme` değeri varsayılan sekmeye (İş Kalemleri) düşer", () => {
+    sectionNav.reset("sekme=uydurma");
+    mockAll([listItem()]);
+    renderScreen();
+
+    expect(screen.getByRole("tab", { name: "İş Kalemleri" })).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("sekme değişince URL `router.replace` ile güncellenir (geçmiş şişmez, kaydırma yok)", async () => {
+    const user = userEvent.setup();
+    mockAll([listItem()]);
+    renderScreen();
+
+    await user.click(screen.getByRole("tab", { name: "Günlük Kayıt" }));
+    expect(sectionNav.replaceCalls.at(-1)).toEqual([`${SECTION_NAV_PATHNAME}?sekme=gunluk-kayit`, { scroll: false }]);
+
+    // Varsayılan sekmeye dönüş parametreyi SİLER — çıplak yol bugünkü bağlantılarla aynı kalır.
+    await user.click(screen.getByRole("tab", { name: "İş Kalemleri" }));
+    expect(sectionNav.replaceCalls.at(-1)).toEqual([SECTION_NAV_PATHNAME, { scroll: false }]);
+  });
+
+  it("günlük satırı TAMAMIYLA detay rotasına bağlantıdır — doğru kayıt kimliğiyle", async () => {
+    mockAll([
+      listItem({ id: "hedef", entry_date: "2026-07-15" }),
+      listItem({ id: "ikinci", entry_date: "2026-07-14", status: "draft" }),
+    ]);
+    const panel = await openDiaryTab();
+
+    const link = within(panel).getByRole("link", { name: /^15\.07\.2026 günlük kaydını görüntüle/ });
+    expect(link).toHaveAttribute(
+      "href",
+      `/projeler/${PROJECT_ID}/santiyeler/${SITE_ID}/bolumler/${SECTION_ID}/gunluk-kayit/hedef`,
+    );
+    const draft = within(panel).getByRole("link", { name: /^14\.07\.2026 günlük kaydını görüntüle/ });
+    expect(draft).toHaveAttribute(
+      "href",
+      `/projeler/${PROJECT_ID}/santiyeler/${SITE_ID}/bolumler/${SECTION_ID}/gunluk-kayit/ikinci`,
+    );
   });
 });

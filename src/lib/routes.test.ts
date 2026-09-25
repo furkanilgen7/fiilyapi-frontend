@@ -12,7 +12,7 @@ import {
   buildRouteTree,
   resolveHrefIn,
 } from "@/components/shell/route-tree.testkit";
-import { PERSONNEL_RETURN_PARAM, routes } from "@/lib/routes";
+import { PERSONNEL_RETURN_PARAM, SECTION_TAB_PARAM, routes } from "@/lib/routes";
 
 const P = "p-1";
 const S = "s-9";
@@ -109,6 +109,52 @@ describe("routes — uretilen URL bicimi (elle yazilmis beklentiler)", () => {
   });
 });
 
+describe("routes — DET-1.2 bolum sekmesi + gunluk kayit detayi", () => {
+  it("bolum detayi `sekme` VERILMEZSE ciplak yol kalir (bugunku baglantilar DEGISMEZ)", () => {
+    expect(
+      routes.projects.sites.sections.detail({ projectId: P, siteId: S, sectionId: SEC, sekme: undefined }),
+    ).toBe("/projeler/p-1/santiyeler/s-9/bolumler/sec-4");
+  });
+
+  it("bolum detayi `sekme` VERILIRSE `?sekme=` ile eklenir (S4)", () => {
+    expect(
+      routes.projects.sites.sections.detail({
+        projectId: P,
+        siteId: S,
+        sectionId: SEC,
+        sekme: "gunluk-kayit",
+      }),
+    ).toBe("/projeler/p-1/santiyeler/s-9/bolumler/sec-4?sekme=gunluk-kayit");
+    expect(
+      routes.projects.sites.sections.detail({ projectId: P, siteId: S, sectionId: SEC, sekme: "stok" }),
+    ).toBe("/projeler/p-1/santiyeler/s-9/bolumler/sec-4?sekme=stok");
+  });
+
+  it("sekme sorgu anahtari OKUYAN tarafla ayni sabittir", () => {
+    expect(SECTION_TAB_PARAM).toBe("sekme");
+  });
+
+  it("gunluk kayit detayi bolum altinda kimlikle kurulur", () => {
+    expect(
+      routes.projects.sites.sections.diaryEntry({
+        projectId: P,
+        siteId: S,
+        sectionId: SEC,
+        entryId: "e-3",
+      }),
+    ).toBe("/projeler/p-1/santiyeler/s-9/bolumler/sec-4/gunluk-kayit/e-3");
+    // Kimlik segmenti de kaçışlanır (seg()).
+    expect(
+      routes.projects.sites.sections.diaryEntry({
+        projectId: P,
+        siteId: S,
+        sectionId: SEC,
+        entryId: "a/b",
+      }),
+    ).toBe("/projeler/p-1/santiyeler/s-9/bolumler/sec-4/gunluk-kayit/a%2Fb");
+  });
+});
+
 describe("routes — uretilen her yol GERCEK bir rotaya cozulur", () => {
   // `route-tree.testkit` ağacı `src/app/(app)/` DOSYA SİSTEMİNDEN kurar; elle
   // yazılmış bir rota listesi DEĞİLDİR. Böylece `routes.ts`e uydurma bir yol
@@ -146,6 +192,10 @@ describe("routes — uretilen her yol GERCEK bir rotaya cozulur", () => {
     ["sections.new", routes.projects.sites.sections.new({ projectId: P, siteId: S })],
     ["sections.detail", routes.projects.sites.sections.detail({ projectId: P, siteId: S, sectionId: SEC })],
     ["sections.edit", routes.projects.sites.sections.edit({ projectId: P, siteId: S, sectionId: SEC })],
+    [
+      "sections.diaryEntry",
+      routes.projects.sites.sections.diaryEntry({ projectId: P, siteId: S, sectionId: SEC, entryId: "e-3" }),
+    ],
     ["settings.root", routes.settings.root()],
     ["settings.company", routes.settings.company()],
     ["settings.users", routes.settings.users()],

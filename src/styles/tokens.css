@@ -129,6 +129,9 @@
   --shadow-card: 0 1px 4px rgba(0, 0, 0, 0.06);
   --shadow-topbar: 0 1px 3px rgba(0, 0, 0, 0.06);
   --focus-ring: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  /* DET-1.2 — içe çizilen odak halkası: overflow:hidden kart içindeki satır
+     bağlantısı (Günlük Kayıt Detay mockup 122-123 · E5:19 kenar + halka). */
+  --focus-ring-inset: inset 0 0 0 1.5px var(--color-primary), inset 0 0 0 4.5px rgba(37, 99, 235, 0.12);
   --focus-ring-danger: 0 0 0 3px var(--color-danger-soft);
 
   /* F1: layout sabitleri (F3'te kullanilir) */

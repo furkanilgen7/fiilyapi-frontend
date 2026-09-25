@@ -63,8 +63,7 @@ export interface DiaryFormState {
   /**
    * PLN-F2.1 hava genişlemesi: min/max °C ve rüzgâr m/s — serbest metin;
    * sayıya çevrilemezse gövdeye `null` gider. Bugünkü tek "Sıcaklık" kutusu
-   * (GK194) `tempMaxC`yi yazar (backend yanıtında `temperature_c` =
-   * `temp_max_c`); min + rüzgâr kutuları F2.2'de basılır.
+   * (GK194) `tempMaxC`yi yazar; min + rüzgâr kutuları F2.2'de basılır.
    */
   tempMinC: string;
   tempMaxC: string;
@@ -148,8 +147,9 @@ export function diaryFormFromEntry(entry: SiteDiaryEntryDetail): DiaryFormState 
     sectionId: entry.section_id ?? "",
     weather: entry.weather ?? "",
     tempMinC: entry.temp_min_c ?? "",
-    // Eski kayıt/ikiz yeni alanı taşımayabilir: backend `temperature_c` = `temp_max_c`.
-    tempMaxC: entry.temp_max_c ?? entry.temperature_c ?? "",
+    // Eski kayıtlar da `temp_max_c` taşır: backend göçü (b877270195d8) eski sıcaklık
+    // alanını min/max'a kopyaladı (CLEAN-B1: eski alan API'den kalktı).
+    tempMaxC: entry.temp_max_c ?? "",
     windMs: entry.wind_ms ?? "",
     workDone: entry.work_done ?? "",
     chiefNote: entry.chief_note ?? "",
@@ -296,8 +296,8 @@ export function diaryWeatherError(form: DiaryFormState): string | null {
 }
 
 /**
- * Hava alanları (PLN-B2.1). Kullanımdan kalkan `temperature_c` GÖNDERİLMEZ:
- * yeni alanlar yokken backend onu min = max'a yayar ve kayıtlı min'i ezerdi.
+ * Hava alanları (PLN-B2.1). Eski tek sıcaklık alanı CLEAN-B1'de API'den kalktı —
+ * gövdede görünürse backend 422 döner; yalnız min/max/rüzgâr gider.
  */
 function weatherFields(form: DiaryFormState) {
   return {

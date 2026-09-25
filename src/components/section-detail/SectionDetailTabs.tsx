@@ -1,12 +1,14 @@
 "use client";
-import { routes } from "@/lib/routes";
+import { routes, type SectionTabKey } from "@/lib/routes";
 
 /**
  * Bölüm detayı sekme şeridi (D99-105).
  *
  * 🔴 KABUL EDİLMİŞ SAPMA: bölüm seviyesinde ROTA YOKTUR (task-2-brief §Rota:
  * drill sidebar'a bölüm eklenmez). Bu yüzden `SiteDetailTabs`/`ProjectDetailTabs`
- * gibi `Link` tabanlı değil, `<button>` + YEREL state ile geçiş yapar.
+ * gibi `Link` tabanlı değil, `<button>` ile geçiş yapar. DET-1.2 · S4: seçim
+ * artık YEREL state değil `?sekme=` URL parametresidir (sahibi
+ * `SectionDetailView`; şerit yalnız `activeIndex`/`onSelect` alır).
  * Şerit bu dosyaya AYRILDI (F-BOLLINK) ki bekçi testi onu hook mock'u olmadan
  * render edebilsin — F-PRJTAB kanonu: *koruma, yüzeyin araca KAYDEDİLMESİDİR.*
  *
@@ -32,7 +34,7 @@ export interface SectionTabDef {
    * (`/projeler/{p}/santiyeler/{s}/<slug>`). HER ZAMAN doludur — `moduleWritten`
    * ile birlikte bekçinin İKİ YÖNLÜ çapasını kurar.
    */
-  readonly siteSlug: string;
+  readonly siteSlug: SectionTabKey;
   /**
    * İDDİA: o rota bugün YAZILI mı? Bekçi bunu dosya sistemindeki gerçek rota
    * ağacıyla karşılaştırır — `false` iddia edilip rota yazılırsa da, `true`
@@ -92,10 +94,20 @@ export const SECTION_TABS: readonly (SectionTabDef & SectionTabContent)[] = [
   // eksiklik sekmeyi yer tutucuda tutmak yerine panelin GÖRÜNÜR kapsam
   // satırında basılır (`section_employer_progress_payments`).
   { label: "Hakediş", siteSlug: "hakedisler", moduleWritten: true, contentLive: true },
-  // F-BLMSEK: bölüm bağı AÇILDI — `SiteDiaryEntryListItem.section_id` var,
-  // liste ucu süzgeç KABUL ETMEDİĞİ için filtre istemcide (bkz. `section-diary.ts`).
+  // F-BLMSEK: bölüm bağı AÇILDI. DET-1.1: süzgeç SUNUCUDA (`?section_id=`,
+  // Kural A — başlığı bu bölüm ∪ bu bölüme satır yazılmış gün).
   { label: "Günlük Kayıt", siteSlug: "gunluk-kayit", moduleWritten: true, contentLive: true },
 ];
+
+/**
+ * DET-1.2 · S4 — `?sekme=` değerinden sekme sırası. Sekme kimliği şantiye rota
+ * dilimiyle (`siteSlug`) AYNIDIR. Değer yok ya da tanınmıyorsa varsayılan
+ * sekme (0 · İş Kalemleri) — uydurma değer ekranı boş bırakmaz.
+ */
+export function sectionTabIndexOf(value: string | null): number {
+  const index = SECTION_TABS.findIndex((tab) => tab.siteSlug === value);
+  return index === -1 ? 0 : index;
+}
 
 export interface SectionDetailTabsProps {
   /** ADRESTEKI anahtarlar (slug VEYA UUID) — bu serit YALNIZ YOL kurar. */

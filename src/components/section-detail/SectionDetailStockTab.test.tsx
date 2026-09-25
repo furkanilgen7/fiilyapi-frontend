@@ -11,8 +11,13 @@ import { useSession } from "@/components/shell/SessionProvider";
 import { useTimesheetData } from "@/components/timesheet/useTimesheetData";
 import { buildTimesheetView } from "@/components/timesheet/derive";
 import { useSectionStock } from "@/lib/api/hooks/useSectionStock";
-import { useSiteDiaryEntries } from "@/lib/api/hooks/useSiteDiary";
+import {
+  useSiteDiaryEntries,
+  SITE_DIARY_LIST_MAX_LIMIT,
+  type SiteDiaryEntryListResponse,
+} from "@/lib/api/hooks/useSiteDiary";
 import { useSiteSubcontractorPayments } from "@/lib/api/hooks/useSiteSubcontractorPayments";
+import { sectionNav } from "./section-nav.testkit";
 
 // F-BLMSEK T3 · Bölüm Detay › "Malzeme" sekmesinin EKRAN BAĞLANTISI.
 // AYRI dosyadır: `SectionDetailView.test.tsx` 775 satırla 800 tavanındadır.
@@ -61,9 +66,15 @@ const SITE_ID = "44444444-4444-4444-4444-444444444444";
 const SECTION_ID = "55555555-5555-5555-5555-555555555555";
 const SECTION_NAME = "Kat 6–10 Kaba İnşaat";
 
-vi.mock("next/navigation", () => ({
-  useParams: () => ({ projectId: PROJECT_ID, siteId: SITE_ID, sectionId: SECTION_ID }),
-}));
+// DET-1.2 · S4 — sekme `?sekme=` URL parametresidir; durumlu ikiz `replace`i uygular.
+vi.mock("next/navigation", async () =>
+  (await import("./section-nav.testkit")).sectionNavModule(() => ({
+    projectId: PROJECT_ID,
+    siteId: SITE_ID,
+    sectionId: SECTION_ID,
+  })),
+);
+beforeEach(() => sectionNav.reset());
 
 function mockAll() {
   vi.mocked(useSession).mockReturnValue({
@@ -156,7 +167,7 @@ function mockAll() {
     personnelTruncation: { isTruncated: false, shownCount: 0, totalCount: 0 },
   }));
   vi.mocked(useSiteDiaryEntries).mockReturnValue({
-    data: { items: [], total: 0 },
+    data: { items: [], total: 0, limit: SITE_DIARY_LIST_MAX_LIMIT, offset: 0 } satisfies SiteDiaryEntryListResponse,
     isLoading: false,
     isError: false,
     error: null,

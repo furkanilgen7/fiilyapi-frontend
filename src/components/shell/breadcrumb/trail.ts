@@ -29,6 +29,8 @@ export interface CrumbNames {
   readonly project?: string;
   readonly site?: string;
   readonly section?: string;
+  /** DET-1.2 — günlük kaydın tarihi ("24.09.2026"). */
+  readonly diaryEntry?: string;
   /**
    * Adı ÇÖZÜLEMEYEN türler (sorgu hata verdi: 404 / 403 / kopuk ağ).
    *
@@ -122,9 +124,14 @@ function crumbOf(node: TrailNode, keys: RouteKeys, names: CrumbNames): Crumb {
     node.named !== undefined && (names.unresolved?.has(node.named) ?? false);
   return {
     label: resolved ?? node.label ?? "",
-    href: node.href === undefined ? undefined : node.href(keys),
+    href: (node.href ?? node.crumbHref)?.(keys),
     pending: node.named !== undefined && resolved === undefined && !failed,
   };
+}
+
+/** DET-1.3 — adı çözülemeyen ve `omitWhenUnresolved` işaretli düğüm basılmaz. */
+function isOmitted(node: TrailNode, names: CrumbNames): boolean {
+  return node.omitWhenUnresolved === true && node.named !== undefined && (names.unresolved?.has(node.named) ?? false);
 }
 
 /**
@@ -156,7 +163,8 @@ export function buildTrail(pathname: string, names: CrumbNames = {}): Crumb[] {
     if (step === undefined) return comingSoonTrail(segments[0]);
     node = step.node;
     if (step.param !== undefined) keys = { ...keys, [step.param]: safeDecode(segment) };
-    if (node.href !== undefined) crumbs.push(crumbOf(node, keys, names));
+    if (isOmitted(node, names)) continue;
+    if (node.href !== undefined || node.crumbHref !== undefined) crumbs.push(crumbOf(node, keys, names));
   }
   // 🔴 SON segmentin SAYFASI yoksa o adreste bir sayfa YOKTUR: yol yapısal bir
   // klasörde bitmiştir (`/projeler/<p>/santiyeler`) ve Next onu da `[...slug]`

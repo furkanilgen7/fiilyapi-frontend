@@ -31173,25 +31173,6 @@
             ],
             "title": "Temp Min C"
           },
-          "temperature_c": {
-            "anyOf": [
-              {
-                "maximum": 60.0,
-                "minimum": -60.0,
-                "type": "number"
-              },
-              {
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "deprecated": true,
-            "description": "KULLANIMDAN KALKIYOR (PLN-B2.1): `temp_min_c` + `temp_max_c` kullanın. İstekte yeni alanlar YOKSA kabul edilir ve ikisine de yazılır; yeni alanlardan biri gelirse bu alan YOK SAYILIR. Yanıtta `temp_max_c`nin salt okunur kopyasıdır.",
-            "title": "Temperature C"
-          },
           "weather": {
             "anyOf": [
               {
@@ -31261,6 +31242,17 @@
             "title": "Created By",
             "type": "string"
           },
+          "created_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By Name"
+          },
           "dropped_orphan_count": {
             "anyOf": [
               {
@@ -31309,6 +31301,46 @@
             "title": "Lines Total",
             "type": "string"
           },
+          "lock_report_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lock Report Date"
+          },
+          "locked": {
+            "title": "Locked",
+            "type": "boolean"
+          },
+          "next_entry_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Entry Date"
+          },
+          "next_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Id"
+          },
           "own_crew_from_timesheet": {
             "items": {
               "$ref": "#/components/schemas/OwnCrewFromTimesheet"
@@ -31320,9 +31352,37 @@
             "title": "Ppe Checked",
             "type": "boolean"
           },
+          "prev_entry_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prev Entry Date"
+          },
+          "prev_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prev Id"
+          },
           "project_id": {
             "format": "uuid",
             "title": "Project Id",
+            "type": "string"
+          },
+          "project_name": {
+            "title": "Project Name",
             "type": "string"
           },
           "safety_meeting_held": {
@@ -31341,9 +31401,24 @@
             ],
             "title": "Section Id"
           },
+          "section_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section Name"
+          },
           "site_id": {
             "format": "uuid",
             "title": "Site Id",
+            "type": "string"
+          },
+          "site_name": {
+            "title": "Site Name",
             "type": "string"
           },
           "status": {
@@ -31360,6 +31435,29 @@
               }
             ],
             "title": "Submitted At"
+          },
+          "submitted_by": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted By"
+          },
+          "submitted_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted By Name"
           },
           "temp_max_c": {
             "anyOf": [
@@ -31384,20 +31482,6 @@
               }
             ],
             "title": "Temp Min C"
-          },
-          "temperature_c": {
-            "anyOf": [
-              {
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "deprecated": true,
-            "description": "KULLANIMDAN KALKIYOR (PLN-B2.1): `temp_min_c` + `temp_max_c` kullanın. İstekte yeni alanlar YOKSA kabul edilir ve ikisine de yazılır; yeni alanlardan biri gelirse bu alan YOK SAYILIR. Yanıtta `temp_max_c`nin salt okunur kopyasıdır.",
-            "title": "Temperature C"
           },
           "updated_at": {
             "format": "date-time",
@@ -31456,7 +31540,6 @@
           "entry_date",
           "section_id",
           "weather",
-          "temperature_c",
           "work_done",
           "chief_note",
           "safety_meeting_held",
@@ -31471,7 +31554,19 @@
           "lines",
           "worker_counts",
           "lines_total",
-          "worker_total"
+          "worker_total",
+          "site_name",
+          "project_name",
+          "section_name",
+          "created_by_name",
+          "submitted_by",
+          "submitted_by_name",
+          "locked",
+          "lock_report_date",
+          "prev_id",
+          "next_id",
+          "prev_entry_date",
+          "next_entry_date"
         ],
         "title": "SiteDiaryEntryDetail",
         "type": "object"
@@ -31525,6 +31620,28 @@
             ],
             "title": "Section Id"
           },
+          "section_line_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section Line Count"
+          },
+          "section_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section Name"
+          },
           "site_id": {
             "format": "uuid",
             "title": "Site Id",
@@ -31554,6 +31671,8 @@
           "project_id",
           "entry_date",
           "section_id",
+          "section_name",
+          "section_line_count",
           "weather",
           "has_incident",
           "status",
@@ -31713,25 +31832,6 @@
               }
             ],
             "title": "Temp Min C"
-          },
-          "temperature_c": {
-            "anyOf": [
-              {
-                "maximum": 60.0,
-                "minimum": -60.0,
-                "type": "number"
-              },
-              {
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "deprecated": true,
-            "description": "KULLANIMDAN KALKIYOR (PLN-B2.1): `temp_min_c` + `temp_max_c` kullanın. İstekte yeni alanlar YOKSA kabul edilir ve ikisine de yazılır; yeni alanlardan biri gelirse bu alan YOK SAYILIR. Yanıtta `temp_max_c`nin salt okunur kopyasıdır.",
-            "title": "Temperature C"
           },
           "weather": {
             "anyOf": [
@@ -31945,6 +32045,17 @@
             ],
             "title": "Section Id"
           },
+          "section_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section Name"
+          },
           "unit": {
             "maxLength": 50,
             "title": "Unit",
@@ -31965,7 +32076,8 @@
           "unit_price",
           "quantity",
           "cumulative_quantity",
-          "line_amount"
+          "line_amount",
+          "section_name"
         ],
         "title": "SiteDiaryLineRead",
         "type": "object"
@@ -32250,6 +32362,17 @@
             ],
             "title": "Subcontractor Id"
           },
+          "subcontractor_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subcontractor Name"
+          },
           "trade": {
             "maxLength": 100,
             "title": "Trade",
@@ -32260,7 +32383,8 @@
           "id",
           "trade",
           "source",
-          "count"
+          "count",
+          "subcontractor_name"
         ],
         "title": "SiteDiaryWorkerCountRead",
         "type": "object"
@@ -46614,6 +46738,7 @@
         ]
       },
       "get": {
+        "description": "DET-1.B `section_id`: `prev_id`/`next_id` bu bölümün Kural A kümesinde; verilmezse\nşantiye bağlamında. Başka şantiyenin / olmayan bölüm 422.",
         "operationId": "get_site_diary_entry_endpoint_diary__entry_id__get",
         "parameters": [
           {
@@ -46624,6 +46749,23 @@
               "format": "uuid",
               "title": "Entry Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "section_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Section Id"
             }
           }
         ],
@@ -47414,7 +47556,7 @@
     },
     "/earned-value/catalog": {
       "get": {
-        "description": "Birim oran katalogu (KAT). `q` is tipi adinda harf duyarsiz arar.\n\n`actual` (gerceklesen) ve `diff_pct` K4 kuralindadir; saha verisi PLN-B2'de\ndogdugu icin B1'de her satirda bostur (`catalog_service.catalog_actuals`).",
+        "description": "Birim oran katalogu (KAT). `q` is tipi adinda harf duyarsiz arar.\n\n`actual` (gerceklesen) ve `diff_pct` K4 kuralindadir: TAMAMLANMIS santiyelerin miktar\nagirlikli ortalamasi (`catalog_service.catalog_actuals`); tamamlanmis santiye verisi\nyoksa bostur.",
         "operationId": "list_catalog_endpoint_earned_value_catalog_get",
         "parameters": [
           {
@@ -47495,7 +47637,7 @@
         ]
       },
       "post": {
-        "description": "Katalog is tipi ekler. (disiplin, ad, birim) benzersiz → 409 `CATALOG_ITEM_TAKEN`.",
+        "description": "Katalog is tipi ekler. (disiplin, ad, birim) benzersiz — ad/birim NORMALIZE\nkarsilastirilir (buyuk/kucuk harf, İ/I, bosluk) → 409 `CATALOG_ITEM_TAKEN_AS`.",
         "operationId": "create_catalog_item_endpoint_earned_value_catalog_post",
         "requestBody": {
           "content": {
@@ -47613,7 +47755,7 @@
     },
     "/earned-value/catalog/{item_id}/adopt-actual": {
       "post": {
-        "description": "KAT \"Gerceklesen standart yap\": gerceklesen ortalama yoksa 409 `CATALOG_NO_ACTUAL`.\n\n⚠️ B1'de gerceklesen hic yoktur → bu uc PLN-B3'e kadar HER ZAMAN 409 doner.",
+        "description": "KAT \"Gerceklesen standart yap\": gerceklesen ortalama yoksa 409 `CATALOG_NO_ACTUAL`.\n\nGerceklesen = TAMAMLANMIS santiyelerin miktar agirlikli ortalamasi (K4; PLN-B3'ten beri\n`actuals.completed_site_actuals`); hic tamamlanmis santiye verisi yoksa 409.",
         "operationId": "adopt_actual_endpoint_earned_value_catalog__item_id__adopt_actual_post",
         "parameters": [
           {
@@ -62060,7 +62202,7 @@
     },
     "/sites/{site_id}/diary": {
       "get": {
-        "description": "GK \"Son Kayıtlar\" — durum, işçi toplamı ve satır ₺ toplamı TÜREVDİR.\n\n`month` YALNIZ `year` ile anlamlıdır (\"her yılın temmuzu\" bir dönem\ndeğildir); tek başına gönderilirse 422 — sessizce yok saymak, kullanıcının\nfiltrelediğini sandığı bir listeyi filtresiz göstermek olurdu.",
+        "description": "GK \"Son Kayıtlar\" — durum, işçi toplamı ve satır ₺ toplamı TÜREVDİR.\n\nDET-1.B `section_id`: Bölüm Detay › Günlük Kayıt — Kural A (başlığı bu bölüm OLAN gün ∪\nbu bölüme miktar satırı yazılmış gün; kayıt tekrarlanmaz). `total` süzülmüş kümedir;\nbaşka şantiyenin / olmayan bölüm 422. Verilmezse davranış aynen.\n\n`month` YALNIZ `year` ile anlamlıdır (\"her yılın temmuzu\" bir dönem\ndeğildir); tek başına gönderilirse 422 — sessizce yok saymak, kullanıcının\nfiltrelediğini sandığı bir listeyi filtresiz göstermek olurdu.",
         "operationId": "list_site_diary_entries_endpoint_sites__site_id__diary_get",
         "parameters": [
           {
@@ -62130,6 +62272,23 @@
               "minimum": 0,
               "title": "Offset",
               "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "section_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Section Id"
             }
           }
         ],

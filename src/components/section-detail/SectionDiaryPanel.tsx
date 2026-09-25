@@ -3,34 +3,31 @@ import Link from "next/link";
 import type { DiarySectionOption } from "@/components/site-diary/DiaryBasicInfoCard";
 import { DiaryEntryRowBody } from "@/components/site-diary/DiaryEntryRowBody";
 import { buildRecentEntryRows } from "@/components/site-diary/recent-entries";
+import { ChevronRightIcon } from "@/components/ui/icons";
 import type { SiteDiaryEntryListItem } from "@/lib/api/hooks/useSiteDiary";
+import { formatDateDots } from "@/lib/format";
+import { buildListTruncation, listTruncationMessage } from "@/lib/list-truncation";
 import "@/components/site-diary/site-diary.css";
 
-import { partitionSectionDiaryEntries } from "./section-diary";
+import { sectionDiaryLinkageMeta, sectionDiaryRowLinkage } from "./section-diary-linkage";
 
 /**
  * F-BLMSEK · Bölüm Detay › "Günlük Kayıt" sekmesinin GÖVDESİ.
  *
- * 🔴 MOCKUP BU SEKME İÇİN PANEL ÇİZMEZ: `Bölüm Detay.dc.html` 102-104 yalnız
- * sekme DÜĞMELERİNİ çizer, panel çizimi DOSYADA YOKTUR. F-BLMPUAN'ın aynı
- * durumda verdiği kanonik cevap uygulanır — yeni bir görsel dil İCAT EDİLMEZ,
- * şantiye günlüğünün "Son Kayıtlar" satırı (GK360-364) `DiaryEntryRowBody` ile
- * OLDUĞU GİBİ yeniden kullanılır (DRY: listenin ikinci bir kopyası zamanla
- * ayrışırdı).
+ * 🔴 MOCKUP: `Bölüm Detay.dc.html` bu panel için çizim TAŞIMAZ; satır içeriği
+ * şantiye günlüğünün "Son Kayıtlar" satırıdır (GK360-364, `DiaryEntryRowBody`
+ * OLDUĞU GİBİ yeniden kullanılır — DRY). DET-1.2'den beri satırın KABUĞU
+ * `Şantiye - Günlük Kayıt Detay (Salt Okunur).dc.html` 498-561'dir: satırın
+ * TAMAMI detay sayfasına tek bağlantı, sağda dekoratif ok, hover/odak (içe
+ * halka) o mockup'tan.
  *
- * 🔴 SALT OKUNURDUR: satırlar tıklanabilir DEĞİL. "Son Kayıtlar" satırı gün
- * SEÇER; burada seçilecek bir gün formu yok. Yazma/gezinme yolu tektir ve
- * başlıktaki "Şantiye günlüğü →" bağlantısındadır.
+ * 🔴 DET-1.1 · SÜZGEÇ SUNUCUDA: `items` `GET /sites/{id}/diary?section_id=`
+ * yanıtıdır (Kural A: başlığı bu bölüm ∪ bu bölüme miktar satırı yazılmış
+ * gün). Panel İKİNCİ KEZ SÜZMEZ — süzseydi satır kolu sessizce kaybolurdu.
+ * Başlığı başka bölüm olan gün "Satırla bağlı" rozetiyle işaretlenir.
  *
- * 🔴 YÜKLEME/HATA dalları AYRI basılır (emsal: `SectionTimesheetPanel`,
- * `SectionBoqCard`). Veri yüklenmemişken boş listeyi basmak kullanıcıya
- * *"bu bölümde hiç günlük tutulmamış"* YALANINI söylerdi.
- *
- * 🔴 Kayıt 259 — KABUK (başlık + "Şantiye günlüğü →" çıkış bağlantısı) hata/
- * yükleme dalında da KORUNUR; yalnız GÖVDE değişir. Eskiden bileşenin TAMAMI
- * erken dönüyordu ve kullanıcı hata/yükleme sırasında hem başlığı hem çıkış
- * bağlantısını kaybediyordu — kardeş panel `SectionStockPanel` bu ayrımı
- * zaten yapıyordu (kabuk + `SectionStockBody`), burada hizalanır.
+ * 🔴 YÜKLEME/HATA dalları AYRI basılır; KABUK (başlık + "Şantiye günlüğü →")
+ * her dalda KORUNUR (Kayıt 259).
  */
 export interface SectionDiaryPanelProps {
   sectionId: string;
@@ -38,22 +35,22 @@ export interface SectionDiaryPanelProps {
   sectionName: string;
   /** Bölüm adı çözümü için (`site.sections`) — satır alt metnini kurar. */
   sections: readonly DiarySectionOption[];
-  /** `GET /sites/{site_id}/diary` HAM listesi; süzgeç burada uygulanır. */
+  /** `GET /sites/{site_id}/diary?section_id=` yanıtı — sunucuda süzülmüş. */
   items: readonly SiteDiaryEntryListItem[];
+  /** Sunucunun bildirdiği toplam; listeden büyükse kırpılma GÖRÜNÜR basılır. */
+  total?: number;
   isLoading: boolean;
   isError: boolean;
-  /** Şantiye günlüğü ekranı — dışarıda kalan kayıtların GÖRÜLEBİLDİĞİ yer. */
+  /** Şantiye günlüğü ekranı — tüm günlerin görüldüğü yer. */
   diaryHref: string;
+  /** DET-1.2 · kayıt kimliği → salt okunur detay rotası. */
+  entryHref: (entryId: string) => string;
 }
 
 export function SectionDiaryPanel({
-  sectionId,
   sectionName,
-  sections,
-  items,
-  isLoading,
-  isError,
   diaryHref,
+  ...body
 }: SectionDiaryPanelProps) {
   return (
     <section className="section-diary" data-testid="section-diary" aria-labelledby="section-diary-title">
@@ -65,14 +62,7 @@ export function SectionDiaryPanel({
           Şantiye günlüğü →
         </Link>
       </div>
-      <SectionDiaryBody
-        sectionId={sectionId}
-        sections={sections}
-        items={items}
-        isLoading={isLoading}
-        isError={isError}
-        diaryHref={diaryHref}
-      />
+      <SectionDiaryBody diaryHref={diaryHref} {...body} />
     </section>
   );
 }
@@ -81,13 +71,12 @@ function SectionDiaryBody({
   sectionId,
   sections,
   items,
+  total,
   isLoading,
   isError,
   diaryHref,
-}: Pick<
-  SectionDiaryPanelProps,
-  "sectionId" | "sections" | "items" | "isLoading" | "isError" | "diaryHref"
->) {
+  entryHref,
+}: Omit<SectionDiaryPanelProps, "sectionName">) {
   if (isError) {
     return (
       <p className="section-detail__message" data-testid="section-diary-error">
@@ -99,50 +88,63 @@ function SectionDiaryBody({
     return <p className="section-detail__message">Yükleniyor…</p>;
   }
 
-  const partition = partitionSectionDiaryEntries(items, sectionId);
   // 🔴 `DIARY_RECENT_ENTRY_LIMIT` (=3) BİLEREK KULLANILMAZ: o kırpma "Son
-  // Kayıtlar" KARTININ yüksekliğine aittir (mockup GK359-384 üç satır çizer).
-  // Bu sekme bölümün TÜM kayıtlarını basar; sessizce miras alınsaydı dördüncü
-  // kayıt gerekçesiz kaybolurdu. Limit AÇIKÇA küme boyu verilir.
-  const rows = buildRecentEntryRows(partition.entries, sections, partition.entries.length);
-  const excluded = partition.unassignedCount + partition.otherSectionCount;
+  // Kayıtlar" KARTININ yüksekliğine aittir. Bu sekme gelen TÜM kayıtları basar.
+  const rows = buildRecentEntryRows(items, sections, items.length);
+  const itemById = new Map(items.map((item) => [item.id, item]));
+  const truncation = buildListTruncation(items.length, total);
 
   return (
     <>
       {rows.length === 0 ? (
-        // 🔴 "Veri YOK" ≠ "modül bu bölüme KIRILMIYOR". Bağ AÇIK; eksik olan
-        // kayıttır. `CardEmptyState` + `pendingModule` burada YANLIŞ bilgi olurdu.
         <div className="section-diary__empty">
           <p className="section-diary__empty-title">Bu bölümde günlük kayıt yok</p>
           <p className="section-diary__empty-hint">Bu bölüme atanmış günlük kayıt bulunmuyor</p>
         </div>
       ) : (
-        <ul className="section-diary__list diary-recent__list">
-          {rows.map((row) => (
-            <li key={row.id} className="section-diary__row diary-recent__row">
-              <DiaryEntryRowBody row={row} />
-            </li>
-          ))}
+        <ul className="section-diary__list">
+          {rows.map((row) => {
+            const item = itemById.get(row.id);
+            const linkage = item === undefined ? null : sectionDiaryRowLinkage(item, sectionId, sections);
+            const accessibleName =
+              `${formatDateDots(row.entryDate)} günlük kaydını görüntüle · ${row.statusLabel}` +
+              (linkage === null ? "" : ` — başlık bölümü ${linkage.headerSectionName}`);
+            return (
+              <li key={row.id} className="section-diary__row">
+                <Link className="section-diary__entry-link" href={entryHref(row.id)} aria-label={accessibleName}>
+                  <span className="section-diary__entry-body">
+                    <DiaryEntryRowBody
+                      row={row}
+                      extraBadge={
+                        linkage === null ? undefined : (
+                          <span
+                            className="diary-recent__badge section-diary__linkage-badge"
+                            title={`Başlık bölümü ${linkage.headerSectionName}; bu bölüme miktar satırı yazılmış`}
+                          >
+                            Satırla bağlı
+                          </span>
+                        )
+                      }
+                      sectionSlot={linkage === null ? undefined : sectionDiaryLinkageMeta(linkage)}
+                    />
+                  </span>
+                  <ChevronRightIcon className="section-diary__entry-arrow" />
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       )}
 
-      {/* 🔴 SESSİZ ATLAMA = İHLAL (F-TH kanonu): süzgecin dışarıda bıraktığı
-          kayıtların SAYISI da NEREDE görüldükleri de GÖRÜNÜR basılır — `title`
-          içinde saklanmaz. */}
-      {excluded > 0 && (
+      {/* 🔴 SESSİZ KIRPMA = İHLAL (TB3/F-TH): sunucu toplamı listeden büyükse
+          görünür basılır; tamamı şantiye günlüğündedir. */}
+      {truncation.isTruncated && (
         <p className="section-diary__note" data-testid="section-diary-note">
-          {partition.unassignedCount > 0 && (
-            <>Bölüme atanmamış {partition.unassignedCount} kayıt bu listede yok</>
-          )}
-          {partition.unassignedCount > 0 && partition.otherSectionCount > 0 && <> · </>}
-          {partition.otherSectionCount > 0 && (
-            <>başka bölüme atanmış {partition.otherSectionCount} kayıt bu listede yok</>
-          )}
-          {" — "}
+          {listTruncationMessage(truncation)}{" "}
           <Link className="section-diary__note-link" href={diaryHref}>
-            şantiye günlüğünde
+            Şantiye günlüğünde
           </Link>{" "}
-          görünür
+          tümü görünür
         </p>
       )}
     </>

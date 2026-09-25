@@ -18,13 +18,14 @@ vi.mock("@/lib/api/hooks/useSites", async (importOriginal) => ({
   useSite: vi.fn(),
 }));
 vi.mock("@/components/shell/SessionProvider", () => ({ useSession: vi.fn() }));
-vi.mock("next/navigation", () => ({
-  useParams: () => ({
+// DET-1.2 · S4 — ekran `?sekme=` okur; durumlu gezinme ikizi (section-nav.testkit).
+vi.mock("next/navigation", async () =>
+  (await import("@/components/section-detail/section-nav.testkit")).sectionNavModule(() => ({
     projectId: "11111111-1111-1111-1111-111111111111",
     siteId: "44444444-4444-4444-4444-444444444444",
     sectionId: "55555555-5555-5555-5555-555555555555",
-  }),
-}));
+  })),
+);
 
 describe("SectionDetailPage — duman testi", () => {
   it("yukleniyor durumunu basar", () => {

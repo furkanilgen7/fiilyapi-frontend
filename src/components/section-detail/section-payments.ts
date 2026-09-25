@@ -10,8 +10,9 @@ import type { SiteSubcontractorPaymentItem } from "@/lib/api/hooks/useSiteSubcon
  * ekranıyla PAYLAŞTIRIR — ikinci bir ağ isteği doğmaz.
  *
  * 🔴 `sectionId === null` KAYITLARI BU SEKMEDE **GÖSTERİLİR** — "Tüm Bölümler"
- * olarak. Bu, kardeş dosya `section-diary.ts`in kuralının TERSİDİR ve fark
- * BİLEREKTİR. İki `null` AYNI ŞEY DEĞİLDİR:
+ * olarak. Bu, eski günlük süzgecinin (`section-diary.ts`, DET-1.1'de silindi —
+ * süzgeç artık sunucuda, Kural A) kuralının TERSİYDİ ve fark BİLEREKTİR. İki
+ * `null` AYNI ŞEY DEĞİLDİR:
  *   - günlük kaydın `null`'ı = kaydı giren kişi BÖLÜM SEÇMEDİ (atanmamış) →
  *     hiçbir kapsam iddiası taşımaz, bu bölümün günlüğü olduğu SÖYLENEMEZ,
  *   - hakedişin `null`'ı = sözleşme kapsamı TÜM BÖLÜMLERİ kapsar (kasıtlı) →
