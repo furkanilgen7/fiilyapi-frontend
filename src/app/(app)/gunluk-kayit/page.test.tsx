@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import GunlukKayitPage from "./page";
 import { useSession } from "@/components/shell/SessionProvider";
@@ -16,6 +17,23 @@ import type { MeResponse } from "@/lib/auth/types";
 // devre dışı kalır. Bu test sayfanın ComingSoon YERİNE gerçek günlük kayıt
 // ekranını bastığını doğrular — nav'daki `Saha › Günlük Kayıt` öğesinin
 // "yakında" ekranına düşmediğinin sayfa tarafındaki kanıtıdır.
+
+// PLN-F2 · sayfa artık planlama adaptörünü basar (çekirdeği sarar) ve çekirdek
+// de yeni sorgular açtı (taşeron listesi, puantaj haftası) → gerçek react-query
+// + hiç çözülmeyen sahte istemci: ekran "yükleniyor" hâlinde, uzantısız basılır.
+vi.mock("@/lib/api/client", () => {
+  const pending = () => new Promise(() => {});
+  return { backendClient: { GET: vi.fn(pending), POST: vi.fn(pending), PUT: vi.fn(pending), PATCH: vi.fn(pending), DELETE: vi.fn(pending) } };
+});
+
+function renderPage() {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <QueryClientProvider client={client}>
+      <GunlukKayitPage />
+    </QueryClientProvider>,
+  );
+}
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/gunluk-kayit",
@@ -116,7 +134,7 @@ beforeEach(() => {
 
 describe("/gunluk-kayit sayfasi", () => {
   it("gercek gunluk kayit ekranini basar (ComingSoon DEGIL)", () => {
-    render(<GunlukKayitPage />);
+    renderPage();
     expect(
       screen.getByRole("heading", { level: 1, name: "Günlük Kayıt & Planlama" }),
     ).toBeInTheDocument();
@@ -124,7 +142,7 @@ describe("/gunluk-kayit sayfasi", () => {
   });
 
   it("santiye secicisi ekranin parcasidir (kok rotanin kabugu)", () => {
-    render(<GunlukKayitPage />);
+    renderPage();
     expect(screen.getByLabelText("Şantiye")).toBeInTheDocument();
   });
 });

@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 
-import { GeneralSiteDiaryView } from "@/components/site-diary/GeneralSiteDiaryView";
+import { GeneralDiaryProgressView } from "@/components/earned-value/diary/DiaryProgressAdapter";
 
 // F-NAVSAHA · `/gunluk-kayit` gerçek rotası — [...slug] catch-all'ı bu segment
 // için devre dışı bırakır (Next.js App Router: özel segment her zaman
@@ -9,10 +9,13 @@ import { GeneralSiteDiaryView } from "@/components/site-diary/GeneralSiteDiaryVi
 //
 // Seçili şantiye URL'de taşındığı için görünüm `useSearchParams` kullanır ve
 // Suspense sınırında sarılır (Next 15 kanonu; `/puantaj` deseni).
+//
+// PLN-F2.3 · Çekirdek `GeneralSiteDiaryView` yerine planlama ADAPTÖRÜ basılır
+// (spec §2.7, `DiaryProgressAdapter`); modül yoksa bu satır çekirdeğe döner.
 export default function GunlukKayitPage() {
   return (
     <Suspense>
-      <GeneralSiteDiaryView />
+      <GeneralDiaryProgressView />
     </Suspense>
   );
 }

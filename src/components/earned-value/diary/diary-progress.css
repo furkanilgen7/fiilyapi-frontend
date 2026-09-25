@@ -1,0 +1,560 @@
+/* PLN-F2.3 · Planlama adaptörü — Günlük Kayıt (İlerleme) yuvaları.
+   Kaynak: projedesign/Şantiye - Günlük Kayıt (İlerleme).dc.html (İ) + (Ek Formlar).
+   Çıplak hex YOK; mockup değerleri token'a çevrildi. Token'da birebir karşılığı
+   olmayan dört ton en yakın token'a bağlandı (raporda):
+     #eef2f6 → --color-ev-chip-neutral (#eef2f7) · #f5f7fa → --color-divider
+     #f5f7ff → --color-ev-editor-bg (#f8fbff) · #fafbff → --color-ev-row-open-bg
+     #fcfcfd → --color-surface-2 · gönder çubuğu gölgesi .10 → --shadow-menu (.12) */
+
+.ev-diary-mono { font-family: var(--font-mono); }
+.ev-diary-muted { color: var(--color-text-subtle); }
+.ev-diary-tone--ok { color: var(--color-success); }
+.ev-diary-tone--warn { color: var(--color-warning-body-text); }
+.ev-diary-tone--danger { color: var(--color-danger-strong); }
+.ev-diary-inline-arrow { width: 11px; height: 11px; vertical-align: -1px; margin: 0 2px; }
+
+/* ── PF rozeti — İ:230 / İ:250 / İ:486 (padding 2px 5px, radius 3) ── */
+.ev-diary-pf {
+  display: inline-block;
+  padding: 2px 5px;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.ev-diary-pf--red { background: var(--color-danger-soft); color: var(--color-danger-strong); }
+.ev-diary-pf--amber { background: var(--color-warning-soft); color: var(--color-warning-body-text); }
+.ev-diary-pf--green { background: var(--color-success-soft); color: var(--color-success-deep); }
+/* K19 — günlük PF > üst eşik: bilgi (mavi) tonu, "şüpheli yüksek" */
+.ev-diary-pf--high { background: var(--color-primary-soft); color: var(--color-primary-hover); }
+.ev-diary-pf--none { background: transparent; color: var(--color-text-subtle); }
+
+/* ── Miktar tablosu ek kolonları — İ:220 (mavi başlık), İ:229 hücre ── */
+.ev-diary-col-earned { color: var(--color-primary); }
+.ev-diary-earned {
+  font-family: var(--font-mono);
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
+}
+.ev-diary-earned--none { color: var(--color-text-subtle); }
+
+/* İ:248-252 — "Bugün toplam kazanılmış · harcanan" alt satırı */
+.ev-diary-line-foot { display: flex; flex-direction: column; gap: var(--space-2); }
+.ev-diary-line-foot__total {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 10px;
+  background: var(--color-info-tint);
+  border-top: var(--border-width-total) solid var(--color-primary);
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+}
+.ev-diary-line-foot__label { flex: 1; }
+.ev-diary-line-foot__earned {
+  font-family: var(--font-mono);
+  font-size: var(--text-total-amount);
+  color: var(--color-primary);
+}
+
+/* İ:241-246 — oransız satır uyarısı */
+.ev-diary-norate {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: var(--space-2) 10px;
+  border: 1px solid var(--color-danger-tint-border);
+  background: var(--color-danger-row-bg);
+  border-radius: var(--radius-8);
+  font-size: var(--text-xs);
+  color: var(--color-error-card-title);
+}
+.ev-diary-norate__icon { width: 12px; height: 12px; }
+.ev-diary-norate__lead { font-weight: var(--weight-semibold); }
+.ev-diary-norate__text { color: var(--color-danger-deep); }
+.ev-diary-norate__link {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-weight: var(--weight-semibold);
+  color: var(--color-error-card-title);
+}
+.ev-diary-norate__link svg { width: 12px; height: 12px; }
+
+/* ── Kilit bandı içeriği — İ:146-147 (çerçeve + ikon çekirdekte: `diary__lock-banner`) ── */
+.ev-diary-lock__text b { font-weight: var(--weight-bold); }
+.btn.ev-diary-lock__action {
+  margin-left: auto;
+  height: 32px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-6);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
+.ev-diary-unlock__text {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-body);
+  line-height: var(--leading-normal);
+  color: var(--color-text-secondary);
+}
+
+/* ── Blok — İ:386 kartı + İ:493 çubuğu ── */
+/* Üst boşluk (İ:386 margin-top 20) çekirdeğin `diary__full-width` kabındadır. */
+.ev-diary-block { display: flex; flex-direction: column; gap: var(--space-4); }
+
+/* İ:150-155 formen bandı */
+.ev-diary-foreman {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-primary-ring);
+  background: var(--color-nav-active-bg);
+  border-radius: var(--radius-10);
+  font-size: var(--text-body);
+  color: var(--color-primary-hover);
+}
+.ev-diary-foreman svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+.ev-diary-alloc {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-14);
+  box-shadow: var(--shadow-card);
+}
+/* İ:386 `distOp` — formen görünümünde soluk */
+.ev-diary-alloc--faded { opacity: 0.55; }
+
+.ev-diary-alloc__head {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: var(--space-4) 18px var(--space-3);
+}
+.ev-diary-alloc__title-wrap { display: flex; flex-direction: column; gap: 2px; margin-right: auto; }
+.ev-diary-alloc__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-form-card-title);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.ev-diary-alloc__title svg { width: 15px; height: 15px; }
+.ev-diary-chip {
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-size: 9.5px;
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.4px;
+}
+.ev-diary-alloc__subtitle { margin: 0; font-size: var(--text-small); color: var(--color-text-subtle); }
+
+/* İ:392-397 — 4'lü şerit */
+.ev-diary-strip { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: 0; }
+.ev-diary-strip__item {
+  display: flex;
+  flex-direction: column;
+  min-width: 100px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-8);
+}
+.ev-diary-strip__item dt {
+  font-size: var(--text-kpi-label);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+.ev-diary-strip__item dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-kpi-value);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.ev-diary-strip__unit { font-size: var(--text-small); font-weight: var(--weight-medium); color: var(--color-text-subtle); }
+.ev-diary-strip__item--allocated dd { color: var(--color-primary); }
+.ev-diary-strip__item--sub { min-width: 90px; }
+.ev-diary-strip__item--sub dd { color: var(--color-text-secondary); }
+.ev-diary-strip__item--ok { background: var(--color-success-tint); border-color: var(--color-success-tint-border); }
+.ev-diary-strip__item--ok dt,
+.ev-diary-strip__item--ok dd { color: var(--color-success); }
+.ev-diary-strip__item--warn { background: var(--color-warning-soft); border-color: var(--color-warning-border-soft); }
+.ev-diary-strip__item--warn dt,
+.ev-diary-strip__item--warn dd { color: var(--color-warning-body-text); }
+
+/* İ:400-402 — "Salt okunur · …" */
+.ev-diary-alloc__ro {
+  margin: 0 18px 10px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  border-radius: var(--radius-8);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}
+.ev-diary-alloc__warnings {
+  margin: 0 18px 10px;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-xs);
+  color: var(--color-warning-body-text);
+}
+.ev-diary-alloc__warnings li { display: flex; align-items: center; gap: 6px; }
+.ev-diary-alloc__warnings svg { width: 12px; height: 12px; flex-shrink: 0; }
+.ev-diary-alloc__empty {
+  margin: 0;
+  padding: var(--space-4) 18px;
+  border-top: 1px solid var(--color-border);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+/* İ:156-158 bildirim */
+.ev-diary-flash-slot { margin: 0 18px; }
+.ev-diary-flash {
+  margin: 0 0 10px;
+  padding: 10px 14px;
+  border-radius: var(--radius-10);
+  font-size: var(--text-body);
+  font-weight: var(--weight-medium);
+}
+.ev-diary-flash--ok { border: 1px solid var(--color-success-tint-border); background: var(--color-success-tint); color: var(--color-success-deep); }
+.ev-diary-flash--error { border: 1px solid var(--color-danger-tint-border); background: var(--color-danger-row-bg); color: var(--color-danger-strong); }
+
+/* ── Araç çubuğu — İ:403-424 ── */
+.ev-diary-toolbar { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-2); padding: 0 18px 10px; }
+.ev-diary-toolbar__anchor { position: relative; }
+.btn.ev-diary-btn {
+  height: 34px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-6);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+}
+.btn.ev-diary-btn--add { border-color: var(--color-primary-border-soft); background: var(--color-nav-active-bg); color: var(--color-primary); }
+.btn.ev-diary-btn--bulk-on { border-color: var(--color-primary-border-soft); background: var(--color-nav-active-bg); color: var(--color-primary); }
+.btn.ev-diary-btn:disabled { border-color: var(--color-border); background: var(--color-surface-2); color: var(--color-text-subtle); }
+.ev-diary-toolbar__save { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.ev-diary-toolbar__note { font-size: var(--text-xs); color: var(--color-warning-body-text); }
+
+/* İ:406-422 — seçici */
+.ev-diary-picker {
+  position: absolute;
+  top: 38px;
+  left: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  width: 320px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-8);
+  box-shadow: var(--shadow-popover);
+}
+.ev-diary-picker__search { padding: var(--space-2); border-bottom: 1px solid var(--color-divider); }
+.ev-diary-picker__search .input { height: 32px; font-size: var(--text-body); }
+.ev-diary-picker__list { max-height: 280px; overflow: auto; padding: var(--space-1); }
+.ev-diary-picker__empty { margin: 0; padding: var(--space-2); font-size: var(--text-xs); color: var(--color-text-muted); }
+.ev-diary-picker__head,
+.ev-diary-picker__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: 6px var(--space-2);
+  border-radius: var(--radius-5);
+  font-size: 12.5px;
+  text-align: left;
+}
+.ev-diary-picker__head > span:first-child,
+.ev-diary-picker__label { flex: 1; }
+.ev-diary-picker__head--discipline { padding-left: var(--space-2); font-weight: var(--weight-bold); color: var(--color-text-subtle); }
+.ev-diary-picker__head--item { padding-left: 30px; font-weight: var(--weight-semibold); color: var(--color-text-secondary); }
+.ev-diary-picker__row { border: none; background: transparent; color: var(--color-text); cursor: pointer; }
+.ev-diary-picker__row--group { padding-left: var(--space-4); font-weight: var(--weight-semibold); }
+.ev-diary-picker__row--leaf { padding-left: 44px; }
+.ev-diary-picker__row--on { background: var(--color-nav-active-bg); }
+.ev-diary-picker__row--norate { color: var(--color-danger-strong); cursor: not-allowed; }
+.ev-diary-picker__row:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.ev-diary-picker__box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: 3px;
+  background: var(--color-surface);
+  color: var(--color-on-brand);
+}
+.ev-diary-picker__row--on .ev-diary-picker__box { border-color: var(--color-primary); background: var(--color-primary); }
+.ev-diary-picker__row--norate .ev-diary-picker__box { opacity: 0.5; }
+.ev-diary-picker__box svg { width: 10px; height: 10px; }
+.ev-diary-picker__code { font-family: var(--font-mono); font-size: 10.5px; color: var(--color-text-subtle); }
+.ev-diary-picker__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) 10px;
+  border-top: 1px solid var(--color-divider);
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+.btn.ev-diary-picker__done { color: var(--color-primary); font-weight: var(--weight-semibold); font-size: var(--text-xs); }
+
+/* İ:425-431 — toplu atama */
+.ev-diary-bulk {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 18px 10px;
+  padding: 10px var(--space-3);
+  border: 1px solid var(--color-primary-ring);
+  background: var(--color-nav-active-bg);
+  border-radius: var(--radius-8);
+  font-size: var(--text-xs);
+}
+.ev-diary-bulk__chip {
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 11.5px;
+  cursor: pointer;
+}
+.ev-diary-bulk__chip--on { border-color: var(--color-primary); background: var(--color-primary); color: var(--color-on-brand); font-weight: var(--weight-semibold); }
+.ev-diary-bulk__hours { width: 64px; }
+.ev-diary-bulk__hours .input { height: 28px; padding: 0 var(--space-2); border-color: var(--color-primary-border-soft); font-size: var(--text-body); }
+.btn.ev-diary-bulk__apply { height: 28px; padding: 0 var(--space-3); border-radius: var(--radius-6); font-size: var(--text-xs); font-weight: var(--weight-semibold); }
+
+/* ── Izgara — İ:446-489; ilk kolon yapışkan (TimesheetWeekTable emsali) ── */
+.ev-diary-grid-scroll { overflow-x: auto; border-top: 1px solid var(--color-border); }
+/* Izgara kolon toplamı kadar geniştir (İ:447 `min-width: gridMin`); az kolonda sağ boş kalır. */
+.ev-diary-grid {
+  width: max-content;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.ev-diary-grid thead th { background: var(--color-surface-2); border-bottom: 1px solid var(--color-border); }
+.ev-diary-grid__lead {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  width: 270px;
+  min-width: 270px;
+  padding: 5px 10px 5px 14px;
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+  text-align: left;
+  font-weight: var(--weight-regular);
+}
+.ev-diary-grid__lead--head {
+  z-index: 3;
+  padding: var(--space-2) 10px var(--space-2) 14px;
+  vertical-align: bottom;
+  font-size: var(--text-table-head);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.ev-diary-grid__code {
+  width: 92px;
+  min-width: 92px;
+  padding: 6px;
+  border-left: 1px solid var(--color-ev-chip-neutral);
+  vertical-align: bottom;
+  text-align: left;
+}
+.ev-diary-grid thead .ev-diary-grid__code--group { background: var(--color-ev-editor-bg); }
+.ev-diary-grid__code-id { display: block; font-family: var(--font-mono); font-size: 10px; font-weight: var(--weight-regular); color: var(--color-text-muted); }
+.ev-diary-grid__code-name {
+  display: block;
+  overflow: hidden;
+  font-size: 11.5px;
+  font-weight: var(--weight-semibold);
+  line-height: 1.2;
+  color: var(--color-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ev-diary-rule {
+  margin-top: 2px;
+  padding: 1px 5px;
+  border: none;
+  border-radius: 3px;
+  font-size: 9.5px;
+  font-weight: var(--weight-bold);
+  cursor: pointer;
+}
+.ev-diary-rule--prorata_by_daily_qty { background: var(--color-primary-soft); color: var(--color-primary); }
+.ev-diary-rule--direct { background: var(--color-surface-muted); color: var(--color-text-secondary); }
+.ev-diary-rule:disabled { cursor: not-allowed; }
+.ev-diary-grid__remain {
+  width: 86px;
+  min-width: 86px;
+  padding: var(--space-1) 14px var(--space-1) var(--space-2);
+  border-left: 1px solid var(--color-border);
+  text-align: right;
+}
+.ev-diary-grid__remain--head {
+  padding: var(--space-2) 14px var(--space-2) var(--space-2);
+  vertical-align: bottom;
+  font-size: var(--text-table-head);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* İ:461 — grup ayırıcı */
+.ev-diary-grid__sep th {
+  position: sticky;
+  left: 0;
+  padding: 6px 14px;
+  background: var(--color-surface-muted);
+  border-bottom: 1px solid var(--color-border);
+  font-size: 10.5px;
+  font-weight: var(--weight-bold);
+  color: var(--color-text-secondary);
+  letter-spacing: var(--tracking-wide);
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.ev-diary-grid__row > * { border-bottom: 1px solid var(--color-divider); }
+.ev-diary-grid__row--sub > * { background: var(--color-surface-2); }
+.ev-diary-grid__row--changed > * { background: var(--color-warning-tint); }
+.ev-diary-grid__person { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
+.ev-diary-grid__who { display: flex; flex: 1; flex-direction: column; min-width: 0; }
+.ev-diary-grid__name,
+.ev-diary-grid__job { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ev-diary-grid__name { font-size: 12.5px; font-weight: var(--weight-medium); color: var(--color-text); }
+.ev-diary-grid__job { font-size: 10.5px; color: var(--color-text-subtle); }
+.ev-diary-grid__changed {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: 10.5px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-warning-body-text);
+}
+.ev-diary-grid__changed > svg { width: 11px; height: 11px; flex-shrink: 0; }
+.ev-diary-grid__hours { font-family: var(--font-mono); font-size: var(--text-body); font-weight: var(--weight-semibold); color: var(--color-text-secondary); }
+
+.ev-diary-cell { padding: var(--space-1) 5px; border-left: 1px solid var(--color-divider); }
+.ev-diary-grid__row > .ev-diary-cell { background-clip: padding-box; }
+.input.ev-diary-cell__input {
+  height: 28px;
+  padding: 0 6px;
+  border: 1px solid var(--color-ev-chip-neutral);
+  border-radius: var(--radius-sm);
+  font-size: 12.5px;
+}
+.input.ev-diary-cell__input--filled { border-color: var(--color-primary-ring); background: var(--color-nav-active-bg); }
+.input.ev-diary-cell__input:disabled { background: var(--color-surface-2); color: var(--color-text); }
+.input.ev-diary-cell__input.input--error { border-color: var(--color-danger); }
+
+/* İ:476 — Kalan rozeti */
+.ev-diary-remain {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  font-weight: var(--weight-bold);
+}
+.ev-diary-remain svg { width: 11px; height: 11px; }
+.ev-diary-remain--ok { background: var(--color-success-soft); color: var(--color-success); }
+.ev-diary-remain--over { background: var(--color-danger-soft); color: var(--color-danger-strong); }
+.ev-diary-remain--under { background: var(--color-warning-soft); color: var(--color-warning-body-text); }
+
+/* İ:481-489 — alt satırlar */
+.ev-diary-grid__num { padding: var(--space-2); border-left: 1px solid var(--color-ev-chip-neutral); font-family: var(--font-mono); font-size: 12.5px; text-align: right; }
+.ev-diary-grid__total > * { background: var(--color-surface-2); border-top: 1.5px solid var(--color-border-strong); font-weight: var(--weight-bold); }
+.ev-diary-grid__total .ev-diary-grid__lead { padding: var(--space-2) 10px var(--space-2) 14px; font-size: 12.5px; }
+.ev-diary-grid__foot-lead { display: flex; justify-content: space-between; }
+.ev-diary-grid__pf > * { border-top: 1px solid var(--color-divider); }
+.ev-diary-grid__pf .ev-diary-grid__lead { padding: 7px 10px 7px 14px; font-size: 11.5px; color: var(--color-text-muted); }
+.ev-diary-grid__pf .ev-diary-pf { padding: 1px 5px; font-size: 11.5px; }
+.ev-diary-grid__pf .ev-diary-muted { font-size: 11.5px; }
+
+/* ── Gönder kontrol çubuğu — İ:493-510 ── */
+.ev-diary-submit {
+  position: sticky;
+  bottom: var(--space-3);
+  z-index: 50;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-14);
+  box-shadow: var(--shadow-menu);
+}
+.ev-diary-submit__checks { display: flex; flex: 1; flex-wrap: wrap; align-items: center; gap: 14px; margin: 0; padding: 0; list-style: none; }
+.ev-diary-check { display: flex; align-items: center; gap: 6px; font-size: var(--text-body); font-weight: var(--weight-medium); color: var(--color-text); }
+.ev-diary-check--warn { color: var(--color-warning-deep-text); }
+.ev-diary-check__dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+}
+.ev-diary-check__dot svg { width: 11px; height: 11px; stroke-width: 3; }
+.ev-diary-check--ok .ev-diary-check__dot { background: var(--color-success-soft); color: var(--color-success); }
+.ev-diary-check--warn .ev-diary-check__dot { background: var(--color-warning-soft); color: var(--color-warning-body-text); }
+.ev-diary-check__link {
+  border: none;
+  background: none;
+  color: var(--color-warning-body-text);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.ev-diary-check__link:disabled { cursor: not-allowed; opacity: 0.6; }
+.ev-diary-submit__note { font-size: var(--text-xs); font-weight: var(--weight-medium); }
+.ev-diary-submit__reason { flex-basis: 100%; }
+.input.ev-diary-submit__reason-input {
+  border: 1px solid var(--color-warning-border-soft);
+  background: var(--color-warning-tint);
+  border-radius: var(--radius-8);
+  padding: var(--space-2) var(--space-3);
+}
+
+/* ── Tablet 1024 — İ:527-558: yatay kaydırma, ilk kolon sabit, dokunmatik ≥ 36 px ── */
+@media (max-width: 1024px) {
+  .ev-diary-grid__lead { width: 230px; min-width: 230px; padding: 6px var(--space-3); box-shadow: var(--shadow-sm); }
+  .ev-diary-grid__code { width: 104px; min-width: 104px; padding: var(--space-2); }
+  .ev-diary-grid__remain { width: 96px; min-width: 96px; padding: 6px var(--space-3); }
+  .ev-diary-grid__row { height: 52px; }
+  .ev-diary-grid__name { font-size: var(--text-sm); }
+  .ev-diary-grid__job { font-size: var(--text-small); }
+  .ev-diary-grid__select { width: 36px; height: 36px; }
+  .ev-diary-cell { padding: 6px; }
+  .input.ev-diary-cell__input { height: 40px; padding: 0 10px; border-radius: var(--radius-6); font-size: 15px; }
+  .ev-diary-remain { padding: 6px var(--space-2); border-radius: var(--radius-6); font-size: var(--text-sm); }
+  .btn.ev-diary-btn { height: 40px; padding: 0 14px; border-radius: var(--radius-8); font-size: var(--text-body); }
+  .ev-diary-rule,
+  .ev-diary-check__link { min-height: 36px; }
+}
