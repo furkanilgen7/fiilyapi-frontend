@@ -1,0 +1,482 @@
+/*
+ * PLN-F1.6 · Adam-Saat Bütçesi — Adım 1 ağaç tablosu hücreleri, rozet/seçiciler,
+ * popover'lar, alt toplam şeridi ve boş/iskelet hâlleri.
+ * AS = Planlama - Adam-Saat Bütçesi.dc.html · EK = … (Ek Formlar).dc.html
+ * Ekrana özgü PLN-F1 token'ları (--color-ev-*, --shadow-menu/-popover) `budget.css` başlığında.
+ */
+
+/* ---- Ağaç tablo hücreleri · AS 205-266 ----------------------------------- */
+
+.ev-budget-table-scroll {
+  overflow-x: auto;
+  margin-top: 10px;
+}
+.ev-budget-table {
+  min-width: 1180px; /* AS 206 */
+}
+.ev-budget-col-code {
+  width: 128px;
+  font-size: 11.5px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+.ev-budget-col-unit {
+  width: 56px;
+  color: var(--color-text-muted);
+}
+.ev-budget-col-qty {
+  width: 128px;
+}
+.ev-budget-col-rate {
+  width: 132px;
+  position: relative;
+}
+.ev-budget-col-source {
+  width: 118px;
+}
+.ev-budget-col-own {
+  width: 82px;
+}
+.ev-budget-col-dir {
+  width: 86px;
+}
+.ev-budget-col-budget {
+  width: 104px;
+}
+.ev-budget-col-share {
+  width: 64px;
+  color: var(--color-text-muted);
+  padding-right: 14px;
+}
+.ev-budget-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ev-budget-name--leaf {
+  color: var(--color-text-secondary);
+}
+.ev-budget-tag {
+  margin-left: 6px;
+  font-size: 10px;
+  font-weight: var(--weight-medium);
+  color: var(--color-text-subtle);
+  white-space: nowrap;
+}
+.ev-budget-tag--override {
+  color: var(--color-warning-body-text);
+}
+.ev-budget-src {
+  display: inline-block;
+  font-size: var(--text-small);
+  font-weight: var(--weight-semibold);
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+}
+.ev-budget-src--catalog {
+  background: var(--color-nav-active-bg);
+  color: var(--color-primary);
+}
+.ev-budget-src--history {
+  background: var(--color-success-soft);
+  color: var(--color-success-deep);
+}
+.ev-budget-src--manual {
+  background: var(--color-surface-muted);
+  color: var(--color-text-secondary);
+}
+.ev-budget-src--danger {
+  background: var(--color-danger-soft);
+  color: var(--color-danger-strong);
+}
+.ev-budget-qty,
+.ev-budget-rate {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.ev-budget-boq {
+  font-family: var(--font-sans);
+  font-size: 9px;
+  font-weight: var(--weight-bold);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border-strong);
+  border-radius: 2px;
+  padding: 0 3px;
+  letter-spacing: 0.3px;
+}
+.ev-budget-old {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--color-text-subtle);
+  text-decoration: line-through;
+}
+/* AS 629-630: değişen hücre sarı zemin */
+.ev-budget-changed {
+  display: inline-flex;
+  padding: 2px var(--space-1);
+  border-radius: var(--radius-sm);
+  background: var(--color-warning-soft);
+}
+.ev-budget-rate__input {
+  width: 84px;
+  height: 28px;
+  text-align: right;
+  font-family: var(--font-mono);
+}
+.ev-budget-rate__text {
+  font-family: var(--font-mono);
+}
+/* AS 632: oranı boş satır zemini · EK 24 `.r-err` aynı zemin + halka */
+.ev-budget-row--empty {
+  background: var(--color-ev-row-empty-rate-bg);
+}
+.ev-budget-row--error {
+  background: var(--color-ev-row-empty-rate-bg);
+  box-shadow: inset 0 0 0 1.5px var(--color-danger);
+}
+.ev-budget-row--raised {
+  position: relative;
+  z-index: 20;
+}
+
+/* Rozetler / seçiciler · AS 594-595 · EK 43-46 */
+.ev-budget-anchor {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.ev-budget-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: var(--text-small);
+  font-weight: var(--weight-semibold);
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: none;
+}
+.ev-budget-chip--button {
+  padding: 2px 4px 2px 6px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.ev-budget-chip--button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.ev-budget-chip--own {
+  background: var(--color-nav-active-bg);
+  color: var(--color-primary);
+}
+.ev-budget-chip--subcon {
+  background: var(--color-surface-muted);
+  color: var(--color-text-secondary);
+}
+.ev-budget-chip--direct {
+  background: var(--color-surface-2);
+  color: var(--color-text-secondary);
+}
+.ev-budget-chip--indirect {
+  background: var(--color-warning-soft);
+  color: var(--color-warning-body-text);
+}
+.ev-budget-chip--inherited {
+  opacity: 0.55; /* AS 633 miras */
+}
+.ev-budget-leaf-assign {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.ev-budget-override-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-warning);
+}
+.ev-budget-swatch {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  display: inline-block;
+  border-radius: 2px;
+}
+.ev-budget-disc-btn {
+  height: 26px;
+  padding: 0 var(--space-2) 0 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-6);
+  background: var(--color-surface);
+  cursor: pointer;
+  font-family: inherit;
+}
+.ev-budget-disc-btn--empty {
+  border: 1.5px solid var(--color-danger);
+  background: var(--color-danger-row-bg);
+}
+.ev-budget-disc-btn__caption {
+  font-size: 10px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+.ev-budget-disc-btn__value {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+}
+.ev-budget-disc-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-xs);
+}
+.ev-budget-disc-menu {
+  width: 240px;
+}
+.ev-budget-assign-menu {
+  width: 220px;
+}
+.ev-budget-disc-option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 7px 10px;
+  border: none;
+  border-radius: var(--radius-6);
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+}
+.ev-budget-disc-option:hover {
+  background: var(--color-nav-active-bg);
+}
+.ev-budget-disc-option__name {
+  flex: 1;
+  font-weight: var(--weight-medium);
+}
+.ev-budget-disc-option__default {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+
+/* Popover · AS 245-255 · EK 60 */
+.ev-budget-pop {
+  width: 292px;
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-popover); /* AS 245 */
+  font-weight: var(--weight-regular);
+  text-align: left;
+  z-index: 40;
+}
+.ev-budget-suggest {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: var(--space-1);
+}
+.ev-budget-pop__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ev-budget-pop__title {
+  flex: 1;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+}
+.ev-budget-pop__close {
+  display: inline-flex;
+  border: none;
+  background: none;
+  color: var(--color-text-subtle);
+  cursor: pointer;
+}
+.ev-budget-pop__grid {
+  margin: 0;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-1) 10px;
+  font-size: var(--text-xs);
+}
+.ev-budget-pop__grid dt {
+  color: var(--color-text-muted);
+}
+.ev-budget-pop__grid dd {
+  margin: 0;
+  text-align: right;
+}
+.ev-budget-pop__strong {
+  font-weight: var(--weight-semibold);
+}
+.ev-budget-pop__overridden {
+  font-weight: var(--weight-semibold);
+  color: var(--color-warning-body-text);
+}
+.ev-budget-pop__actions {
+  display: flex;
+  gap: 6px;
+}
+.ev-budget-pop__grow {
+  flex: 1;
+}
+
+/* ---- Alt toplam şeridi · AS 272-277 -------------------------------------- */
+
+.ev-budget-footer {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  flex-wrap: wrap;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+.ev-budget-footer__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.ev-budget-footer__caption,
+.ev-budget-caption {
+  font-size: var(--text-small);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-subtle);
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+.ev-budget-footer__total {
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-weight: var(--weight-bold);
+}
+.ev-budget-footer__unit {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-subtle);
+}
+.ev-budget-footer__value {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-secondary);
+}
+.ev-budget-footer__next {
+  margin-left: auto;
+}
+.ev-budget-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 6px 10px;
+  border-radius: var(--radius-6);
+  border: 1px solid transparent;
+  font-weight: var(--weight-semibold);
+}
+.ev-budget-pill__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.ev-budget-pill--danger {
+  background: var(--color-danger-row-bg);
+  border-color: var(--color-danger-tint-border);
+  color: var(--color-danger-strong);
+}
+.ev-budget-pill--ok {
+  background: var(--color-success-tint);
+  border-color: var(--color-success-tint-border);
+  color: var(--color-success-deep);
+}
+
+/* ---- Hâller · AS 473-505 -------------------------------------------------- */
+
+.ev-budget-skeleton {
+  padding: var(--space-4);
+}
+.ev-budget-empty {
+  padding: 14px;
+}
+.ev-budget-empty__box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 20px 14px;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+  text-align: center;
+}
+.ev-budget-empty__icon {
+  width: 20px;
+  height: 24px;
+  border: 1.3px dashed var(--color-text-subtle);
+  border-radius: 3px;
+}
+.ev-budget-empty__title {
+  margin: 0;
+  font-weight: var(--weight-semibold);
+}
+.ev-budget-empty__link {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+/* ---- M4 alt satırı · EK 643-647 = Şantiye - Günlük Kayıt (İlerleme):241-244 ---- */
+.ev-budget-after {
+  margin: 6px 10px var(--space-2);
+  padding: var(--space-2) 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--color-danger-tint-border);
+  background: var(--color-danger-row-bg);
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+  color: var(--color-error-card-title);
+}
+.ev-budget-after__title {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-weight: var(--weight-semibold);
+}
+.ev-budget-after__text {
+  color: var(--color-danger-deep);
+}
+.ev-budget-after__link {
+  margin-left: auto;
+  font-weight: var(--weight-semibold);
+  color: var(--color-error-card-title);
+  text-decoration: none;
+}
+
+/* M1 — "Disiplinsiz (eşlemeyi kaldır)" seçeneği listenin başında, ayrıcılı */
+.ev-budget-disc-option--unmap {
+  border-bottom: 1px solid var(--color-divider);
+  border-radius: 0;
+  color: var(--color-text-muted);
+}

@@ -1261,6 +1261,123 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/earned-value/catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Catalog Endpoint
+         * @description Birim oran katalogu (KAT). `q` is tipi adinda harf duyarsiz arar.
+         *
+         *     `actual` (gerceklesen) ve `diff_pct` K4 kuralindadir; saha verisi PLN-B2'de
+         *     dogdugu icin B1'de her satirda bostur (`catalog_service.catalog_actuals`).
+         */
+        get: operations["list_catalog_endpoint_earned_value_catalog_get"];
+        put?: never;
+        /**
+         * Create Catalog Item Endpoint
+         * @description Katalog is tipi ekler. (disiplin, ad, birim) benzersiz → 409 `CATALOG_ITEM_TAKEN`.
+         */
+        post: operations["create_catalog_item_endpoint_earned_value_catalog_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/earned-value/catalog/{item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Catalog Item Endpoint
+         * @description Kismi guncelleme. Standart oran DEGISIRSE `standard_updated_at` yenilenir.
+         */
+        patch: operations["update_catalog_item_endpoint_earned_value_catalog__item_id__patch"];
+        trace?: never;
+    };
+    "/earned-value/catalog/{item_id}/adopt-actual": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Adopt Actual Endpoint
+         * @description KAT "Gerceklesen standart yap": gerceklesen ortalama yoksa 409 `CATALOG_NO_ACTUAL`.
+         *
+         *     ⚠️ B1'de gerceklesen hic yoktur → bu uc PLN-B3'e kadar HER ZAMAN 409 doner.
+         */
+        post: operations["adopt_actual_endpoint_earned_value_catalog__item_id__adopt_actual_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/earned-value/disciplines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Disciplines Endpoint
+         * @description Sirket disiplinleri (K2) — `sort_order`, sonra `code` sirasiyla.
+         */
+        get: operations["list_disciplines_endpoint_earned_value_disciplines_get"];
+        put?: never;
+        /**
+         * Create Discipline Endpoint
+         * @description Disiplin ekler. Kod benzersizdir → 409 `DISCIPLINE_CODE_TAKEN`.
+         */
+        post: operations["create_discipline_endpoint_earned_value_disciplines_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/earned-value/disciplines/{discipline_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Discipline Endpoint
+         * @description Disiplini siler — yalniz HICBIR EV kaydinda kullanilmiyorsa (B1-9), yoksa 409.
+         */
+        delete: operations["delete_discipline_endpoint_earned_value_disciplines__discipline_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Discipline Endpoint
+         * @description Kismi guncelleme; gecmeyen alan dokunulmaz, acik `null` 422 (alan adli).
+         */
+        patch: operations["update_discipline_endpoint_earned_value_disciplines__discipline_id__patch"];
+        trace?: never;
+    };
     "/employers": {
         parameters: {
             query?: never;
@@ -5676,6 +5793,419 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sites/{site_id}/earned-value/budget": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Budget
+         * @description Butce agaci (L1 disiplin · L2 BOQ grubu · L3 is tipi · L4 kalem × bolum) + ozet.
+         *
+         *     Varsayilan revizyon: taslak varsa taslak, yoksa aktif. Hic revizyon yoksa CANLI BOQ'tan
+         *     bos bir taslak gorunumu (`revision: null`, `editable: true`) — ilk yazma Rev 0'i acar.
+         *     Dondurma engelleri/uyarilari yalniz duzenlenebilir gorunumde doner (frontend istegi 1).
+         */
+        get: operations["get_budget_sites__site_id__earned_value_budget_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sites/{site_id}/earned-value/budget/distributions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Put Budget Distributions
+         * @description Disiplin basina dagilim tipi (B1-2) — KISMI upsert.
+         */
+        put: operations["put_budget_distributions_sites__site_id__earned_value_budget_distributions_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sites/{site_id}/earned-value/budget/fill-from-catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Fill Budget From Catalog
+         * @description "Katalogdan oner (bosları doldur)" (B1-4; frontend istegi 3).
+         */
+        post: operations["fill_budget_from_catalog_sites__site_id__earned_value_budget_fill_from_catalog_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sites/{site_id}/earned-value/budget/freeze": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Freeze Budget
+         * @description Baseline dondur (K8): engel varsa 422; taslak → aktif, onceki aktif → arsiv.
+         */
+        post: operations["freeze_budget_sites__site_id__earned_value_budget_freeze_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sites/{site_id}/earned-value/budget/group-disciplines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Put Group Disciplines
+         * @description BOQ grubu → disiplin eslemesi (K2) — KISMI: yalniz listelenen gruplar; null kaldirir.
+         */
+        put: operations["put_group_disciplines_sites__site_id__earned_value_budget_group_disciplines_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sites/{site_id}/earned-value/budget/items/{boq_item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Patch Budget Item
+         * @description Is tipi (L3) kendi/taseron + dogrudan/dolayli + katalog bagi (K3).
+         */
+        patch: operations["patch_budget_item_sites__site_id__earned_value_budget_items__boq_item_id__patch"];
+        trace?: never;
+    };
+    "/sites/{site_id}/earned-value/budget/items/{boq_item_id}/suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Budget Item Suggestions
+         * @description Oran onerisi popover'i: katalog adaylari (bagli · tam · kismi). Gecmis B3'te dolar.
+         */
+        get: operations["get_budget_item_suggestions_sites__site_id__earned_value_budget_items__boq_item_id__suggestions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sites/{site_id}/earned-value/budget/leaves": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Patch Budget Leaves
+         * @description Yaprak orani (+kaynak) ve ezmeleri — tekil ya da TOPLU ("secili satirlara toplu oran").
+         */
+        patch: operations["patch_budget_leaves_sites__site_id__earned_value_budget_leaves_patch"];
+        trace?: never;
+    };
+    "/sites/{site_id}/earned-value/budget/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview Budget
+         * @description KALICI OLMAYAN egri onizlemesi (frontend istegi 2): govdedeki dagilim/pencere ezmeleri
+         *     kaydedilmeden uygulanir. Donmus revizyon snapshot egrisinden gelir (K8).
+         */
+        post: operations["preview_budget_sites__site_id__earned_value_budget_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sites/{site_id}/earned-value/budget/revisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Budget Revisions */
+        get: operations["list_budget_revisions_sites__site_id__earned_value_budget_revisions_get"];
+        put?: never;
+        /**
+         * Open Budget Draft
+         * @description "Taslak revizyon ac": aktifin girdileri yeni taslaga kopyalanir. Taslak varken 409.
+         */
+        post: operations["open_budget_draft_sites__site_id__earned_value_budget_revisions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sites/{site_id}/earned-value/budget/revisions/{revision_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Budget Draft
+         * @description Yalniz TASLAK silinir (onay duzeyi); donmus revizyon 409.
+         */
+        delete: operations["delete_budget_draft_sites__site_id__earned_value_budget_revisions__revision_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sites/{site_id}/earned-value/budget/revisions/{revision_id}/diff": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Budget Revision Diff
+         * @description Onceki DONMUS revizyona gore yaprak farki (yeni / cikan / miktar / oran).
+         */
+        get: operations["get_budget_revision_diff_sites__site_id__earned_value_budget_revisions__revision_id__diff_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sites/{site_id}/earned-value/budget/schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Budget Schedule
+         * @description Adim 2 Gantt: bolumler, disiplin × bolum cubuklari, tatiller.
+         */
+        get: operations["get_budget_schedule_sites__site_id__earned_value_budget_schedule_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sites/{site_id}/earned-value/budget/windows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Put Budget Windows
+         * @description Disiplin × bolum pencere EZMELERI — TAM DEGISTIRME (B1-3).
+         */
+        put: operations["put_budget_windows_sites__site_id__earned_value_budget_windows_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sites/{site_id}/earned-value/code-tree": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Code Tree
+         * @description "+ Is kodu ekle" secicisi: AKTIF baseline agaci (oransiz yaprak `has_rate=false`).
+         */
+        get: operations["get_code_tree_sites__site_id__earned_value_code_tree_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sites/{site_id}/earned-value/days/{day}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Day
+         * @description Gunun dagitim baglami + kilit + ilerleme onizlemesi + Gonder kontrolu (§4.2).
+         */
+        get: operations["get_day_sites__site_id__earned_value_days__day__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sites/{site_id}/earned-value/days/{day}/allocation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Put Day Allocation
+         * @description Gunun saat dagitimi — TAM DEGISTIRME. Kilitli gun 409 · baseline yok 409.
+         */
+        put: operations["put_day_allocation_sites__site_id__earned_value_days__day__allocation_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sites/{site_id}/earned-value/days/{day}/previous-allocation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Previous Allocation
+         * @description B2-7 "Dunku dagilimi kopyala": son GONDERILMIS gunun deseni (satir basina pay).
+         */
+        get: operations["get_previous_allocation_sites__site_id__earned_value_days__day__previous_allocation_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sites/{site_id}/earned-value/days/{day}/unlock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Unlock Day
+         * @description Gun duzeyi kilit istisnasi (B2-6 b) — gerekceli; kilitli degilse 409.
+         */
+        post: operations["unlock_day_sites__site_id__earned_value_days__day__unlock_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sites/{site_id}/earned-value/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Settings Endpoint
+         * @description Santiyenin EV ayarlari. Satir yoksa sabit varsayilanlar, `is_default` = true (K1).
+         */
+        get: operations["get_settings_endpoint_sites__site_id__earned_value_settings_get"];
+        /**
+         * Save Settings Endpoint
+         * @description TAM DEGISTIRME: govde santiyenin ayar kumesinin TAMAMIDIR.
+         *
+         *     ⚠️ Govdede gecmeyen tatil ve pacal metrik SILINIR. Baslangic/bitis tarihi alan
+         *     DEGILDIR (K7); "her n. haftanin X gunu" kurali YOKTUR (S5). Yanit guncel GET govdesi.
+         */
+        put: operations["save_settings_endpoint_sites__site_id__earned_value_settings_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sites/{site_id}/plan": {
         parameters: {
             query?: never;
@@ -7407,6 +7937,32 @@ export interface components {
             kume: string;
         };
         /**
+         * AllocationSave
+         * @description TAM DEGISTIRME: govde gunun kod + hucre kumesinin TAMAMIDIR.
+         */
+        AllocationSave: {
+            /** Cells */
+            cells: components["schemas"]["CellIn"][];
+            /** Codes */
+            codes: components["schemas"]["CodeIn"][];
+            /** Unallocated Reason */
+            unallocated_reason?: string | null;
+        };
+        /** AmbiguousItemOut */
+        AmbiguousItemOut: {
+            /**
+             * Boq Item Id
+             * Format: uuid
+             */
+            boq_item_id: string;
+            /** Candidates */
+            candidates: components["schemas"]["CandidateOut"][];
+            /** Code */
+            code: string;
+            /** Description */
+            description: string;
+        };
+        /**
          * ApprovalDocumentType
          * @description Zincire giren evrak aileleri (K4 — bu dilim YALNIZ bu ucudur).
          *
@@ -7869,6 +8425,30 @@ export interface components {
             is_active?: boolean | null;
             /** Opening Balance */
             opening_balance?: number | string | null;
+        };
+        /** BarOut */
+        BarOut: {
+            /** Budget Mhr */
+            budget_mhr: string;
+            /**
+             * Discipline Id
+             * Format: uuid
+             */
+            discipline_id: string;
+            /** Discipline Node Id */
+            discipline_node_id: string;
+            /** End Date */
+            end_date: string | null;
+            /** Outside Section Dates */
+            outside_section_dates: boolean;
+            /** Section Id */
+            section_id: string | null;
+            /** Section Name */
+            section_name: string | null;
+            /** Source */
+            source: ("override" | "section" | "union" | "snapshot") | null;
+            /** Start Date */
+            start_date: string | null;
         };
         /** BlockCreate */
         BlockCreate: {
@@ -8341,6 +8921,58 @@ export interface components {
             remaining_total: components["schemas"]["MetricPlaceholder"];
             revision_total: components["schemas"]["MetricPlaceholder"];
         };
+        /** BudgetTotals */
+        BudgetTotals: {
+            /** Direct Budget Mhr */
+            direct_budget_mhr: string;
+            /** Empty Rate Leaf Count */
+            empty_rate_leaf_count: number;
+            /** Indirect Budget Mhr */
+            indirect_budget_mhr: string;
+            /** Item Count */
+            item_count: number;
+            /** Leaf Count */
+            leaf_count: number;
+        };
+        /** BudgetView */
+        BudgetView: {
+            /** Boq Synced At */
+            boq_synced_at: string | null;
+            /** Disciplines */
+            disciplines: components["schemas"]["DisciplineOut"][];
+            /** Editable */
+            editable: boolean;
+            /** Freeze Blockers */
+            freeze_blockers: components["schemas"]["FindingOut"][];
+            /** Freeze Warnings */
+            freeze_warnings: components["schemas"]["FindingOut"][];
+            revision: components["schemas"]["RevisionOut"] | null;
+            totals: components["schemas"]["BudgetTotals"];
+        };
+        /** CandidateOut */
+        CandidateOut: {
+            /**
+             * Catalog Item Id
+             * Format: uuid
+             */
+            catalog_item_id: string;
+            /**
+             * Discipline Id
+             * Format: uuid
+             */
+            discipline_id: string;
+            /**
+             * Match
+             * @enum {string}
+             */
+            match: "linked" | "exact" | "partial";
+            /** Name */
+            name: string;
+            /** Standard Unit Mhr */
+            standard_unit_mhr: string;
+            /** Uom */
+            uom: string;
+        };
         /**
          * CashFlowBucket
          * @description E9:92-101 serisinin TEK GÜNÜ. İki yön AYRI alandır, net DEĞİL.
@@ -8469,6 +9101,131 @@ export interface components {
             subtotal_label: string;
             /** Title */
             title: string;
+        };
+        /**
+         * CatalogActual
+         * @description K4: yalniz tamamlanmis santiyeler, miktar agirlikli ortalama = Σspent / Σqty.
+         */
+        CatalogActual: {
+            /** Avg */
+            avg: string | null;
+            /** Max */
+            max: string | null;
+            /** Min */
+            min: string | null;
+            /** Site Count */
+            site_count: number;
+            /** Sites */
+            sites: components["schemas"]["CatalogActualSite"][];
+        };
+        /**
+         * CatalogActualSite
+         * @description Gercekleseni besleyen TAMAMLANMIS santiye (KAT acilir satir tablosu).
+         *
+         *     B1'de hic uretilmez (`catalog_service.catalog_actuals` bos doner); sekil B3'te
+         *     saha verisiyle dolacak alanlari simdiden sabitler ki openapi devri tek sefer olsun.
+         */
+        CatalogActualSite: {
+            /** End Date */
+            end_date: string | null;
+            /** Qty */
+            qty: string;
+            /** Rate */
+            rate: string;
+            /**
+             * Site Id
+             * Format: uuid
+             */
+            site_id: string;
+            /** Site Name */
+            site_name: string;
+        };
+        /** CatalogItemCreate */
+        CatalogItemCreate: {
+            default_contractor_type: components["schemas"]["ContractorType"];
+            /** Description */
+            description?: string | null;
+            /**
+             * Discipline Id
+             * Format: uuid
+             */
+            discipline_id: string;
+            /** Name */
+            name: string;
+            /** Standard Unit Mhr */
+            standard_unit_mhr: number | string;
+            /** Uom */
+            uom: string;
+        };
+        /** CatalogItemRead */
+        CatalogItemRead: {
+            actual: components["schemas"]["CatalogActual"];
+            default_contractor_type: components["schemas"]["ContractorType"];
+            /** Description */
+            description: string | null;
+            /** Diff Pct */
+            diff_pct: string | null;
+            discipline: components["schemas"]["DisciplineRef"];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Standard Unit Mhr */
+            standard_unit_mhr: string;
+            /**
+             * Standard Updated At
+             * Format: date-time
+             */
+            standard_updated_at: string;
+            /** Uom */
+            uom: string;
+            /** Used By Site Count */
+            used_by_site_count: number;
+        };
+        /**
+         * CatalogItemUpdate
+         * @description Kismi guncelleme. `description` nullable (`null` = temizle); digerleri 422.
+         */
+        CatalogItemUpdate: {
+            default_contractor_type?: components["schemas"]["ContractorType"] | null;
+            /** Description */
+            description?: string | null;
+            /** Discipline Id */
+            discipline_id?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Standard Unit Mhr */
+            standard_unit_mhr?: number | string | null;
+            /** Uom */
+            uom?: string | null;
+        };
+        /** CellIn */
+        CellIn: {
+            /** Hours */
+            hours: number | string;
+            /** Node Id */
+            node_id: string;
+            row: components["schemas"]["RowRef"];
+        };
+        /** CellOut */
+        CellOut: {
+            /** Hours */
+            hours: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "personnel" | "subcontractor";
+            /** Node Id */
+            node_id: string;
+            /**
+             * Ref Id
+             * Format: uuid
+             */
+            ref_id: string;
         };
         /**
          * ChartAccountCreate
@@ -8622,6 +9379,49 @@ export interface components {
             /** Name */
             name?: string | null;
         };
+        /** CodeIn */
+        CodeIn: {
+            /** Node Id */
+            node_id: string;
+            /**
+             * Rule
+             * @enum {string}
+             */
+            rule: "direct" | "prorata_by_daily_qty";
+        };
+        /** CodeNodeOut */
+        CodeNodeOut: {
+            /** Code */
+            code: string | null;
+            /** Has Rate */
+            has_rate: boolean | null;
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            /** Level */
+            level: number;
+            /** Parent Id */
+            parent_id: string | null;
+            /** Unit Mhr */
+            unit_mhr: string | null;
+            /** Uom */
+            uom: string | null;
+        };
+        /** CodeOut */
+        CodeOut: {
+            /** Label */
+            label: string | null;
+            /** Level */
+            level: number | null;
+            /** Node Id */
+            node_id: string;
+            /**
+             * Rule
+             * @enum {string}
+             */
+            rule: "direct" | "prorata_by_daily_qty";
+        };
         /**
          * CollectionKpi
          * @description S58 "Tahsil Edilen" · ₺24,8M · "%79 tahsilat".
@@ -8715,6 +9515,47 @@ export interface components {
             trade_registry_no?: string | null;
             /** Website */
             website?: string | null;
+        };
+        /**
+         * CompositeMeasure
+         * @description Pacal metrigin TEK olcusu (K25).
+         * @enum {string}
+         */
+        CompositeMeasure: "spent" | "earned" | "budget";
+        /**
+         * CompositeMetricInput
+         * @description Pacal metrik (K25): pay = is tipleri (BOQ kalemi) toplami, TEK olcu; payda = bir
+         *     is tipinin miktari. Kalemler bu santiyenin BOQ'unda olmalidir (servis).
+         */
+        CompositeMetricInput: {
+            /**
+             * Denominator Item Id
+             * Format: uuid
+             */
+            denominator_item_id: string;
+            measure: components["schemas"]["CompositeMeasure"];
+            /** Name */
+            name: string;
+            /** Numerator Item Ids */
+            numerator_item_ids: string[];
+        };
+        /** CompositeMetricRead */
+        CompositeMetricRead: {
+            /**
+             * Denominator Item Id
+             * Format: uuid
+             */
+            denominator_item_id: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            measure: components["schemas"]["CompositeMeasure"];
+            /** Name */
+            name: string;
+            /** Numerator Item Ids */
+            numerator_item_ids: string[];
         };
         /**
          * ConsumptionStatus
@@ -8946,6 +9787,11 @@ export interface components {
             worker_count: components["schemas"]["CountPlaceholder"];
         };
         /**
+         * ContractorType
+         * @enum {string}
+         */
+        ContractorType: "own" | "subcon";
+        /**
          * CountPlaceholder
          * @description Sayac alaninin zarfi ("48 isci", "3 hissedar" gibi).
          *
@@ -9036,6 +9882,32 @@ export interface components {
             /** Tax Number */
             tax_number?: string | null;
         };
+        /**
+         * DailyPfBands
+         * @description Gunluk PF: < `red_below` kirmizi · [`green_from`; `high_above`] yesil ·
+         *     > `high_above` "supheli yuksek" (S6, K19). Sira: red ≤ green ≤ high.
+         */
+        "DailyPfBands-Input": {
+            /** Green From */
+            green_from: number | string;
+            /** High Above */
+            high_above: number | string;
+            /** Red Below */
+            red_below: number | string;
+        };
+        /**
+         * DailyPfBands
+         * @description Gunluk PF: < `red_below` kirmizi · [`green_from`; `high_above`] yesil ·
+         *     > `high_above` "supheli yuksek" (S6, K19). Sira: red ≤ green ≤ high.
+         */
+        "DailyPfBands-Output": {
+            /** Green From */
+            green_from: string;
+            /** High Above */
+            high_above: string;
+            /** Red Below */
+            red_below: string;
+        };
         /** DashboardProjectCard */
         DashboardProjectCard: {
             /** Budget */
@@ -9067,6 +9939,50 @@ export interface components {
             /** Role Name */
             role_name: string;
         };
+        /** DayOut */
+        DayOut: {
+            /** Cumulative Mhr */
+            cumulative_mhr: string;
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            /** Mhr */
+            mhr: string;
+            /** Planned Pct Cum */
+            planned_pct_cum: string | null;
+        };
+        /** DayView */
+        DayView: {
+            /** Cells */
+            cells: components["schemas"]["CellOut"][];
+            /** Codes */
+            codes: components["schemas"]["CodeOut"][];
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            /** Day No */
+            day_no: number | null;
+            /** Has Baseline */
+            has_baseline: boolean;
+            lock: components["schemas"]["LockOut"];
+            progress: components["schemas"]["ProgressOut"] | null;
+            /** Revision Number */
+            revision_number: number | null;
+            /** Rows */
+            rows: components["schemas"]["RowOut"][];
+            submit: components["schemas"]["SubmitCheckOut"] | null;
+            totals: components["schemas"]["TotalsOut"];
+            /** Unallocated Reason */
+            unallocated_reason: string | null;
+            /** Warnings */
+            warnings: string[];
+            /** Week No */
+            week_no: number | null;
+        };
         /**
          * DeedCondition
          * @description F156 "Tapu Devir Kosulu": Tum odeme tamamlaninca · Pesinat sonrasi · Sozlesme imzasinda.
@@ -9083,6 +9999,146 @@ export interface components {
          * @enum {string}
          */
         DiaryStatus: "draft" | "submitted";
+        /** DisciplineCreate */
+        DisciplineCreate: {
+            /** Code */
+            code: string;
+            /** Color */
+            color: string;
+            default_contractor_type: components["schemas"]["ContractorType"];
+            /** Name */
+            name: string;
+            /**
+             * Sort Order
+             * @default 0
+             */
+            sort_order: number;
+        };
+        /** DisciplineOut */
+        DisciplineOut: {
+            /** Budget Mhr */
+            budget_mhr: string;
+            /** Code */
+            code: string | null;
+            /** Color */
+            color: string | null;
+            default_contractor_type: components["schemas"]["ContractorType"];
+            /** Direct Budget Mhr */
+            direct_budget_mhr: string;
+            /** Discipline Id */
+            discipline_id: string | null;
+            /**
+             * Distribution
+             * @enum {string}
+             */
+            distribution: "linear" | "bell" | "front" | "back";
+            /** Groups */
+            groups: components["schemas"]["GroupOut"][];
+            /** Id */
+            id: string;
+            /** Name */
+            name: string | null;
+            /** Share */
+            share: string | null;
+        };
+        /** DisciplinePreviewOut */
+        DisciplinePreviewOut: {
+            /** Code */
+            code: string | null;
+            /** Color */
+            color: string | null;
+            /** Discipline Id */
+            discipline_id: string | null;
+            /** Discipline Node Id */
+            discipline_node_id: string;
+            /**
+             * Distribution
+             * @enum {string}
+             */
+            distribution: "linear" | "bell" | "front" | "back";
+            /** Name */
+            name: string | null;
+            series: components["schemas"]["SeriesOut"];
+            /** Share */
+            share: string | null;
+        };
+        /** DisciplineRead */
+        DisciplineRead: {
+            /** Code */
+            code: string;
+            /** Color */
+            color: string;
+            default_contractor_type: components["schemas"]["ContractorType"];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Sort Order */
+            sort_order: number;
+            /**
+             * Used By Item Count
+             * @default 0
+             */
+            used_by_item_count: number;
+            /**
+             * Used By Site Count
+             * @default 0
+             */
+            used_by_site_count: number;
+        };
+        /**
+         * DisciplineRef
+         * @description Katalog satirina gomulu disiplin ozeti (rozet + renk).
+         */
+        DisciplineRef: {
+            /** Code */
+            code: string;
+            /** Color */
+            color: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /**
+         * DisciplineUpdate
+         * @description Kismi guncelleme. Butun kolonlar NOT NULL → acik `null` her alanda 422.
+         */
+        DisciplineUpdate: {
+            /** Code */
+            code?: string | null;
+            /** Color */
+            color?: string | null;
+            default_contractor_type?: components["schemas"]["ContractorType"] | null;
+            /** Name */
+            name?: string | null;
+            /** Sort Order */
+            sort_order?: number | null;
+        };
+        /** DistributionPair */
+        DistributionPair: {
+            /**
+             * Discipline Id
+             * Format: uuid
+             */
+            discipline_id: string;
+            /**
+             * Distribution
+             * @enum {string}
+             */
+            distribution: "linear" | "bell" | "front" | "back";
+        };
+        /** DistributionsBody */
+        DistributionsBody: {
+            /** Items */
+            items: components["schemas"]["DistributionPair"][];
+        };
         /**
          * DocumentFolderCreate
          * @description `POST /projects/{id}/document-folders` gövdesi.
@@ -10235,6 +11291,19 @@ export interface components {
             /** Unit Label */
             unit_label: string;
         };
+        /** FillOut */
+        FillOut: {
+            /** Ambiguous */
+            ambiguous: components["schemas"]["AmbiguousItemOut"][];
+            /** Ambiguous Count */
+            ambiguous_count: number;
+            /** Filled Item Count */
+            filled_item_count: number;
+            /** Filled Leaf Count */
+            filled_leaf_count: number;
+            /** Unmatched Count */
+            unmatched_count: number;
+        };
         /**
          * FinancialInstrumentCreate
          * @description `POST /financial-instruments` — E10 tablosunun yazma yolu.
@@ -10468,6 +11537,22 @@ export interface components {
             /** Serial No */
             serial_no?: string | null;
         };
+        /** FindingOut */
+        FindingOut: {
+            /** Code */
+            code: string;
+            /** Count */
+            count: number;
+            /** Node Ids */
+            node_ids: string[];
+        };
+        /** FreezeBody */
+        FreezeBody: {
+            /** Description */
+            description?: string | null;
+            /** Name */
+            name?: string | null;
+        };
         /**
          * FuelLogCreate
          * @description `POST /equipment/fuel-logs` — M4 kaydı.
@@ -10637,10 +11722,88 @@ export interface components {
          * @enum {string}
          */
         Gender: "male" | "female";
+        /** GroupDisciplinePair */
+        GroupDisciplinePair: {
+            /**
+             * Boq Group Id
+             * Format: uuid
+             */
+            boq_group_id: string;
+            /** Discipline Id */
+            discipline_id: string | null;
+        };
+        /** GroupDisciplinesBody */
+        GroupDisciplinesBody: {
+            /** Items */
+            items: components["schemas"]["GroupDisciplinePair"][];
+        };
+        /** GroupOut */
+        GroupOut: {
+            /** Budget Mhr */
+            budget_mhr: string;
+            /** Direct Budget Mhr */
+            direct_budget_mhr: string;
+            /** Discipline Id */
+            discipline_id: string | null;
+            /**
+             * Group Id
+             * Format: uuid
+             */
+            group_id: string;
+            /** Id */
+            id: string;
+            /** Items */
+            items: components["schemas"]["ItemOut"][];
+            /** Name */
+            name: string;
+            /** Share */
+            share: string | null;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /**
+         * HolidayInput
+         * @description Elle tatil; tek gun icin `date_to` = `date_from`.
+         */
+        HolidayInput: {
+            /**
+             * Date From
+             * Format: date
+             */
+            date_from: string;
+            /**
+             * Date To
+             * Format: date
+             */
+            date_to: string;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
+        /** HolidayRead */
+        HolidayRead: {
+            /**
+             * Date From
+             * Format: date
+             */
+            date_from: string;
+            /**
+             * Date To
+             * Format: date
+             */
+            date_to: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Note */
+            note: string;
         };
         /**
          * HrDocumentTypeBreakdown
@@ -11474,6 +12637,56 @@ export interface components {
             /** Withholding Rate */
             withholding_rate?: number | string | null;
         };
+        /** ItemOut */
+        ItemOut: {
+            /** Budget Mhr */
+            budget_mhr: string;
+            /** Catalog Item Id */
+            catalog_item_id: string | null;
+            /** Code */
+            code: string;
+            /**
+             * Contractor Source
+             * @enum {string}
+             */
+            contractor_source: "inherited" | "item";
+            contractor_type: components["schemas"]["ContractorType"];
+            /** Description */
+            description: string;
+            /** Direct Budget Mhr */
+            direct_budget_mhr: string;
+            /** Empty Rate Count */
+            empty_rate_count: number;
+            /** Id */
+            id: string;
+            /** Is Direct */
+            is_direct: boolean;
+            /**
+             * Item Id
+             * Format: uuid
+             */
+            item_id: string;
+            /** Leaves */
+            leaves: components["schemas"]["LeafOut"][];
+            /** Planned Qty */
+            planned_qty: string;
+            /** Share */
+            share: string | null;
+            /** Uom */
+            uom: string;
+        };
+        /**
+         * ItemPatch
+         * @description `contractor_type=null` BILINCLI: "disiplin varsayilanina don" (miras). `is_direct` null
+         *     olamaz.
+         */
+        ItemPatch: {
+            /** Catalog Item Id */
+            catalog_item_id?: string | null;
+            contractor_type?: components["schemas"]["ContractorType"] | null;
+            /** Is Direct */
+            is_direct?: boolean | null;
+        };
         /**
          * JournalEntryCreate
          * @description `POST /journal-entries` (E8:67 `+ Yevmiye Kaydı`).
@@ -12034,6 +13247,115 @@ export interface components {
             /** Tolerance Pct */
             tolerance_pct: string;
         };
+        /** LeafDiffOut */
+        LeafDiffOut: {
+            /** Budget Mhr */
+            budget_mhr: string;
+            /** Delta Mhr */
+            delta_mhr: string;
+            /** Item Code */
+            item_code: string;
+            /** Item Description */
+            item_description: string;
+            /** Leaf Id */
+            leaf_id: string;
+            /** Prev Budget Mhr */
+            prev_budget_mhr: string;
+            /** Prev Qty */
+            prev_qty: string | null;
+            /** Prev Unit Mhr */
+            prev_unit_mhr: string | null;
+            /** Qty */
+            qty: string | null;
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "new" | "removed" | "qty_changed" | "rate_changed" | "qty_and_rate_changed";
+            /** Section Name */
+            section_name: string | null;
+            /** Unit Mhr */
+            unit_mhr: string | null;
+            /** Uom */
+            uom: string;
+        };
+        /** LeafOut */
+        LeafOut: {
+            /** Budget Mhr */
+            budget_mhr: string;
+            /**
+             * Contractor Source
+             * @enum {string}
+             */
+            contractor_source: "inherited" | "override";
+            contractor_type: components["schemas"]["ContractorType"];
+            /** Id */
+            id: string;
+            /** Is Direct */
+            is_direct: boolean;
+            /**
+             * Is Direct Source
+             * @enum {string}
+             */
+            is_direct_source: "inherited" | "override";
+            /**
+             * Item Id
+             * Format: uuid
+             */
+            item_id: string;
+            /** Outside Section Dates */
+            outside_section_dates: boolean;
+            /** Planned Qty */
+            planned_qty: string;
+            rate_source: components["schemas"]["RateSource"] | null;
+            /** Section Id */
+            section_id: string | null;
+            /** Section Name */
+            section_name: string | null;
+            /** Share */
+            share: string | null;
+            /** Unit Mhr */
+            unit_mhr: string | null;
+            /** Window End */
+            window_end: string | null;
+            /** Window Source */
+            window_source: ("override" | "section" | "union" | "snapshot") | null;
+            /** Window Start */
+            window_start: string | null;
+        };
+        /**
+         * LeafPatch
+         * @description Govdede GELEN alanlar yazilir. `unit_mhr=null` orani (ve kaynagini) siler;
+         *     `contractor_type`/`is_direct` null → ezmeyi kaldir (is tipinden miras).
+         */
+        LeafPatch: {
+            /**
+             * Boq Item Id
+             * Format: uuid
+             */
+            boq_item_id: string;
+            contractor_type?: components["schemas"]["ContractorType"] | null;
+            /** Is Direct */
+            is_direct?: boolean | null;
+            rate_source?: components["schemas"]["RateSource"] | null;
+            /** Section Id */
+            section_id?: string | null;
+            /** Unit Mhr */
+            unit_mhr?: number | string | null;
+        };
+        /** LeafProgressOut */
+        LeafProgressOut: {
+            /** Earned Day */
+            earned_day: string;
+            /** Node Id */
+            node_id: string;
+            /** Pf Day */
+            pf_day: string | null;
+            /** Qty Day */
+            qty_day: string | null;
+            /** Spent Day */
+            spent_day: string;
+        };
         /**
          * LeaveApproveRequest
          * @description Onay gövdesi — **ALAN YOKTUR** (spec §5 K4: onay TEK adım, veri taşımaz).
@@ -12289,6 +13611,11 @@ export interface components {
             /** Sort Order */
             sort_order: number;
         };
+        /** LeavesPatch */
+        LeavesPatch: {
+            /** Leaves */
+            leaves: components["schemas"]["LeafPatch"][];
+        };
         /**
          * LedgerResponse
          * @description K7 zarfı + 🔴 **`carried_balance`** (pencere ÖNCESİ toplam).
@@ -12364,6 +13691,17 @@ export interface components {
             items?: string[];
             /** Pending Module */
             pending_module: string;
+        };
+        /** LockOut */
+        LockOut: {
+            /** Approved At */
+            approved_at: string | null;
+            approved_by: components["schemas"]["UserRef"] | null;
+            /** Locked */
+            locked: boolean;
+            /** Report Date */
+            report_date: string | null;
+            unlock: components["schemas"]["UnlockOut"] | null;
         };
         /** LoginRequest */
         LoginRequest: {
@@ -13652,6 +14990,16 @@ export interface components {
             wage_amount?: number | string | null;
             wage_type?: components["schemas"]["WageType"] | null;
         };
+        /** PfBands */
+        "PfBands-Input": {
+            daily: components["schemas"]["DailyPfBands-Input"];
+            weekly: components["schemas"]["WeeklyPfBands-Input"];
+        };
+        /** PfBands */
+        "PfBands-Output": {
+            daily: components["schemas"]["DailyPfBands-Output"];
+            weekly: components["schemas"]["WeeklyPfBands-Output"];
+        };
         /**
          * PlanCellTag
          * @description Hucrenin renk kodu (planlama spec §2, P127-179).
@@ -13705,6 +15053,50 @@ export interface components {
             theme?: components["schemas"]["UITheme"] | null;
         };
         /**
+         * PreviewBody
+         * @description Kalici OLMAYAN ezmeler (frontend istegi 2): kaydedilmeden egri canli degisir.
+         */
+        PreviewBody: {
+            /**
+             * Distributions
+             * @default []
+             */
+            distributions: components["schemas"]["DistributionPair"][];
+            /** Revision Id */
+            revision_id?: string | null;
+            /**
+             * Windows
+             * @default []
+             */
+            windows: components["schemas"]["WindowIn"][];
+        };
+        /** PreviewOut */
+        PreviewOut: {
+            /** Disciplines */
+            disciplines: components["schemas"]["DisciplinePreviewOut"][];
+            /** End */
+            end: string | null;
+            /** Indirect Budget Mhr */
+            indirect_budget_mhr: string;
+            /** Start */
+            start: string | null;
+            total: components["schemas"]["SeriesOut"];
+            /** Unspreadable */
+            unspreadable: string[];
+        };
+        /**
+         * PreviousAllocationOut
+         * @description B2-7: son GONDERILMIS gunun deseni. Doldurma/olcekleme istemcide.
+         */
+        PreviousAllocationOut: {
+            /** Codes */
+            codes: components["schemas"]["CodeIn"][];
+            /** Day */
+            day: string | null;
+            /** Rows */
+            rows: components["schemas"]["RowPatternOut"][];
+        };
+        /**
          * PriceIndexType
          * @description Fiyat farki endeks tipi (spec §2.4). Mockup satir 128 sirasi.
          * @enum {string}
@@ -13721,6 +15113,17 @@ export interface components {
             financial_pct: string | null;
             /** Physical Pct */
             physical_pct: string | null;
+        };
+        /** ProgressOut */
+        ProgressOut: {
+            /** Earned Day */
+            earned_day: string;
+            /** Leaves */
+            leaves: components["schemas"]["LeafProgressOut"][];
+            /** Pf Day */
+            pf_day: string | null;
+            /** Spent Day */
+            spent_day: string;
         };
         /**
          * ProgressPaymentCreate
@@ -15201,6 +16604,12 @@ export interface components {
          * @enum {string}
          */
         QuantitySource: "manual" | "diary";
+        /**
+         * RateSource
+         * @description Oranin nereden geldigi (K4) — atama aninda kopyalanir, kaynak saklanir.
+         * @enum {string}
+         */
+        RateSource: "catalog" | "history" | "manual";
         /** RefreshPricesResponse */
         RefreshPricesResponse: {
             /** Refreshed Count */
@@ -15604,6 +17013,52 @@ export interface components {
             /** Expired Count */
             expired_count: number;
         };
+        /** RevisionDiffOut */
+        RevisionDiffOut: {
+            against: components["schemas"]["RevisionOut"] | null;
+            /** Direct After Mhr */
+            direct_after_mhr: string;
+            /** Direct Before Mhr */
+            direct_before_mhr: string;
+            /** Direct Delta Mhr */
+            direct_delta_mhr: string;
+            /** Leaves */
+            leaves: components["schemas"]["LeafDiffOut"][];
+            revision: components["schemas"]["RevisionOut"];
+        };
+        /** RevisionOut */
+        RevisionOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Description */
+            description: string | null;
+            /** Frozen At */
+            frozen_at: string | null;
+            frozen_by: components["schemas"]["UserRef"] | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Last Edited At
+             * Format: date-time
+             */
+            last_edited_at: string;
+            /** Name */
+            name: string | null;
+            /** Number */
+            number: number;
+            status: components["schemas"]["RevisionStatus"];
+        };
+        /**
+         * RevisionStatus
+         * @enum {string}
+         */
+        RevisionStatus: "draft" | "active" | "archived";
         /**
          * RiskAlert
          * @description Kartin TEK satiri — mockup'in her satirinda UC olgu vardir.
@@ -15759,6 +17214,63 @@ export interface components {
             /** Name */
             name: string;
         };
+        /** RowOut */
+        RowOut: {
+            /** Changed */
+            changed: boolean;
+            /** Headcount */
+            headcount: number | null;
+            /** Hours */
+            hours: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "personnel" | "subcontractor";
+            /** Label */
+            label: string;
+            /**
+             * Ref Id
+             * Format: uuid
+             */
+            ref_id: string;
+            /** Saved Hours */
+            saved_hours: string | null;
+            /** Source */
+            source: string | null;
+            /** Subcontractor Name */
+            subcontractor_name: string | null;
+            /** Trade */
+            trade: string | null;
+        };
+        /** RowPatternOut */
+        RowPatternOut: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "personnel" | "subcontractor";
+            /**
+             * Ref Id
+             * Format: uuid
+             */
+            ref_id: string;
+            /** Shares */
+            shares: components["schemas"]["ShareOut"][];
+        };
+        /** RowRef */
+        RowRef: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "personnel" | "subcontractor";
+            /**
+             * Ref Id
+             * Format: uuid
+             */
+            ref_id: string;
+        };
         /**
          * SaleCancelInput
          * @description `POST /sales/{id}/cancel` gövdesi — gerekçe ZORUNLUDUR.
@@ -15899,6 +17411,17 @@ export interface components {
             sold: components["schemas"]["SoldKpi"];
             /** Upcoming Collections */
             upcoming_collections: components["schemas"]["UpcomingCollection"][];
+        };
+        /** ScheduleOut */
+        ScheduleOut: {
+            /** Bars */
+            bars: components["schemas"]["BarOut"][];
+            /** Holidays */
+            holidays: string[];
+            /** Sections */
+            sections: components["schemas"]["SectionOut"][];
+            /** Weekly Off Days */
+            weekly_off_days: number[];
         };
         /**
          * Scope
@@ -16095,6 +17618,22 @@ export interface components {
             sort_order: number;
             /** Title */
             title: string;
+        };
+        /** SectionOut */
+        SectionOut: {
+            /** End Date */
+            end_date: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Planned Worker Count */
+            planned_worker_count: number | null;
+            /** Start Date */
+            start_date: string | null;
         };
         /**
          * SectionResponse
@@ -16327,6 +17866,70 @@ export interface components {
              * Format: date
              */
             start_date: string;
+        };
+        /** SeriesOut */
+        SeriesOut: {
+            /** Budget Mhr */
+            budget_mhr: string;
+            /** Days */
+            days: components["schemas"]["DayOut"][];
+            /** End */
+            end: string | null;
+            peak_week: components["schemas"]["WeekOut"] | null;
+            /** Start */
+            start: string | null;
+            /** Weeks */
+            weeks: components["schemas"]["WeekOut"][];
+        };
+        /**
+         * SettingsRead
+         * @description GET/PUT yaniti. Ayar satiri yoksa `defaults.py` degerleri, `is_default` = true.
+         */
+        SettingsRead: {
+            /** Composite Metrics */
+            composite_metrics: components["schemas"]["CompositeMetricRead"][];
+            /** Holidays */
+            holidays: components["schemas"]["HolidayRead"][];
+            /** Is Default */
+            is_default: boolean;
+            pf_bands: components["schemas"]["PfBands-Output"];
+            /** Standard Daily Hours */
+            standard_daily_hours: string;
+            /** Tolerance Points */
+            tolerance_points: string;
+            /** Updated At */
+            updated_at: string | null;
+            updated_by: components["schemas"]["UserRef"] | null;
+            /** Week Start Dow */
+            week_start_dow: number;
+            /** Weekly Off Days */
+            weekly_off_days: number[];
+        };
+        /**
+         * SettingsSave
+         * @description PUT govdesi — santiyenin ayar kumesinin TAMAMI.
+         */
+        SettingsSave: {
+            /** Composite Metrics */
+            composite_metrics?: components["schemas"]["CompositeMetricInput"][];
+            /** Holidays */
+            holidays?: components["schemas"]["HolidayInput"][];
+            pf_bands: components["schemas"]["PfBands-Input"];
+            /** Standard Daily Hours */
+            standard_daily_hours: number | string;
+            /** Tolerance Points */
+            tolerance_points: number | string;
+            /** Week Start Dow */
+            week_start_dow: number;
+            /** Weekly Off Days */
+            weekly_off_days: number[];
+        };
+        /** ShareOut */
+        ShareOut: {
+            /** Node Id */
+            node_id: string;
+            /** Share */
+            share: string;
         };
         /**
          * ShareholderInput
@@ -16618,9 +18221,19 @@ export interface components {
             safety_meeting_held: boolean;
             /** Section Id */
             section_id?: string | null;
-            /** Temperature C */
+            /** Temp Max C */
+            temp_max_c?: number | string | null;
+            /** Temp Min C */
+            temp_min_c?: number | string | null;
+            /**
+             * Temperature C
+             * @deprecated
+             * @description KULLANIMDAN KALKIYOR (PLN-B2.1): `temp_min_c` + `temp_max_c` kullanın. İstekte yeni alanlar YOKSA kabul edilir ve ikisine de yazılır; yeni alanlardan biri gelirse bu alan YOK SAYILIR. Yanıtta `temp_max_c`nin salt okunur kopyasıdır.
+             */
             temperature_c?: number | string | null;
             weather?: components["schemas"]["Weather"] | null;
+            /** Wind Ms */
+            wind_ms?: number | string | null;
             /** Work Done */
             work_done?: string | null;
         };
@@ -16680,7 +18293,15 @@ export interface components {
             status: components["schemas"]["DiaryStatus"];
             /** Submitted At */
             submitted_at: string | null;
-            /** Temperature C */
+            /** Temp Max C */
+            temp_max_c?: string | null;
+            /** Temp Min C */
+            temp_min_c?: string | null;
+            /**
+             * Temperature C
+             * @deprecated
+             * @description KULLANIMDAN KALKIYOR (PLN-B2.1): `temp_min_c` + `temp_max_c` kullanın. İstekte yeni alanlar YOKSA kabul edilir ve ikisine de yazılır; yeni alanlardan biri gelirse bu alan YOK SAYILIR. Yanıtta `temp_max_c`nin salt okunur kopyasıdır.
+             */
             temperature_c: string | null;
             /**
              * Updated At
@@ -16688,6 +18309,8 @@ export interface components {
              */
             updated_at: string;
             weather: components["schemas"]["Weather"] | null;
+            /** Wind Ms */
+            wind_ms?: string | null;
             /** Work Done */
             work_done: string | null;
             /** Worker Counts */
@@ -16791,9 +18414,19 @@ export interface components {
             safety_meeting_held?: boolean | null;
             /** Section Id */
             section_id?: string | null;
-            /** Temperature C */
+            /** Temp Max C */
+            temp_max_c?: number | string | null;
+            /** Temp Min C */
+            temp_min_c?: number | string | null;
+            /**
+             * Temperature C
+             * @deprecated
+             * @description KULLANIMDAN KALKIYOR (PLN-B2.1): `temp_min_c` + `temp_max_c` kullanın. İstekte yeni alanlar YOKSA kabul edilir ve ikisine de yazılır; yeni alanlardan biri gelirse bu alan YOK SAYILIR. Yanıtta `temp_max_c`nin salt okunur kopyasıdır.
+             */
             temperature_c?: number | string | null;
             weather?: components["schemas"]["Weather"] | null;
+            /** Wind Ms */
+            wind_ms?: number | string | null;
             /** Work Done */
             work_done?: string | null;
             /** Worker Counts */
@@ -16817,8 +18450,12 @@ export interface components {
              * Format: uuid
              */
             boq_item_id: string;
+            /** Overrun Reason */
+            overrun_reason?: string | null;
             /** Quantity */
             quantity: number | string;
+            /** Section Id */
+            section_id?: string | null;
         };
         /**
          * SiteDiaryLineRead
@@ -16838,10 +18475,20 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** Leaf Cumulative Quantity */
+            leaf_cumulative_quantity?: string | null;
             /** Line Amount */
             line_amount: string;
+            /** Overrun Reason */
+            overrun_reason?: string | null;
+            /** Planned Quantity */
+            planned_quantity?: string | null;
             /** Quantity */
             quantity: string;
+            /** Remaining Quantity */
+            remaining_quantity?: string | null;
+            /** Section Id */
+            section_id?: string | null;
             /** Unit */
             unit: string;
             /** Unit Price */
@@ -16936,7 +18583,11 @@ export interface components {
         SiteDiaryWorkerCountInput: {
             /** Count */
             count: number;
+            /** Hours */
+            hours?: number | string | null;
             source: components["schemas"]["WorkerSource"];
+            /** Subcontractor Id */
+            subcontractor_id?: string | null;
             /** Trade */
             trade: string;
         };
@@ -16947,12 +18598,16 @@ export interface components {
         SiteDiaryWorkerCountRead: {
             /** Count */
             count: number;
+            /** Hours */
+            hours?: string | null;
             /**
              * Id
              * Format: uuid
              */
             id: string;
             source: components["schemas"]["WorkerSource"];
+            /** Subcontractor Id */
+            subcontractor_id?: string | null;
             /** Trade */
             trade: string;
         };
@@ -19027,6 +20682,20 @@ export interface components {
             /** Tax Number */
             tax_number?: string | null;
         };
+        /** SubmitCheckOut */
+        SubmitCheckOut: {
+            /** Can Submit */
+            can_submit: boolean;
+            /** Reasons */
+            reasons: string[];
+        };
+        /** SuggestionsOut */
+        SuggestionsOut: {
+            /** Catalog */
+            catalog: components["schemas"]["CandidateOut"][];
+            /** History */
+            history: components["schemas"]["CandidateOut"][];
+        };
         /**
          * SupplierCard
          * @description TED kartinin TAMAMI: kunye + "Bu Yil Toplam Siparis" TUREVI (TED 52).
@@ -19553,6 +21222,15 @@ export interface components {
              * @default bearer
              */
             token_type: string;
+        };
+        /** TotalsOut */
+        TotalsOut: {
+            /** Allocated Hours */
+            allocated_hours: string;
+            /** Source Hours */
+            source_hours: string;
+            /** Unallocated Hours */
+            unallocated_hours: string;
         };
         /**
          * TrialBalanceResponse
@@ -20460,6 +22138,22 @@ export interface components {
          * @enum {string}
          */
         UnitValueBasis: "list_price" | "appraisal_value";
+        /** UnlockBody */
+        UnlockBody: {
+            /** Reason */
+            reason: string;
+        };
+        /** UnlockOut */
+        UnlockOut: {
+            /** Reason */
+            reason: string;
+            /**
+             * Unlocked At
+             * Format: date-time
+             */
+            unlocked_at: string;
+            unlocked_by: components["schemas"]["UserRef"] | null;
+        };
         /**
          * UpcomingCollection
          * @description S220-234'ün tek satırı: "A · Daire 19 — Hasan Demir · Taksit 6 & 7 …".
@@ -20628,6 +22322,16 @@ export interface components {
             offset: number;
             /** Total */
             total: number;
+        };
+        /** UserRef */
+        UserRef: {
+            /** Full Name */
+            full_name: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
         };
         /** UserResponse */
         UserResponse: {
@@ -20845,7 +22549,78 @@ export interface components {
          *     "Yağışlı" rozeti (GK370) KOLON DEĞİLDİR — frontend `weather == rainy` türevidir.
          * @enum {string}
          */
-        Weather: "sunny" | "partly_cloudy" | "cloudy" | "rainy" | "snowy";
+        Weather: "sunny" | "partly_cloudy" | "cloudy" | "rainy" | "snowy" | "heavy_rain" | "drizzle" | "windy" | "dusty" | "foggy";
+        /** WeekOut */
+        WeekOut: {
+            /** Mhr */
+            mhr: string;
+            /** Planned People */
+            planned_people: number | null;
+            /** Required People */
+            required_people: string | null;
+            /**
+             * Week End
+             * Format: date
+             */
+            week_end: string;
+            /** Week No */
+            week_no: number;
+            /**
+             * Week Start
+             * Format: date
+             */
+            week_start: string;
+            /** Working Days */
+            working_days: number;
+        };
+        /**
+         * WeeklyPfBands
+         * @description Haftalik (ve kumulatif, K19) PF: < `red_below` kirmizi · < `green_from` sari.
+         */
+        "WeeklyPfBands-Input": {
+            /** Green From */
+            green_from: number | string;
+            /** Red Below */
+            red_below: number | string;
+        };
+        /**
+         * WeeklyPfBands
+         * @description Haftalik (ve kumulatif, K19) PF: < `red_below` kirmizi · < `green_from` sari.
+         */
+        "WeeklyPfBands-Output": {
+            /** Green From */
+            green_from: string;
+            /** Red Below */
+            red_below: string;
+        };
+        /** WindowIn */
+        WindowIn: {
+            /**
+             * Discipline Id
+             * Format: uuid
+             */
+            discipline_id: string;
+            /**
+             * End Date
+             * Format: date
+             */
+            end_date: string;
+            /** Section Id */
+            section_id?: string | null;
+            /**
+             * Start Date
+             * Format: date
+             */
+            start_date: string;
+        };
+        /**
+         * WindowsBody
+         * @description TAM DEGISTIRME: gonderilmeyen ezme silinir (bolum tarihine doner).
+         */
+        WindowsBody: {
+            /** Windows */
+            windows: components["schemas"]["WindowIn"][];
+        };
         /**
          * WorkLogCreate
          * @description `POST /equipment/work-logs` — M3 kaydı.
@@ -24230,6 +26005,366 @@ export interface operations {
                 content: {
                     "application/json": unknown;
                     "application/octet-stream": unknown;
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_catalog_endpoint_earned_value_catalog_get: {
+        parameters: {
+            query?: {
+                discipline_id?: string | null;
+                q?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogItemRead"][];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_catalog_item_endpoint_earned_value_catalog_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CatalogItemCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogItemRead"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_catalog_item_endpoint_earned_value_catalog__item_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CatalogItemUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogItemRead"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    adopt_actual_endpoint_earned_value_catalog__item_id__adopt_actual_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogItemRead"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_disciplines_endpoint_earned_value_disciplines_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DisciplineRead"][];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    create_discipline_endpoint_earned_value_disciplines_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DisciplineCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DisciplineRead"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_discipline_endpoint_earned_value_disciplines__discipline_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                discipline_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_discipline_endpoint_earned_value_disciplines__discipline_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                discipline_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DisciplineUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DisciplineRead"];
                 };
             };
             /** @description Yetkisiz işlem */
@@ -34876,6 +37011,1046 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SiteDiarySummary"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_budget_sites__site_id__earned_value_budget_get: {
+        parameters: {
+            query?: {
+                revision_id?: string | null;
+            };
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BudgetView"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_budget_distributions_sites__site_id__earned_value_budget_distributions_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DistributionsBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BudgetView"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    fill_budget_from_catalog_sites__site_id__earned_value_budget_fill_from_catalog_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FillOut"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    freeze_budget_sites__site_id__earned_value_budget_freeze_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FreezeBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RevisionOut"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_group_disciplines_sites__site_id__earned_value_budget_group_disciplines_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GroupDisciplinesBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BudgetView"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_budget_item_sites__site_id__earned_value_budget_items__boq_item_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+                boq_item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ItemPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BudgetView"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_budget_item_suggestions_sites__site_id__earned_value_budget_items__boq_item_id__suggestions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+                boq_item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SuggestionsOut"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_budget_leaves_sites__site_id__earned_value_budget_leaves_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LeavesPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BudgetView"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_budget_sites__site_id__earned_value_budget_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PreviewBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreviewOut"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_budget_revisions_sites__site_id__earned_value_budget_revisions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RevisionOut"][];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    open_budget_draft_sites__site_id__earned_value_budget_revisions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RevisionOut"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_budget_draft_sites__site_id__earned_value_budget_revisions__revision_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+                revision_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_budget_revision_diff_sites__site_id__earned_value_budget_revisions__revision_id__diff_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+                revision_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RevisionDiffOut"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_budget_schedule_sites__site_id__earned_value_budget_schedule_get: {
+        parameters: {
+            query?: {
+                revision_id?: string | null;
+            };
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduleOut"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_budget_windows_sites__site_id__earned_value_budget_windows_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WindowsBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BudgetView"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_code_tree_sites__site_id__earned_value_code_tree_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CodeNodeOut"][];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_day_sites__site_id__earned_value_days__day__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+                day: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DayView"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_day_allocation_sites__site_id__earned_value_days__day__allocation_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+                day: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AllocationSave"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DayView"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_previous_allocation_sites__site_id__earned_value_days__day__previous_allocation_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+                day: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreviousAllocationOut"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unlock_day_sites__site_id__earned_value_days__day__unlock_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+                day: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UnlockBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LockOut"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_settings_endpoint_sites__site_id__earned_value_settings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsRead"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_settings_endpoint_sites__site_id__earned_value_settings_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettingsSave"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsRead"];
                 };
             };
             /** @description Yetkisiz işlem */

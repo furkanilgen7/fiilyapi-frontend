@@ -900,6 +900,54 @@ describe("BFF /api/backend/[...path]", () => {
       expect(fetchMock).toHaveBeenCalledTimes(1);
     });
 
+    // PLN-F1.1 — Planlama (EV) sirket uclari YENI kok acar: `earned-value`
+    // (`/earned-value/disciplines`, `/earned-value/catalog`). Santiye uclari
+    // (`/sites/{id}/earned-value/...`) MEVCUT `sites` kokunden gecer. Kok
+    // eklenmezse Katalog/Disiplin ekranlari YALNIZ CANLIDA 404 alir (MU-2/MT-1
+    // dersi); cagiran ekran F1.5'te geldigi icin `cagrilan ⊆ izinli` bekcisi
+    // bugun onu GORMEZ — ADLI bekci onden yazilir.
+    it("earned-value koku (PLN-F1.1) allow-list'te GERCEK girdi olarak tanimlidir", () => {
+      const entries = [...readAllowedRoots()];
+      expect(entries).toContain("earned-value");
+      // "earned_value" (alt cizgili backend modul adi) ya da "planning" diye
+      // AYRI bir kok EKLENMEZ: URL'nin ilk segmenti "earned-value"dir.
+      expect(entries).not.toContain("earned_value");
+      expect(entries).not.toContain("planning");
+    });
+
+    // PLN-F1.1 · TERS YON BEKCISI (`sozlesmedeki ⊆ izinli`). Yukaridaki
+    // `cagrilan ⊆ izinli` bekcisi cagiran kod YOKSA kor kalir; adli bekciler
+    // ise yalniz bir insan hatirladiginda yazilir (MU-2, MT-1, PLN-F1.1 — uc
+    // kez). Bu bekci openapi devri aninda YENI her koku zorla goruntuler:
+    // ya ALLOWED_ROOTS'a girer ya asagidaki GEREKCELI dislama listesine.
+    it("openapi sozlesmesindeki her kok ya izinlidir ya gerekceli olarak dislanmistir", () => {
+      const EXCLUDED_ROOTS: Record<string, string> = {
+        auth: "BFF'nin kendi /api/auth/* rotalari (cerez yonetimi) — proxy'den GECMEZ",
+        health: "altyapi saglik ucu — urun ekrani cagirmaz",
+        blocks: "/blocks/{id} — bugun cagiran ekran yok; cagrilirsa `cagrilan ⊆ izinli` bekcisi yakalar",
+        units: "/units/* — bugun cagiran ekran yok; cagrilirsa `cagrilan ⊆ izinli` bekcisi yakalar",
+      };
+      const contract = JSON.parse(
+        readFileSync(resolve(process.cwd(), "openapi/openapi.json"), "utf8"),
+      ) as { paths: Record<string, unknown> };
+      const contractRoots = [...new Set(Object.keys(contract.paths).map((p) => p.split("/")[1]))];
+      const allowed = new Set(readAllowedRoots());
+      const unaccounted = contractRoots
+        .filter((root) => !allowed.has(root) && !(root in EXCLUDED_ROOTS))
+        .sort();
+
+      expect(
+        unaccounted,
+        `openapi'de yeni kok: ${unaccounted.join(", ")} — ALLOWED_ROOTS'a ekle ya da gerekceyle disla`,
+      ).toEqual([]);
+      // Dislama listesi bayatlamaz: izinli olan ya da sozlesmeden kalkan bir
+      // kok burada kalamaz.
+      for (const root of Object.keys(EXCLUDED_ROOTS)) {
+        expect(allowed.has(root), `${root} hem izinli hem dislanmis`).toBe(false);
+        expect(contractRoots, `${root} sozlesmede yok — dislamadan sil`).toContain(root);
+      }
+    });
+
     // F-MU1 ek gorev — MU-2 (donem kapanisi + mizan + KDV) UC kokU.
     // 🔴 BU BEKCININ VARLIK SEBEBI: yukaridaki "cagrilan her kok
     // ALLOWED_ROOTS'ta tanimlidir" bekcisi `cagrilan ⊆ izinli` yonunu

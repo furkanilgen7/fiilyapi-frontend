@@ -597,6 +597,19 @@
   --color-chart-tooltip-value: var(--color-on-brand); /* P 217 */
   --color-chart-tooltip-negative: var(--color-danger-border-soft); /* P 220, AS 380 */
   --color-chart-tooltip-positive: var(--color-success-border-soft); /* P 315 */
+
+  /* PLN-F1 · Planlama ekranları (AYP · KAT · BÜT) — Ayarlar - Planlama.dc.html
+     (AYP), Ayarlar - Planlama (Ek).dc.html (Ek), Planlama - Birim Oran
+     Kataloğu.dc.html (KAT), Planlama - Adam-Saat Bütçesi.dc.html (BÜT).
+     Beş ton mevcut palette yoktu; gölgeler mevcut sm/md'den ayrı değerlerdir. */
+  --color-ev-chip-neutral: #eef2f7; /* nötr çip (Ek 164 · KAT 451 · BÜT 92) */
+  --color-ev-amber-soft: #fde68a; /* PF sarı bölge (Ek 193) · fark başlığı alt çizgisi (BÜT 156) */
+  --color-ev-editor-bg: #f8fbff; /* paçal metrik düzenleyici zemini (AYP 190) */
+  --color-ev-row-open-bg: #fbfdff; /* katalogda açık satır (KAT 495) */
+  --color-ev-row-empty-rate-bg: #fff8f8; /* oranı boş satır (BÜT 632) */
+  --shadow-sticky-bar: 0 -4px 16px rgba(15, 23, 42, 0.06); /* yapışkan Kaydet çubuğu (Ek 402) */
+  --shadow-menu: 0 8px 24px rgba(15, 23, 42, 0.12); /* açılır menü/liste (KAT 112 · BÜT 109) */
+  --shadow-popover: 0 10px 28px rgba(15, 23, 42, 0.16); /* popover (KAT 154 · BÜT 245) */
 }
 
 @keyframes fadeUp {

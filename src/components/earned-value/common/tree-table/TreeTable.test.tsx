@@ -301,3 +301,82 @@ describe("TreeTable — 3 durumlu seçim", () => {
     expect(screen.getAllByRole("columnheader")).toHaveLength(2);
   });
 });
+
+describe("TreeTable — hücre bazlı colSpan (PLN-F1.6.1 k)", () => {
+  const cols: readonly TreeTableColumn<Item>[] = [
+    { key: "name", header: "Ad", render: (n) => n.data.name },
+    {
+      key: "a",
+      header: "A",
+      render: (n) => `a-${n.id}`,
+      colSpan: (n) => (n.id === "KAB" ? 2 : 1),
+    },
+    { key: "b", header: "B", render: (n) => `b-${n.id}` },
+    { key: "c", header: "C", render: (n) => `c-${n.id}` },
+  ];
+
+  it("yayılan hücre colspan taşır, örttüğü kolon O SATIRDA basılmaz; diğer satırlar etkilenmez", () => {
+    render(<TreeTable nodes={TREE} columns={cols} getLabel={getLabel} variant="budget" ariaLabel="B" emptyText="Boş" />);
+    const kab = rowOf("Kaba İnşaat");
+    expect(within(kab).getByText("a-KAB").closest("td")).toHaveAttribute("colspan", "2");
+    expect(within(kab).queryByText("b-KAB")).not.toBeInTheDocument();
+    expect(within(kab).getByText("c-KAB")).toBeInTheDocument();
+    expect(kab.children).toHaveLength(3);
+    const duv = rowOf("Duvar & Sıva");
+    expect(duv.children).toHaveLength(4);
+    expect(within(duv).getByText("b-DUV")).toBeInTheDocument();
+  });
+
+  it("yayılım kalan kolon sayısıyla sınırlanır; ağaç kolonunda da çalışır (treeCellColSpan ile aynı sözleşme)", () => {
+    const treeCols: readonly TreeTableColumn<Item>[] = [
+      { key: "name", header: "Ad", tree: true, render: (n) => n.data.name, colSpan: () => 9 },
+      { key: "b", header: "B", render: (n) => `b-${n.id}` },
+    ];
+    render(<TreeTable nodes={TREE} columns={treeCols} getLabel={getLabel} variant="budget" ariaLabel="B" emptyText="Boş" />);
+    const kab = rowOf("Kaba İnşaat");
+    expect(within(kab).getByRole("rowheader")).toHaveAttribute("colspan", "2");
+    expect(kab.children).toHaveLength(1);
+  });
+});
+
+describe("TreeTable — satır sonrası yuva (PLN-F1.6.1 j)", () => {
+  const after = (n: TreeNode<Item>) => (n.id === "KAB.01.03-TML" ? <span>Penceresi çıkmıyor</span> : null);
+
+  it("ek satır ilgili satırın HEMEN altında, bütün kolonları (seçim dahil) kaplar ve satıra aria-describedby ile bağlanır", () => {
+    render(
+      <TreeTable
+        nodes={TREE}
+        columns={COLUMNS}
+        getLabel={getLabel}
+        variant="budget"
+        ariaLabel="B"
+        emptyText="Boş"
+        defaultExpanded="all"
+        selectable
+        renderRowAfter={after}
+      />,
+    );
+    const row = rowOf("Temel");
+    const extra = row.nextElementSibling as HTMLElement;
+    const cell = within(extra).getByText("Penceresi çıkmıyor").closest("td") as HTMLElement;
+    expect(cell).toHaveAttribute("colspan", String(COLUMNS.length + 1));
+    expect(row).toHaveAttribute("aria-describedby", cell.id);
+    expect(cell.id).not.toBe("");
+    expect(extra).toHaveClass("tree-table__after-row");
+  });
+
+  it("null dönen satıra ek satır basılmaz; describedby yok", () => {
+    render(<TreeTable nodes={TREE} columns={COLUMNS} getLabel={getLabel} variant="budget" ariaLabel="B" emptyText="Boş" defaultExpanded="all" renderRowAfter={after} />);
+    const row = rowOf("Kat 1-5 Kaba");
+    expect(row).not.toHaveAttribute("aria-describedby");
+    expect(document.querySelectorAll(".tree-table__after-row")).toHaveLength(1);
+  });
+
+  it("üst düğüm kapanınca ek satır da gizlenir", async () => {
+    const user = userEvent.setup();
+    render(<TreeTable nodes={TREE} columns={COLUMNS} getLabel={getLabel} variant="budget" ariaLabel="B" emptyText="Boş" defaultExpanded="all" renderRowAfter={after} />);
+    expect(screen.getByText("Penceresi çıkmıyor")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Beton döküm aç/kapat" }));
+    expect(screen.queryByText("Penceresi çıkmıyor")).not.toBeInTheDocument();
+  });
+});

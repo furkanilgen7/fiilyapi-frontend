@@ -197,6 +197,19 @@ export const TrendingUpIcon = (p: IconProps) => (
     <polyline points="17 6 23 6 23 12" />
   </svg>
 );
+// PLN-F1 · Planlama nav ikonları — Planlama - Panel.dc.html:59 (hesap makinesi)
+// ve :61 (kitaplar); mockup'ın 16'lık çizimi bu setin 24'lük ızgarasına ×1,5.
+export const CalculatorIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <rect x="4.5" y="3" width="15" height="18" rx="2.25" />
+    <path d="M8.25 7.5h7.5M8.25 12h1.5M14.25 12h1.5M8.25 16.5h1.5M14.25 16.5h1.5" />
+  </svg>
+);
+export const BooksIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M4.5 5.25h5.25v15H4.5zM9.75 5.25H15v15H9.75zM15.75 6l4.2-1.05 3 14.55-4.2 1.05z" />
+  </svg>
+);
 export const ListIcon = (p: IconProps) => (
   <svg {...base(p)}>
     <line x1="8" y1="6" x2="21" y2="6" />

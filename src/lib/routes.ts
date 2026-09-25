@@ -205,6 +205,11 @@ export const routes = {
       diary: (p: SiteParams) => `${siteBase(p)}/gunluk-kayit`,
       diarySummary: (p: SiteParams) => `${siteBase(p)}/gunluk-kayit/ozet`,
       diaryPlanning: (p: SiteParams) => `${siteBase(p)}/gunluk-kayit/planlama`,
+      /**
+       * PLN-F1 · Adam-Saat Bütçesi (EV). F-PL ızgarasının `diaryPlanning`inden
+       * AYRI bir modüldür (backend `earned_value`); ad `ev*` ile ayrılır.
+       */
+      evBudget: (p: SiteParams) => `${siteBase(p)}/adam-saat-butcesi`,
 
       sections: {
         new: (p: SiteParams) => `${siteBase(p)}/${SECTIONS_SEGMENT}/yeni`,
@@ -227,6 +232,8 @@ export const routes = {
     backup: () => "/ayarlar/yedekleme",
     auditLog: () => "/ayarlar/denetim-gunlugu",
     payrollRates: () => "/ayarlar/bordro-oranlari",
+    /** PLN-F1 · Planlama (EV) şantiye ayarları; şantiye sayfada seçilir (K1). */
+    planning: () => "/ayarlar/planlama",
   },
 
   /** Belge arşivi; proje süzgeci ekran tarafından OKUNUR (`?proje=`). */
@@ -334,6 +341,16 @@ export const routes = {
    * elle kurulmaz (URL-1).
    */
   siteDiary: () => "/gunluk-kayit",
+
+  /**
+   * PLN-F1 · kabuk nav'ının "Planlama" grubu (K21). `budget` şantiye kapsamlı
+   * ekranın KÖK İKİZİDİR (`siteDiary` deseni): seçili şantiye `?site=` ile
+   * taşınır, seçici `usePathname()` üzerine yazar. `catalog` şirket genelidir.
+   */
+  planning: {
+    budget: () => "/planlama/adam-saat-butcesi",
+    catalog: () => "/planlama/birim-oran-katalogu",
+  },
 
   purchasing: {
     root: () => "/satinalma",
