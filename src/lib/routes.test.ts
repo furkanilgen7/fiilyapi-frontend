@@ -138,6 +138,52 @@ describe("routes — Günlük Kayıt `?tarih=`", () => {
   });
 });
 
+// PLN-F3.6a · Panel/GİR/QURR (F3-SOZLESME.md §2).
+describe("routes — Planlama raporları (Panel/GİR/QURR)", () => {
+  it("şantiye altı: Panel parametresiz, GİR `?tarih=`, QURR `?hafta=` (verilmezse EKLENMEZ)", () => {
+    expect(routes.projects.sites.evPanel({ projectId: P, siteId: S })).toBe(
+      `/projeler/${P}/santiyeler/${S}/planlama-paneli`,
+    );
+    expect(routes.projects.sites.evDailyReport({ projectId: P, siteId: S })).toBe(
+      `/projeler/${P}/santiyeler/${S}/gunluk-ilerleme-raporu`,
+    );
+    expect(routes.projects.sites.evDailyReport({ projectId: P, siteId: S, date: "2026-09-24" })).toBe(
+      `/projeler/${P}/santiyeler/${S}/gunluk-ilerleme-raporu?tarih=2026-09-24`,
+    );
+    expect(routes.projects.sites.evWeeklyReport({ projectId: P, siteId: S })).toBe(
+      `/projeler/${P}/santiyeler/${S}/haftalik-qurr`,
+    );
+    expect(routes.projects.sites.evWeeklyReport({ projectId: P, siteId: S, week: 12 })).toBe(
+      `/projeler/${P}/santiyeler/${S}/haftalik-qurr?hafta=12`,
+    );
+  });
+
+  it("kök ikizler parametresiz de çağrılabilir — eski çıplak yolla BİREBİR", () => {
+    expect(routes.planning.budget()).toBe("/planlama/adam-saat-butcesi");
+    expect(routes.planning.panel()).toBe("/planlama/panel");
+    expect(routes.planning.dailyReport()).toBe("/planlama/gunluk-rapor");
+    expect(routes.planning.weeklyReport()).toBe("/planlama/haftalik-qurr");
+  });
+
+  it("kök ikizler (lider denetimi F3.6a-ek) `?site=` KABUL EDER — bir kök ikizden diğerine seçili şantiye TAŞINABİLİR", () => {
+    expect(routes.planning.budget({ site: S })).toBe(`/planlama/adam-saat-butcesi?site=${S}`);
+    expect(routes.planning.panel({ site: S })).toBe(`/planlama/panel?site=${S}`);
+    expect(routes.planning.dailyReport({ site: S })).toBe(`/planlama/gunluk-rapor?site=${S}`);
+    expect(routes.planning.dailyReport({ site: S, date: "2026-09-24" })).toBe(
+      `/planlama/gunluk-rapor?site=${S}&tarih=2026-09-24`,
+    );
+    expect(routes.planning.weeklyReport({ site: S })).toBe(`/planlama/haftalik-qurr?site=${S}`);
+    expect(routes.planning.weeklyReport({ site: S, week: 21 })).toBe(
+      `/planlama/haftalik-qurr?site=${S}&hafta=21`,
+    );
+  });
+
+  it("EVB_WEEK_PARAM okuyan tarafla (QURR ekranı) aynı sabittir", async () => {
+    const { EVB_WEEK_PARAM } = await import("@/lib/routes");
+    expect(EVB_WEEK_PARAM).toBe("hafta");
+  });
+});
+
 describe("routes — DET-1.2 bolum sekmesi + gunluk kayit detayi", () => {
   it("bolum detayi `sekme` VERILMEZSE ciplak yol kalir (bugunku baglantilar DEGISMEZ)", () => {
     expect(
@@ -216,8 +262,14 @@ describe("routes — uretilen her yol GERCEK bir rotaya cozulur", () => {
     ["sites.diarySummary", routes.projects.sites.diarySummary({ projectId: P, siteId: S })],
     ["sites.diaryPlanning", routes.projects.sites.diaryPlanning({ projectId: P, siteId: S })],
     ["sites.evBudget", routes.projects.sites.evBudget({ projectId: P, siteId: S })],
+    ["sites.evPanel", routes.projects.sites.evPanel({ projectId: P, siteId: S })],
+    ["sites.evDailyReport", routes.projects.sites.evDailyReport({ projectId: P, siteId: S })],
+    ["sites.evWeeklyReport", routes.projects.sites.evWeeklyReport({ projectId: P, siteId: S })],
     ["planning.budget", routes.planning.budget()],
     ["planning.catalog", routes.planning.catalog()],
+    ["planning.panel", routes.planning.panel()],
+    ["planning.dailyReport", routes.planning.dailyReport()],
+    ["planning.weeklyReport", routes.planning.weeklyReport()],
     ["sections.new", routes.projects.sites.sections.new({ projectId: P, siteId: S })],
     ["sections.detail", routes.projects.sites.sections.detail({ projectId: P, siteId: S, sectionId: SEC })],
     ["sections.edit", routes.projects.sites.sections.edit({ projectId: P, siteId: S, sectionId: SEC })],

@@ -1,0 +1,22 @@
+/* PLN-F3.6a · Planlama Paneli — yer tutucu düzeni (gövde sonraki turda). */
+.ev-panel__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+.ev-panel__title {
+  font-size: var(--text-xl);
+  font-weight: 600;
+  margin: 0;
+}
+.ev-panel__subtitle {
+  margin: var(--space-1) 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+.ev-panel__pending {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}

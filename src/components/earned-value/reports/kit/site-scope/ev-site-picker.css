@@ -1,0 +1,11 @@
+/* PLN-F3.6a · Kök ikizlerin başlık şantiye seçicisi (`EvSitePicker`) —
+   `budget.css`teki `.ev-budget-site-picker`in aynı ölçüsü, ORTAK kit sınıf
+   adıyla (kopya değil, tekrar kullanılan token'lar). */
+.ev-site-picker {
+  max-width: 320px;
+}
+.ev-site-picker__empty {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}

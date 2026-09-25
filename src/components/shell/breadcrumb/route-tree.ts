@@ -127,6 +127,20 @@ const SITE_NODE: TrailNode = {
       label: "Adam-Saat Bütçesi",
       href: (k) => routes.projects.sites.evBudget({ projectId: k.projectId, siteId: k.siteId }),
     },
+    // PLN-F3.6a · Panel/GİR/QURR (F3-SOZLESME.md §2) — `adam-saat-butcesi`
+    // ile AYNI seviyede, K21 "İlerleme Raporları" parçası YOK (gruplanmaz).
+    "planlama-paneli": {
+      label: "Planlama Paneli",
+      href: (k) => routes.projects.sites.evPanel({ projectId: k.projectId, siteId: k.siteId }),
+    },
+    "gunluk-ilerleme-raporu": {
+      label: "Günlük İlerleme Raporu",
+      href: (k) => routes.projects.sites.evDailyReport({ projectId: k.projectId, siteId: k.siteId }),
+    },
+    "haftalik-qurr": {
+      label: "Haftalık QURR",
+      href: (k) => routes.projects.sites.evWeeklyReport({ projectId: k.projectId, siteId: k.siteId }),
+    },
     // Yapısal: `/projeler/<p>/santiyeler/<s>/bolumler` diye bir sayfa YOK.
     bolumler: {
       children: {
@@ -365,6 +379,11 @@ export const ROUTE_TRAIL_ROOT: TrailNode = {
           label: "Birim Oran Kataloğu",
           href: () => routes.planning.catalog(),
         },
+        // PLN-F3.6a · Panel/GİR/QURR KÖK İKİZLERİ — `adam-saat-butcesi` ile
+        // AYNI seviyede, K21 "İlerleme Raporları" parçası YOK (gruplanmaz).
+        panel: { label: "Planlama Paneli", href: () => routes.planning.panel() },
+        "gunluk-rapor": { label: "Günlük İlerleme Raporu", href: () => routes.planning.dailyReport() },
+        "haftalik-qurr": { label: "Haftalık QURR", href: () => routes.planning.weeklyReport() },
       },
     },
 
