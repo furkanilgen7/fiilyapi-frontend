@@ -278,6 +278,19 @@ describe("tokens.css", () => {
     }
   });
 
+  it("bilgi popover'ı genişliği (PLN-F2.5) token'dır; kullanıcı CSS'lerinde çıplak 292px kalmaz", () => {
+    // Kaynak: Planlama - Adam-Saat Bütçesi.dc.html:245 (öneri popover'ı) · Şantiye - Puantaj (Kilitli Gün).dc.html:340.
+    expect(tokensCss).toMatch(/--width-info-popover:\s*292px\s*;/);
+    for (const file of [
+      "../components/earned-value/budget/budget-rates.css",
+      "../components/timesheet/timesheet.css",
+    ]) {
+      const css = readFileSync(fileURLToPath(new URL(file, import.meta.url)), "utf8");
+      expect(css, file).not.toMatch(/\b292px\b/);
+      expect(css, file).toContain("var(--width-info-popover)");
+    }
+  });
+
   it("şantiye formu için yeni renk token'ı eklenmedi", () => {
     // Spec §5.1 sonu: mockup'ın 19 rengi mevcut token'larda karşılanıyor.
     // Bu sayı artarsa yeni bir çıplak renk sızmış demektir.

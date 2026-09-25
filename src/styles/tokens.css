@@ -620,6 +620,10 @@
   --color-ev-diary-group-cell-bg: #fafbff; /* grup kodu gövde hücresi zemini (İ 666) */
   --color-ev-diary-sub-row-bg: #fcfcfd; /* taşeron satırı zemini (İ 664) */
   --shadow-ev-diary-submit-bar: 0 8px 24px rgba(15, 23, 42, 0.1); /* gönder çubuğu (İ 493 · EF 591) */
+
+  /* PLN-F2.5 · Bilgi popover'ı (öneri / kilitli hücre) — Planlama - Adam-Saat
+     Bütçesi.dc.html:245 · Şantiye - Puantaj (Kilitli Gün).dc.html:340. */
+  --width-info-popover: 292px;
 }
 
 @keyframes fadeUp {
