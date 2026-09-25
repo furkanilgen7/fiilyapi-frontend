@@ -81,3 +81,74 @@ describe("diary-progress.css — karar 5 · 6", () => {
     expect(withoutComments).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
   });
 });
+
+/**
+ * F-SUBPX — Saat Dağıtımı ızgarasının BÜTÜN satırları tam piksel yükseklikte.
+ *
+ * ÖLÇÜLDÜ (DET-1): gövdenin 1.5 mirasıyla 12.5/10.5/11.5 px metin 18.75/15.75/
+ * 17.25 px satır verdi → gövde satırı 45.5, ayırıcı 28.75, başlık 61.297, toplam
+ * 35.75, PF 36.75 px; satır sınırları yarım/çeyrek pikselde kaldı ve yapışkan
+ * kişi kolonu iki Linux baseline turunda FARKLI rasterlendi (1 px kayma).
+ * Satır yüksekliğini belirleyen her metin `--leading-ev-diary-*` taşır ve bu
+ * token'lar TAM px'tir. Tarayıcıdaki sonucu (satır üstleri tam sayı) bu test
+ * DOĞRULAMAZ — yalnız kuralın metnini bekçiler.
+ */
+describe("diary-progress.css — F-SUBPX ızgara satır aralıkları tam piksel", () => {
+  const tokensCss = readFileSync(fileURLToPath(new URL("../../../styles/tokens.css", import.meta.url)), "utf8");
+
+  /** Seçicinin TEK BAŞINA yazıldığı kural gövdeleri (seçici listesi `a, b {` sayılmaz). */
+  function ruleBody(source: string, selector: string): string {
+    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const bodies = [...source.matchAll(new RegExp(`(?:^|})\\s*${escaped}\\s*{([^}]*)}`, "g"))].map((match) => match[1]);
+    expect(bodies.length, `${selector} kuralı yok`).toBeGreaterThan(0);
+    return bodies.join("\n");
+  }
+
+  it("--leading-ev-diary-* token'larının HEPSİ tam px", () => {
+    const tokens = [...tokensCss.matchAll(/(--leading-ev-diary-[\w-]+):\s*([^;]+);/g)];
+    expect(tokens.map(([, name]) => name).sort()).toEqual([
+      "--leading-ev-diary-code",
+      "--leading-ev-diary-meta",
+      "--leading-ev-diary-pf",
+      "--leading-ev-diary-row",
+      "--leading-ev-diary-row-tablet",
+      "--leading-ev-diary-rule",
+    ]);
+    for (const [, name, value] of tokens) {
+      expect(value.trim(), `${name} tam px değil`).toMatch(/^\d+px$/);
+    }
+  });
+
+  it.each([
+    [".ev-diary-grid__lead--head", "meta"],
+    [".ev-diary-grid__remain--head", "meta"],
+    [".ev-diary-grid__code-name", "code"],
+    [".ev-diary-rule", "rule"],
+    [".ev-diary-grid__sep th", "meta"],
+    [".ev-diary-grid__name", "row"],
+    [".ev-diary-grid__job", "meta"],
+    [".ev-diary-grid__changed", "meta"],
+    [".ev-diary-grid__hours", "row"],
+    [".ev-diary-grid__total > *", "row"],
+    [".ev-diary-grid__pf > *", "row"],
+    [".ev-diary-grid__pf .ev-diary-pf", "pf"],
+  ])("%s satır aralığı --leading-ev-diary-%s", (selector, token) => {
+    expect(ruleBody(baseRules(), selector)).toMatch(new RegExp(`line-height:\\s*var\\(--leading-ev-diary-${token}\\)`));
+  });
+
+  it("tablet ad satırı (14 px) kendi tam px satır aralığını taşır", () => {
+    expect(tabletBlock()).toMatch(/\.ev-diary-grid__name\s*{[^}]*line-height:\s*var\(--leading-ev-diary-row-tablet\)/);
+  });
+
+  it("ızgarada kesirli satır aralığı üreten çarpan (1.2 · 1.5 …) YOKTUR", () => {
+    const grid = withoutComments.slice(withoutComments.indexOf(".ev-diary-grid-scroll"), withoutComments.indexOf(".ev-diary-submit {"));
+    expect(grid.length).toBeGreaterThan(0);
+    expect(grid).not.toMatch(/line-height:\s*[\d.]+\s*;/);
+  });
+
+  it("karışık yazı boylu satır kutusu kesir üretmez: kip düğmesi blok, PF rozeti/metni üste hizalı", () => {
+    expect(ruleBody(baseRules(), ".ev-diary-rule")).toMatch(/display:\s*block/);
+    expect(ruleBody(baseRules(), ".ev-diary-grid__pf .ev-diary-pf")).toMatch(/vertical-align:\s*top/);
+    expect(ruleBody(baseRules(), ".ev-diary-grid__pf .ev-diary-muted")).toMatch(/vertical-align:\s*top/);
+  });
+});

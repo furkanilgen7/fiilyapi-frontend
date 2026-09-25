@@ -623,6 +623,17 @@
   --color-ev-diary-group-cell-bg: #fafbff; /* grup kodu gövde hücresi zemini (İ 666) */
   --color-ev-diary-sub-row-bg: #fcfcfd; /* taşeron satırı zemini (İ 664) */
   --shadow-ev-diary-submit-bar: 0 8px 24px rgba(15, 23, 42, 0.1); /* gönder çubuğu (İ 493 · EF 591) */
+  /* F-SUBPX · Saat Dağıtımı ızgarasının satır aralıkları TAM PİKSEL. Mockup
+     (İ 441-486) satır aralığı vermez; gövdenin 1.5 mirası 12.5/10.5/11.5 px
+     yazıda 18.75/15.75/17.25 px satır üretiyordu → satır sınırları yarım/çeyrek
+     pikselde kalıyor, yapışkan kişi kolonu Linux baseline turlarında dönüşümlü
+     1 px kayıyordu (DET-1 ölçümü). Değerler 1.5 mirasının EN YAKIN tam pikselidir. */
+  --leading-ev-diary-row: 19px; /* 12.5–13 px: ad · saat · alt toplam · PF satırı (İ 462, 466, 480, 485) */
+  --leading-ev-diary-meta: 16px; /* 10.5–11 px: meslek · uyarı · ayırıcı · kolon başlığı (İ 441, 455, 463, 464) */
+  --leading-ev-diary-code: 14px; /* 11.5 px kod adı — mockup 1.2 (13.8) (İ 445) */
+  --leading-ev-diary-rule: 11px; /* 9.5 px kip düğmesi — mockup UA `normal` (İ 447) */
+  --leading-ev-diary-pf: 17px; /* 11.5 px PF rozeti: 17 + 2 dolgu = satır 19 (İ 486) */
+  --leading-ev-diary-row-tablet: 21px; /* tablet 14 px ad (İ 527-558) */
 
   /* PLN-F2.5 · Bilgi popover'ı (öneri / kilitli hücre) — Planlama - Adam-Saat
      Bütçesi.dc.html:245 · Şantiye - Puantaj (Kilitli Gün).dc.html:340. */
