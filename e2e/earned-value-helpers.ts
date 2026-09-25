@@ -168,3 +168,75 @@ export async function openManHourBudget(page: Page, target: BudgetTarget = {}) {
     MAN_HOUR_BUDGET_VIEWPORT.height,
   );
 }
+
+/* ─────────────────────────── Haftalık QURR (PLN-F3.6b) ─────────────────── */
+
+export const WEEKLY_QURR_URL = "/planlama/haftalik-qurr";
+
+/**
+ * QURR penceresi — 18 kolonlu tablo KENDİ kabı içinde yatay kaydırır
+ * (`qurr-table-card__scroll`), kadraj yatayda taşmaz; dikeyde `fullPage`
+ * sayfa boyunu izler. BÜT `MAN_HOUR_BUDGET_VIEWPORT` gerekçesiyle AYNI:
+ * sabit-konumlu yüzeyler (formül baloncuğu `AnchoredPopover
+ * escapeOverflow`) kaydırılmamış bir pencerede doğru konumlanır.
+ */
+export const WEEKLY_QURR_VIEWPORT = { width: 1440, height: 1900 } as const;
+
+export interface WeeklyQurrTarget {
+  siteId?: string;
+  week?: number;
+}
+
+function weeklyQurrUrl({ siteId = ACTIVE_SITE_ID, week }: WeeklyQurrTarget): string {
+  const params = new URLSearchParams({ site: siteId });
+  if (week !== undefined) params.set("hafta", String(week));
+  return `${WEEKLY_QURR_URL}?${params.toString()}`;
+}
+
+/**
+ * QURR'u açar; `GET …/earned-value/reports/weekly` İNDİ mi (GÖRSEL SPEC
+ * KURALI 1. parça) — iskelet (`aria-busy`) kalktı mı ile ölçülür, BAŞLIK
+ * İLE DEĞİL: `WeeklyQurrScreen`in hata dalı (409/404/500) `<h1>`i HİÇ
+ * BASMAZ (yalnız BAŞARILI/veri-yok dalı basar — ÖLÇÜLDÜ, `WeeklyQurrScreen.
+ * tsx` `report.isError` dalı `{picker}<ErrorCard/>` döner, başlık bloğu
+ * yalnız son `return`dedir). Çağıran KENDİ içerik beklentisini (başlık,
+ * tablo, hata kartı…) ayrıca kurar.
+ */
+export async function openWeeklyQurr(page: Page, target: WeeklyQurrTarget = {}) {
+  await page.goto(weeklyQurrUrl(target));
+  await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+}
+
+/* ─────────────────────────── Planlama Paneli (PLN-F3.6b) ────────────────── */
+
+export const PLANNING_PANEL_URL = "/planlama/panel";
+
+/**
+ * Panel penceresi — WEEKLY_QURR_VIEWPORT ile AYNI gerekçe: toolbar'daki
+ * disiplin `Select`i ve gün gezgini sabit-konumlu bir yüzey TAŞIMAZ (BÜT/QURR
+ * gibi popover'ı yok), ama `fullPage` kadraj disiplin tablosunun TAMAMINI
+ * (Genel + 4 disiplin + 2 iş tipi = 7 satır) kapsayacak kadar uzun olmalı.
+ */
+export const PLANNING_PANEL_VIEWPORT = { width: 1440, height: 1900 } as const;
+
+export interface PlanningPanelTarget {
+  siteId?: string;
+  disciplineId?: string;
+}
+
+function planningPanelUrl({ siteId = ACTIVE_SITE_ID, disciplineId }: PlanningPanelTarget): string {
+  const params = new URLSearchParams({ site: siteId });
+  if (disciplineId !== undefined) params.set("disiplin", disciplineId);
+  return `${PLANNING_PANEL_URL}?${params.toString()}`;
+}
+
+/**
+ * Paneli açar; başlık göründü mü (GÖRSEL SPEC KURALI 1. parça — `GET
+ * …/earned-value/panel` indi). Hata/veri-yok/baseline-yok hâllerinde çağıran
+ * KENDİ beklentisini kurar (bu fonksiyon yalnız başlığın bastığını doğrular,
+ * KPI/tablo varlığını DAYATMAZ).
+ */
+export async function openPlanningPanel(page: Page, target: PlanningPanelTarget = {}) {
+  await page.goto(planningPanelUrl(target));
+  await expect(page.getByRole("heading", { level: 1, name: "Planlama Paneli" })).toBeVisible();
+}

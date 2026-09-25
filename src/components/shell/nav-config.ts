@@ -88,12 +88,31 @@ export const NAV_GROUPS: NavGroup[] = [
   // PLN-F1 · K21 — mockup'ların sol menüsü `Planlama`yı `Saha & İK` ile
   // `Stok & Satınalma` arasına çizer (Planlama - Panel.dc.html:57-61); kodda
   // o yer `İK` ile `Stok & Satınalma` arasıdır. 🔴 Öğe EKRANIYLA gelir
-  // (§3.10 F0-10, PLN-F1.3 §0-B): F1'de yalnız Bütçe + Katalog; Panel ·
-  // Günlük Rapor · Haftalık QURR F3'te K21 sırasındaki yerlerine eklenir.
+  // (§3.10 F0-10, PLN-F1.3 §0-B): F1'de yalnız Bütçe + Katalog; PLN-F3.6b'de
+  // Panel · Günlük İlerleme Raporu · Haftalık QURR K21 sırasındaki yerlerine
+  // eklendi: Panel · Adam-Saat Bütçesi · Günlük İlerleme Raporu · Haftalık
+  // QURR · Birim Oran Kataloğu.
+  //
+  // Etiketler kırıntı ağacıyla (`breadcrumb/route-tree.ts` `planlama.*`)
+  // BİREBİR aynıdır — "etiket tutarlılığı" bekçisi (`trail.test.ts`) bunu
+  // zorunlu kılar; lider görevindeki kısa/gündelik adlar ("Panel", "Günlük
+  // Rapor") konuşma dilidir, ekranın kendi h1'i ve kırıntısı UZUN addır.
+  //
+  // Simgeler settedeki mevcut glif setinden (yeni glif İCAT EDİLMEDİ):
+  //   Planlama Paneli → `TrendingUpIcon` (KPI/eğri panosu; Mali Tablolar'la
+  //     PAYLAŞILIR, kabuk canonunda zaten tekrar eden simge deseni var).
+  //   Günlük İlerleme Raporu → `FileTextIcon` (rapor/belge; Sözleşmeler ve
+  //     Fatura Yönetimi ile PAYLAŞILIR).
+  //   Haftalık QURR → `BarChartIcon` (grafik ağırlıklı haftalık özet;
+  //     "Raporlar" (Genel grubu) ile PAYLAŞILIR — QURR da S-eğrisi/PF
+  //     grafikleri taşıyan bir rapor kalemidir).
   {
     heading: "Planlama",
     items: [
+      { label: "Planlama Paneli", href: routes.planning.panel(), Icon: TrendingUpIcon },
       { label: "Adam-Saat Bütçesi", href: routes.planning.budget(), Icon: CalculatorIcon },
+      { label: "Günlük İlerleme Raporu", href: routes.planning.dailyReport(), Icon: FileTextIcon },
+      { label: "Haftalık QURR", href: routes.planning.weeklyReport(), Icon: BarChartIcon },
       { label: "Birim Oran Kataloğu", href: routes.planning.catalog(), Icon: BooksIcon },
     ],
   },
