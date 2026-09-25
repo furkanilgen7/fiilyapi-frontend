@@ -1,0 +1,66 @@
+/* PLN-F3.3 · Panel hâl varyantları (a)/(b) — Panel:400-423. */
+.ev-panel-empty {
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted, #f8fafc);
+  padding: var(--space-5) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  text-align: center;
+  color: var(--color-text-muted);
+}
+.ev-panel-empty__title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text);
+}
+.ev-panel-empty__text {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+.ev-panel-empty__action {
+  margin-top: var(--space-1);
+  padding: 7px 14px;
+  background: var(--color-accent, #2563eb);
+  color: #fff;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.ev-panel-no-field-data {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.ev-panel-no-field-data__mini-kpis {
+  display: flex;
+  gap: var(--space-2);
+}
+.ev-panel-no-field-data__mini-kpi {
+  flex: 1;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+}
+.ev-panel-no-field-data__mini-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+.ev-panel-no-field-data__mini-value {
+  font-family: var(--font-mono);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+.ev-panel-no-field-data__caption {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}

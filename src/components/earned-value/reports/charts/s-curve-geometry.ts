@@ -63,7 +63,10 @@ export function sCurveGeometry(
 
   const xs = points.map((_, i) => indexScale(i, n, S_LEFT, S_RIGHT));
   const plannedPct = points.map((p) => num(p.planned_pct_cum));
-  const actualPct = points.map((p) => (p.is_future ? null : num(p.progress_pct_cum)));
+  // 🔴 `num()` null'ı 0'a ÇEVİRİR (SVG'ye 0 değer beslemek içindir) — burada
+  // "veri YOK" (null) ile "gerçek %0" AYRI anlamlar taşır, o yüzden `num()`
+  // KULLANILMAZ: gelecek gün YA DA veri yok → null (nokta/çizgi BASILMAZ).
+  const actualPct = points.map((p) => (p.is_future || p.progress_pct_cum === null ? null : Number(p.progress_pct_cum)));
 
   const scaled: SCurvePoint[] = points.map((p, i) => ({
     index: i,
@@ -84,7 +87,18 @@ export function sCurveGeometry(
     actualIndices.map((p) => p.plannedY),
   );
 
-  const today = actualIndices.length > 0 ? actualIndices[actualIndices.length - 1]! : null;
+  // "Bugün" son `is_future === false` günüdür — actualY'nin DOLU olmasına
+  // BAĞLI DEĞİL (lider netliği, F3.3 (b) hâli "baseline var, sahadan veri
+  // yok": her gün is_future=false ama HİÇBİRİNİN gerçek verisi yok; "Bugün"
+  // çizgisi yine de son takvim gününü göstermelidir).
+  let todayIndex: number | null = null;
+  for (let i = points.length - 1; i >= 0; i -= 1) {
+    if (!points[i]!.is_future) {
+      todayIndex = i;
+      break;
+    }
+  }
+  const today = todayIndex === null ? null : scaled[todayIndex]!;
 
   const yTicks = Array.from({ length: Y_TICK_COUNT }, (_, i) => {
     const value = Y_MIN + ((Y_MAX - Y_MIN) * i) / (Y_TICK_COUNT - 1);

@@ -1,0 +1,192 @@
+/* PLN-F3.3 · Panel grafiklerinin ORTAK SVG ilkelleri — `budget/budget-steps.css`teki
+   `.ev-chart__*` ailesiyle AYNI token'lar, panel kapsamında TEKRAR tanımlanır
+   (çapraz-modül CSS bağımlılığı kurulmaz). */
+.ev-panel-chart__caption {
+  font-size: 10px;
+  fill: var(--color-text-subtle, #94a3b8);
+}
+.ev-panel-chart__bar-earned {
+  fill: var(--color-accent, #2563eb);
+}
+.ev-panel-chart__bar-spent {
+  fill: var(--color-border-strong, #cbd5e1);
+}
+.ev-panel-chart__hatch-bg {
+  fill: var(--color-surface);
+}
+.ev-panel-chart__hatch-line {
+  stroke: var(--color-border);
+}
+.ev-panel-chart__unsent-dot {
+  fill: var(--color-warning-icon, #f59e0b);
+}
+.ev-panel-chart-legend__dot--pf {
+  background: var(--color-text-secondary, #64748b);
+}
+.ev-panel-chart-legend__swatch--amber {
+  background: var(--color-warning-surface, #fef3c7);
+}
+.ev-panel-chart__pf-rolling-line {
+  stroke: var(--color-accent, #2563eb);
+  stroke-width: 2;
+}
+.ev-panel-chart__pf-rolling-line-path {
+  fill: none;
+  stroke: var(--color-accent, #2563eb);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+.ev-panel-chart__pf-dot {
+  fill: var(--color-text-secondary, #475569);
+  fill-opacity: 0.75;
+}
+.ev-panel-chart__pf-zone {
+  fill-opacity: 0.6;
+}
+.ev-panel-chart__pf-zone--green {
+  fill: var(--color-success-surface, #dcfce7);
+}
+.ev-panel-chart__pf-zone--amber {
+  fill: var(--color-warning-surface, #fef3c7);
+}
+.ev-panel-chart__pf-zone--red {
+  fill: var(--color-danger-surface, #fee2e2);
+}
+.ev-panel-chart {
+  position: relative;
+  padding: 0 var(--space-2) var(--space-2);
+}
+.ev-panel-chart__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.ev-panel-chart__empty {
+  margin: 0;
+  padding: 28px var(--space-4);
+  text-align: center;
+  color: var(--color-text-muted);
+}
+.ev-panel-chart__grid {
+  stroke: var(--color-divider, #f1f5f9);
+}
+.ev-panel-chart__axis {
+  stroke: var(--color-border);
+}
+.ev-panel-chart__tick {
+  font-size: 11px;
+  fill: var(--color-text-subtle, #94a3b8);
+}
+.ev-panel-chart__tick--mono {
+  font-family: var(--font-mono);
+}
+.ev-panel-chart__planned {
+  fill: none;
+  stroke: var(--color-text-secondary, #94a3b8);
+  stroke-width: 2;
+  stroke-dasharray: 5 4;
+}
+.ev-panel-chart__actual {
+  fill: none;
+  stroke: var(--color-accent, #2563eb);
+  stroke-width: 2.2;
+  stroke-linejoin: round;
+}
+.ev-panel-chart__fill-ahead {
+  fill: var(--color-success-surface, #dcfce7);
+  fill-opacity: 0.9;
+}
+.ev-panel-chart__fill-behind {
+  fill: var(--color-danger-surface, #fee2e2);
+  fill-opacity: 0.85;
+}
+.ev-panel-chart__today {
+  stroke: var(--color-text);
+  stroke-dasharray: 3 3;
+}
+.ev-panel-chart__today-label {
+  font-size: 11px;
+  font-weight: 600;
+  fill: var(--color-text);
+}
+.ev-panel-chart__dot {
+  fill: var(--color-surface);
+  stroke: var(--color-text-secondary, #94a3b8);
+  stroke-width: 1.8;
+}
+.ev-panel-chart__dot--actual {
+  fill: var(--color-accent, #2563eb);
+  stroke: var(--color-surface);
+}
+
+/* Kart başlığı + lejant — grafiklerin ORTAK üst şeridi (Panel:187-196, 262-269, 291-297, 321-327). */
+.ev-panel-chart-head {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-xs, 0 1px 2px rgba(0, 0, 0, 0.04));
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.ev-panel-chart-head__row {
+  padding: var(--space-3) var(--space-4) var(--space-1);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.ev-panel-chart-head__title {
+  font-size: var(--text-md);
+  font-weight: 600;
+}
+.ev-panel-chart-head__note {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+.ev-panel-chart-legend {
+  margin-left: auto;
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+.ev-panel-chart-legend__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ev-panel-chart-legend__swatch {
+  width: 12px;
+  height: 8px;
+  border-radius: 2px;
+  display: inline-block;
+}
+.ev-panel-chart-legend__swatch--ahead {
+  background: var(--color-success-surface, #dcfce7);
+}
+.ev-panel-chart-legend__swatch--behind {
+  background: var(--color-danger-surface, #fee2e2);
+}
+.ev-panel-chart-legend__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.ev-panel-chart-legend__dot--unsent {
+  background: var(--color-warning-icon, #f59e0b);
+}
+.ev-panel-chart-legend__swatch--earned {
+  background: var(--color-accent, #2563eb);
+}
+.ev-panel-chart-legend__swatch--spent {
+  background: var(--color-border-strong, #cbd5e1);
+}
+.ev-panel-chart-legend__hatch {
+  width: 9px;
+  height: 9px;
+  border: 1px solid var(--color-border);
+  background-image: repeating-linear-gradient(135deg, var(--color-border) 0 2px, transparent 2px 4px);
+}

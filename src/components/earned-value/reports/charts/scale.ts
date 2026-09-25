@@ -16,6 +16,30 @@ export function indexScale(index: number, count: number, left: number, right: nu
   return Math.round(left + (index / (count - 1)) * (right - left));
 }
 
+/**
+ * `indexScale`in TERSİ — fare/dokunuş konumundan (viewBox birimi) en yakın
+ * NOKTA indeksini bulur (etkileşimli grafik hover'ı, emsal `budget/
+ * preview-geometry.ts sCurveIndexAt`). Aralık dışına taşan konum en yakın
+ * uca KISTIRILIR — grafiğin solunda/sağında sürüklenen fare son/ilk noktaya
+ * "yapışır", `undefined` DÖNMEZ.
+ */
+export function indexAt(viewX: number, count: number, left: number, right: number): number {
+  if (count <= 1) return 0;
+  const t = right === left ? 0 : (viewX - left) / (right - left);
+  return Math.round(Math.max(0, Math.min(1, t)) * (count - 1));
+}
+
+/**
+ * `bandScale`in TERSİ — fare konumundan en yakın BAND indeksini bulur
+ * (çubuk grafikler: günlük çift çubuk, histogram).
+ */
+export function bandIndexAt(viewX: number, count: number, left: number, right: number): number {
+  if (count <= 0) return 0;
+  const slot = (right - left) / count;
+  const i = slot === 0 ? 0 : Math.floor((viewX - left) / slot);
+  return Math.max(0, Math.min(count - 1, i));
+}
+
 /** Bir bandın (çubuk aralığının) sol kenarını eşler — `count` bant genişliğinde. */
 export function bandScale(index: number, count: number, left: number, right: number): number {
   const slot = (right - left) / Math.max(1, count);

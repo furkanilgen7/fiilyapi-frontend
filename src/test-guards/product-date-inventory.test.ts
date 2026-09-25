@@ -45,6 +45,10 @@ const URUN_TARIH_ENVANTERI: Record<string, number> = {
   // PLN-F3.4 · GİR `?tarih=` yoksa İstanbul bugünü (`todayIso`); görsel spec
   // F3.6b'de `page.clock.setFixedTime` ile sabitlenecek.
   "components/earned-value/reports/daily/daily-url-state.ts": 1,
+  // PLN-F3.3 · Panel `?tarih=` yoksa İstanbul bugünü (`todayIso` — GİR'in
+  // `daily-url-state.ts`teki AYNI yardımcısı, KOPYALANMADI); görsel spec
+  // F3.6b'de `page.clock.setFixedTime` ile sabitlenecek.
+  "components/earned-value/reports/panel/panel-url-state.ts": 1,
   "components/documents/SiteDocumentsView.tsx": 1,
   "components/equipment-rental/EquipmentRentalInvoiceDetailView.tsx": 1,
   "components/equipment-rental/EquipmentRentalInvoicesView.tsx": 1,

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { bandScale, bandWidth, fillSplit, indexScale, tickIndices, valueScale } from "./scale";
+import { bandIndexAt, bandScale, bandWidth, fillSplit, indexAt, indexScale, tickIndices, valueScale } from "./scale";
 
 describe("indexScale", () => {
   it("ilk indeks left'e, son indeks right'a düşer", () => {
@@ -14,6 +14,44 @@ describe("indexScale", () => {
 
   it("Math.round uygulanır (kesirli piksel yok)", () => {
     expect(Number.isInteger(indexScale(1, 3, 0, 10))).toBe(true);
+  });
+});
+
+describe("indexAt — indexScale'in TERSİ (etkileşimli grafik hover'ı)", () => {
+  it("indexScale ile YUVARLAK TRIP: her indeks kendi x'inden geri okunur", () => {
+    const n = 9;
+    for (let i = 0; i < n; i += 1) {
+      const x = indexScale(i, n, 44, 744);
+      expect(indexAt(x, n, 44, 744)).toBe(i);
+    }
+  });
+
+  it("aralık DIŞINA taşan konum en yakın uca KISTIRILIR", () => {
+    expect(indexAt(-100, 5, 44, 744)).toBe(0);
+    expect(indexAt(9999, 5, 44, 744)).toBe(4);
+  });
+
+  it("tek elemanlı dizide HER ZAMAN 0", () => {
+    expect(indexAt(500, 1, 44, 744)).toBe(0);
+  });
+});
+
+describe("bandIndexAt — bandScale'in TERSİ", () => {
+  it("bandScale'in ürettiği sol kenardan biraz sağdaki nokta AYNI bandı verir", () => {
+    const n = 4;
+    for (let i = 0; i < n; i += 1) {
+      const left = bandScale(i, n, 36, 450);
+      expect(bandIndexAt(left + 1, n, 36, 450)).toBe(i);
+    }
+  });
+
+  it("aralık DIŞINA taşan konum en yakın banda KISTIRILIR", () => {
+    expect(bandIndexAt(-50, 4, 36, 450)).toBe(0);
+    expect(bandIndexAt(9999, 4, 36, 450)).toBe(3);
+  });
+
+  it("count=0 çökmez", () => {
+    expect(bandIndexAt(100, 0, 36, 450)).toBe(0);
   });
 });
 

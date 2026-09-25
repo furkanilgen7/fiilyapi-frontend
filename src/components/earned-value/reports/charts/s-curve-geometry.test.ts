@@ -64,6 +64,18 @@ describe("sCurveGeometry", () => {
     expect(geo.fillBehind).not.toBe("");
   });
 
+  it("(b) baseline var, sahadan veri YOK: her gün is_future=false ama HİÇBİRİNİN progress_pct_cum'u yok → 'Bugün' YİNE de SON güne oturur", () => {
+    const points = [
+      point({ day: "2026-09-22", is_future: false, progress_pct_cum: null }),
+      point({ day: "2026-09-23", is_future: false, progress_pct_cum: null }),
+      point({ day: "2026-09-24", is_future: false, progress_pct_cum: null }),
+    ];
+    const geo = sCurveGeometry(points, label);
+    expect(geo.today?.day).toBe("2026-09-24");
+    expect(geo.today?.actualY).toBeNull();
+    expect(geo.actualPath).toBe("");
+  });
+
   it("x ekseni etiketleri ilk/son günü İÇERİR", () => {
     const points = Array.from({ length: 20 }, (_, i) =>
       point({ day: `2026-09-${String(i + 1).padStart(2, "0")}` }),

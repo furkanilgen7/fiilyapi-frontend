@@ -1,10 +1,14 @@
-/* PLN-F3.6a · Planlama Paneli — yer tutucu düzeni (gövde sonraki turda). */
+/* PLN-F3.3 · Planlama Paneli düzeni — Panel:79-448. */
+.ev-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
 .ev-panel__head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-3);
-  margin-bottom: var(--space-4);
 }
 .ev-panel__title {
   font-size: var(--text-xl);
@@ -19,4 +23,81 @@
 .ev-panel__pending {
   color: var(--color-text-muted);
   font-size: var(--text-sm);
+}
+
+.ev-panel__toolbar {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  box-shadow: var(--shadow-xs, 0 1px 2px rgba(0, 0, 0, 0.04));
+}
+.ev-panel__baseline-chip {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  background: var(--color-surface-muted, #f8fafc);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+}
+.ev-panel__baseline-chip-date {
+  font-family: var(--font-mono);
+}
+
+.ev-panel__row {
+  display: flex;
+  gap: var(--space-4);
+  align-items: stretch;
+  flex-wrap: wrap;
+}
+.ev-panel__row > :first-child {
+  flex: 3 1 640px;
+  min-width: 0;
+}
+.ev-panel__row > :last-child {
+  flex: 1 1 300px;
+  min-width: 0;
+}
+
+.ev-panel__charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: var(--space-4);
+}
+
+.ev-panel__table-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-xs, 0 1px 2px rgba(0, 0, 0, 0.04));
+  overflow: hidden;
+}
+.ev-panel__table-head {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border-subtle, #f1f5f9);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.ev-panel__table-title {
+  font-size: var(--text-md);
+  font-weight: 600;
+}
+.ev-panel__table-note {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+.ev-panel__table-link {
+  margin-left: auto;
+  font-size: var(--text-sm);
+  font-weight: 600;
 }
