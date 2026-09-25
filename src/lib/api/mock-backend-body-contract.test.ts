@@ -24,7 +24,7 @@ import path from "node:path";
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { startMockBackend } from "../../../e2e/mock-backend";
+import { EV_DAY_SCENARIO_DAYS, TIMESHEET_LOCK_SCENARIOS, startMockBackend } from "../../../e2e/mock-backend";
 
 import { fieldSchema } from "./form-limits.contract";
 
@@ -315,5 +315,341 @@ describe("🔴 test ikizi ↔ Planlama (EV) yazma gövdesi sözleşmesi", () => 
     const violation = firstViolation(json);
     expect(violation.type).toBe("extra_forbidden");
     expect(violation.loc).toEqual(["body", "leaves", 0, "oran"]);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PLN-F2.5a · SAHA (EV GÜN) YAZMA UÇLARI + GÜNLÜK GÖNDER 422
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// GEREKÇE: gün dağıtımı `PUT …/allocation` gövdesi TAM DEĞİŞTİRMEDİR ve tam
+// küme kuralları (kod ağaçta · oranlı · hücrenin kodu gövdede · satır canlı
+// kaynakta) backend'de 422'dir. İkiz bunları kabul etseydi istemcinin
+// korkuluğunu kaldıran mutasyon hiçbir e2e'yi kırmazdı. Kısıtlar
+// `openapi.json`dan, senaryo günleri ikizin kendi tablosundan okunur.
+
+
+const ALLOCATION_FORBIDS_EXTRA = rawSchema("AllocationSave").additionalProperties === false;
+const ALLOCATION_REQUIRED = rawSchema("AllocationSave").required ?? [];
+const UNLOCK_REASON_MIN = fieldSchema("UnlockBody", "reason")?.minLength;
+const DAY = (key: keyof typeof EV_DAY_SCENARIO_DAYS) => `/sites/s-1/earned-value/days/${EV_DAY_SCENARIO_DAYS[key]}`;
+
+interface DayViewLike {
+  has_baseline: boolean;
+  lock: { locked: boolean; report_date: string | null; unlock: { reason: string } | null };
+  rows: { kind: string; ref_id: string; hours: string; saved_hours: string | null; changed: boolean }[];
+  codes: { node_id: string; rule: string }[];
+  cells: { kind: string; ref_id: string; node_id: string; hours: string }[];
+  totals: { source_hours: string; allocated_hours: string; unallocated_hours: string };
+  progress: { items?: { node_id: string }[]; leaves: { node_id: string }[] } | null;
+  submit: { can_submit: boolean; reason_items?: { code: string }[] } | null;
+}
+
+/** Günün mevcut kodları + ilk canlı satır — geçerli bir gövdenin iskeleti. */
+async function dayBody(key: keyof typeof EV_DAY_SCENARIO_DAYS): Promise<{ view: DayViewLike; row: { kind: string; ref_id: string } }> {
+  const view = await getJson<DayViewLike>(DAY(key));
+  return { view, row: { kind: view.rows[0].kind, ref_id: view.rows[0].ref_id } };
+}
+
+describe("🔴 test ikizi ↔ Saha (EV gün) yazma gövdesi sözleşmesi", () => {
+  it("bekçi GERÇEKTEN ölçüyor (kısıtlar sözleşmeden okundu)", () => {
+    expect(ALLOCATION_FORBIDS_EXTRA, "AllocationSave additionalProperties:false").toBe(true);
+    expect(ALLOCATION_REQUIRED, "AllocationSave.required").toEqual(expect.arrayContaining(["codes", "cells"]));
+    expect(UNLOCK_REASON_MIN, "UnlockBody.reason.minLength").toBeGreaterThan(1);
+  });
+
+  it("GET dolu gün — dağıtım + dağıtılmamış saat + 'puantaj değişti' + kalem düğümü", async () => {
+    const view = await getJson<DayViewLike>(DAY("full"));
+    expect(view.has_baseline).toBe(true);
+    expect(Number(view.totals.unallocated_hours)).toBeGreaterThan(0);
+    expect(view.rows.some((row) => row.changed && row.saved_hours !== null)).toBe(true);
+    expect(view.progress?.items?.some((item) => item.node_id.startsWith("i:"))).toBe(true);
+    expect(view.submit?.reason_items?.map((r) => r.code)).toEqual(["undistributed_hours"]);
+  });
+
+  it("GET kilitli · engelli · EV'siz gün senaryoları", async () => {
+    const locked = await getJson<DayViewLike>(DAY("locked"));
+    expect(locked.lock).toMatchObject({ locked: true, report_date: EV_DAY_SCENARIO_DAYS.locked });
+    const blocked = await getJson<DayViewLike>(DAY("blocked"));
+    expect(blocked.submit?.can_submit).toBe(false);
+    expect(blocked.submit?.reason_items?.map((r) => r.code)).toEqual(["weather_incomplete", "no_quantity"]);
+    const noEv = await getJson<DayViewLike>(DAY("noEv"));
+    expect(noEv.has_baseline).toBe(false);
+    expect(noEv.progress).toBeNull();
+    // 🔒 Yazma hedefleri (F2.5b yazma akışları görsel senaryoları bozmasın diye ayrı günler).
+    expect((await getJson<DayViewLike>(DAY("writeTarget"))).lock.locked).toBe(false);
+    expect((await getJson<DayViewLike>(DAY("unlockTarget"))).lock.locked).toBe(true);
+  });
+
+  // 🔒 SIRA: günlük testleri PUT'lardan ÖNCE koşar. PUT testleri reddedilen
+  // gövdelerle engelli günü hedefler; bir mutant gövdeyi KABUL ederse günün
+  // dağıtımı değişir ve Gönder iddiası o mutant yüzünden de kırılırdı (bağlı
+  // kırmızı). Böylece her mutant YALNIZ kendi testini kırar.
+  it("POST /diary/{id}/submit — EV engeli `{detail, reasons, reason_items}` ile 422 döner", async () => {
+    const list = await getJson<{ items: { id: string; entry_date: string }[] }>("/sites/s-1/diary?year=2026&month=10");
+    const entry = list.items.find((item) => item.entry_date === EV_DAY_SCENARIO_DAYS.blocked);
+    expect(entry, "engelli günün günlük kaydı").toBeDefined();
+    const { status, json } = await send("POST", `/diary/${entry?.id}/submit`, {});
+    expect(status).toBe(422);
+    expect(json.reasons).toHaveLength(2);
+    expect((json.reason_items as { code: string }[]).map((r) => r.code)).toEqual(["weather_incomplete", "no_quantity"]);
+    expect(String(json.detail)).toContain("Miktar girilmedi");
+  });
+
+  it("PATCH /diary/{id} — firma satırında tanınmayan alan iç içe `extra_forbidden` döner", async () => {
+    const list = await getJson<{ items: { id: string; entry_date: string }[] }>("/sites/s-1/diary?year=2026&month=10");
+    // Dolu günün kaydı: reddedilen gövde durumu DEĞİŞTİRMEZ; engelli gün (Gönder testi) ile bağ yok.
+    const entry = list.items.find((item) => item.entry_date === EV_DAY_SCENARIO_DAYS.full);
+    const { status, json } = await send("PATCH", `/diary/${entry?.id}`, {
+      worker_counts: [{ trade: "Duvarcı", source: "subcontractor", count: 3, subcontractor_id: "sub-2", hours: 8, kisi: 3 }],
+    });
+    expect(status).toBe(422);
+    expect(firstViolation(json)).toMatchObject({ type: "extra_forbidden", loc: ["body", "worker_counts", 0, "kisi"] });
+  });
+
+  it("PUT allocation — tanınmayan üst alan `extra_forbidden` döner", async () => {
+    const { status, json } = await send("PUT", `${DAY("blocked")}/allocation`, { codes: [], cells: [], oran: 1 });
+    expect(status).toBe(422);
+    expect(firstViolation(json)).toMatchObject({ type: "extra_forbidden", loc: ["body", "oran"] });
+  });
+
+  it("PUT allocation — zorunlu `cells` eksik 422 döner", async () => {
+    const { status, json } = await send("PUT", `${DAY("blocked")}/allocation`, { codes: [] });
+    expect(status).toBe(422);
+    expect(firstViolation(json)).toMatchObject({ type: "missing", loc: ["body", "cells"] });
+  });
+
+  it("PUT allocation — hücre saati 0 (`exclusiveMinimum`) iç içe tam yolla 422 döner", async () => {
+    const { view, row } = await dayBody("blocked");
+    const { status, json } = await send("PUT", `${DAY("blocked")}/allocation`, {
+      codes: view.codes,
+      cells: [{ row, node_id: view.codes[0].node_id, hours: 0 }],
+    });
+    expect(status).toBe(422);
+    expect(firstViolation(json)).toMatchObject({ type: "greater_than", loc: ["body", "cells", 0, "hours"] });
+  });
+
+  it("PUT allocation — hücre satırında `kind` enum dışı 422 döner", async () => {
+    const { view, row } = await dayBody("blocked");
+    const { status, json } = await send("PUT", `${DAY("blocked")}/allocation`, {
+      codes: view.codes,
+      cells: [{ row: { ...row, kind: "ekip" }, node_id: view.codes[0].node_id, hours: 1 }],
+    });
+    expect(status).toBe(422);
+    expect(firstViolation(json)).toMatchObject({ type: "enum", loc: ["body", "cells", 0, "row", "kind"] });
+  });
+
+  it("PUT allocation — tam küme: hücrenin kodu gövdede yok · oransız yaprak kod 422", async () => {
+    const { view, row } = await dayBody("blocked");
+    const missing = await send("PUT", `${DAY("blocked")}/allocation`, {
+      codes: [],
+      cells: [{ row, node_id: view.codes[0].node_id, hours: 1 }],
+    });
+    expect(missing.status).toBe(422);
+    expect(String(missing.json.detail)).toContain("Hücrenin iş kodu gün kodlarında yok");
+    const unrated = await send("PUT", `${DAY("blocked")}/allocation`, {
+      codes: [{ node_id: "l:bi-6:none", rule: "direct" }],
+      cells: [],
+    });
+    expect(unrated.status).toBe(422);
+    expect(String(unrated.json.detail)).toContain("Oransız yaprak iş kodu olamaz");
+  });
+
+  it("PUT allocation — TAM DEĞİŞTİRME: gövdede olmayan kod/hücre SİLİNİR", async () => {
+    const before = await getJson<DayViewLike>(DAY("full"));
+    expect(before.codes.length).toBeGreaterThan(1);
+    const kept = before.codes[0];
+    const row = before.rows[0];
+    const saved = await send("PUT", `${DAY("full")}/allocation`, {
+      codes: [kept],
+      cells: [{ row: { kind: row.kind, ref_id: row.ref_id }, node_id: kept.node_id, hours: "4.5" }],
+    });
+    expect(saved.status).toBe(200);
+    const after = await getJson<DayViewLike>(DAY("full"));
+    expect(after.codes.map((c) => c.node_id)).toEqual([kept.node_id]);
+    expect(after.cells).toEqual([{ kind: row.kind, ref_id: row.ref_id, node_id: kept.node_id, hours: "4.50" }]);
+    expect(after.totals.allocated_hours).toBe("4.50");
+    // Kayıt anlık görüntüyü tazeler: "puantaj değişti" kalkar.
+    expect(after.rows.some((r) => r.changed)).toBe(false);
+  });
+
+  it("kilitli gün: PUT allocation 409 · kısa gerekçe 422 · kilit açılınca yazma serbest", async () => {
+    const { view, row } = await dayBody("locked");
+    const blocked = await send("PUT", `${DAY("locked")}/allocation`, { codes: view.codes, cells: [] });
+    expect(blocked.status).toBe(409);
+    expect(String(blocked.json.detail)).toContain("ilerleme raporuyla kilitli");
+    // Backend `assert_days_unlocked(site, [day])` gövdesi — kapsam yalnız bu gün.
+    expect(blocked.json.locked_days).toEqual([EV_DAY_SCENARIO_DAYS.locked]);
+    expect(blocked.json.day_locks).toEqual([
+      { day: EV_DAY_SCENARIO_DAYS.locked, report_date: EV_DAY_SCENARIO_DAYS.locked },
+    ]);
+    const short = await send("POST", `${DAY("locked")}/unlock`, { reason: "x".repeat((UNLOCK_REASON_MIN ?? 1) - 1) });
+    expect(short.status).toBe(422);
+    expect(firstViolation(short.json)).toMatchObject({ type: "string_too_short", loc: ["body", "reason"] });
+    const opened = await send("POST", `${DAY("locked")}/unlock`, { reason: "Miktar düzeltmesi" });
+    expect(opened.status).toBe(200);
+    expect(opened.json).toMatchObject({ locked: false, unlock: { reason: "Miktar düzeltmesi" } });
+    const again = await send("POST", `${DAY("locked")}/unlock`, { reason: "İkinci kez" });
+    expect(again.status, "kilitli olmayan gün 409").toBe(409);
+    const written = await send("PUT", `${DAY("locked")}/allocation`, {
+      codes: view.codes,
+      cells: [{ row, node_id: view.codes[0].node_id, hours: 9 }],
+    });
+    expect(written.status).toBe(200);
+  });
+
+  it("EV'siz gün: PUT allocation 409 (baseline yok) · code-tree s-2 boş", async () => {
+    const { status, json } = await send("PUT", `${DAY("noEv")}/allocation`, { codes: [], cells: [] });
+    expect(status).toBe(409);
+    expect(String(json.detail)).toContain("baseline yok");
+    expect(await getJson<unknown[]>("/sites/s-2/earned-value/code-tree")).toEqual([]);
+    const tree = await getJson<{ id: string; has_rate: boolean | null }[]>("/sites/s-1/earned-value/code-tree");
+    expect(tree.some((node) => node.has_rate === false), "en az bir ORANSIZ yaprak (K12)").toBe(true);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PLN-F2.5b · PUANTAJ KİLİDİ (§3.14 P1–P5 · EV-BORC-4)
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// GEREKÇE: puantaj haftasının `locked_days`/`day_locks`i ve `PUT` 409'u EV gün
+// kilidinden (TEK kaynak, `evLockState`) türer. İkiz kilitli günü yazmaya izin
+// verseydi istemcinin salt okunur korkuluğunu (`LockedWeekCell`) kaldıran bir
+// mutasyon hiçbir e2e'yi kırmazdı; 409 gövdesi `locked_days` taşımasaydı
+// istemcinin kilit dalı (`timesheetLockConflictLocks`) kişi-gün çakışmasına
+// düşerdi. 409 metni backend `diary_adapter.LOCKED_MESSAGE` ile BİREBİRdir.
+//
+// 🔒 SIRA: bu blok dosyanın SONUNDADIR ve ikiz dosya içinde paylaşılır; yazan
+// testler (P5 200 · kilit açma) okuyan testlerden SONRA koşar.
+
+interface WeekCellLike {
+  work_date: string;
+  hours: string | null;
+  code: string | null;
+  section_id: string | null;
+}
+
+interface WeekLike {
+  locked_days?: string[];
+  day_locks?: { day: string; report_date: string | null }[];
+  rows: { personnel_id: string; cells: WeekCellLike[] }[];
+}
+
+interface PutCell extends WeekCellLike {
+  personnel_id: string;
+}
+
+const LOCK = TIMESHEET_LOCK_SCENARIOS;
+const WEEK = (isoWeek: number) => `/sites/s-1/timesheet/week?iso_year=2026&iso_week=${isoWeek}`;
+
+/** Haftanın TAM hücre kümesi (PUT gövdesi) — GET yanıtından. */
+function weekCells(week: WeekLike): PutCell[] {
+  return week.rows.flatMap((row) =>
+    row.cells.map((cell) => ({ personnel_id: row.personnel_id, ...cell })),
+  );
+}
+
+function withHours(cells: readonly PutCell[], personnelId: string, day: string, hours: string): PutCell[] {
+  return cells.map((cell) =>
+    cell.personnel_id === personnelId && cell.work_date === day ? { ...cell, hours, code: null } : cell,
+  );
+}
+
+describe("🔴 test ikizi ↔ puantaj KİLİDİ (EV gün kilidi TEK kaynak)", () => {
+  it("Ağustos/Eylül puantaj haftaları KİLİTSİZ — mevcut görsel kareler etkilenmez", async () => {
+    for (const isoWeek of [32, 35, 36, 37, 38, 39]) {
+      const week = await getJson<WeekLike>(WEEK(isoWeek));
+      expect(week.locked_days, `W${isoWeek}`).toEqual([]);
+      expect(week.day_locks, `W${isoWeek}`).toEqual([]);
+    }
+  });
+
+  it("(a) kısmen kilitli hafta · TEK rapor: Pzt–Per ← 15.10", async () => {
+    const week = await getJson<WeekLike>(WEEK(LOCK.partial.isoWeek));
+    const days = ["2026-10-12", "2026-10-13", "2026-10-14", "2026-10-15"];
+    expect(week.locked_days).toEqual(days);
+    expect(week.day_locks).toEqual(days.map((day) => ({ day, report_date: LOCK.partial.reportDate })));
+    expect(week.rows.length, "kilitli haftada puantaj satırı var").toBeGreaterThan(0);
+  });
+
+  it("(b) ardışık OLMAYAN · İKİ rapor: gün1→rapor gün1 · gün2 açık · gün3/gün4→rapor gün4", async () => {
+    const week = await getJson<WeekLike>(WEEK(LOCK.twoReports.isoWeek));
+    expect(week.locked_days).toEqual(["2026-10-19", "2026-10-21", "2026-10-22"]);
+    expect(week.day_locks).toEqual([
+      { day: "2026-10-19", report_date: "2026-10-19" },
+      { day: "2026-10-21", report_date: "2026-10-22" },
+      { day: "2026-10-22", report_date: "2026-10-22" },
+    ]);
+  });
+
+  it("(c) tamamen kilitli hafta: yedi gün ← 01.11", async () => {
+    const week = await getJson<WeekLike>(WEEK(LOCK.full.isoWeek));
+    expect(week.locked_days).toHaveLength(7);
+    expect(week.locked_days?.[0]).toBe("2026-10-26");
+    expect(week.locked_days?.[6]).toBe("2026-11-01");
+    expect(new Set(week.day_locks?.map((lock) => lock.report_date))).toEqual(new Set([LOCK.full.reportDate]));
+  });
+
+  it("puantaj kilidi = EV gün kilidi (aynı kaynak): kilitli gün + istisnayla açılmış gün", async () => {
+    const locked = await getJson<DayViewLike>("/sites/s-1/earned-value/days/2026-10-14");
+    expect(locked.lock).toMatchObject({ locked: true, report_date: LOCK.partial.reportDate, unlock: null });
+    // Sal 20: 22.10 onayı kapsar ama ona bağlı istisna açmıştır.
+    const opened = await getJson<DayViewLike>("/sites/s-1/earned-value/days/2026-10-20");
+    expect(opened.lock).toMatchObject({ locked: false, report_date: "2026-10-22", unlock: { reason: "Puantaj düzeltmesi" } });
+  });
+
+  it("PUT — kilitli günü DEĞİŞTİREN gövde 409 `{detail, locked_days, day_locks}` · atomik (hiçbir şey yazılmaz)", async () => {
+    const before = await getJson<WeekLike>(WEEK(LOCK.conflict.isoWeek));
+    // Sal 3 Kas KİLİTLİ (9 → 10) + Per 5 Kas kilitsiz (9 → 11).
+    const cells = withHours(withHours(weekCells(before), "per-1", "2026-11-03", "10.0"), "per-1", "2026-11-05", "11.0");
+    const { status, json } = await send("PUT", WEEK(LOCK.conflict.isoWeek), { cells });
+    expect(status).toBe(409);
+    expect(json).toEqual({
+      detail: "Bu gün 03.11.2026 tarihli ilerleme raporuyla kilitli",
+      locked_days: ["2026-11-02", "2026-11-03"],
+      day_locks: [
+        { day: "2026-11-02", report_date: LOCK.conflict.reportDate },
+        { day: "2026-11-03", report_date: LOCK.conflict.reportDate },
+      ],
+    });
+    // Atomik: kilitsiz günün değişikliği de YAZILMADI.
+    expect(await getJson<WeekLike>(WEEK(LOCK.conflict.isoWeek))).toEqual(before);
+  });
+
+  it("PUT — kilitli günün hücresini SİLEN gövde de 409 (silinen hücre = değişen gün)", async () => {
+    const before = await getJson<WeekLike>(WEEK(LOCK.conflict.isoWeek));
+    const cells = weekCells(before).filter(
+      (cell) => !(cell.personnel_id === "per-2" && cell.work_date === "2026-11-02"),
+    );
+    const { status, json } = await send("PUT", WEEK(LOCK.conflict.isoWeek), { cells });
+    expect(status).toBe(409);
+    expect(json.locked_days).toEqual(["2026-11-02", "2026-11-03"]);
+  });
+
+  it("P5 — kilitli günleri DEĞİŞMEDEN taşıyan gövde 200 (yalnız kilitsiz gün yazılır)", async () => {
+    const before = await getJson<WeekLike>(WEEK(LOCK.conflict.isoWeek));
+    const cells = withHours(weekCells(before), "per-1", "2026-11-05", "11.0");
+    const { status, json } = await send("PUT", WEEK(LOCK.conflict.isoWeek), { cells });
+    expect(status).toBe(200);
+    expect(json.locked_days).toEqual(["2026-11-02", "2026-11-03"]);
+    const after = await getJson<WeekLike>(WEEK(LOCK.conflict.isoWeek));
+    expect(weekCells(after)).toEqual(expect.arrayContaining([expect.objectContaining({ personnel_id: "per-1", work_date: "2026-11-05", hours: "11.0" })]));
+  });
+
+  it("kilit açılınca (`POST …/unlock`) puantajda da açılır ve o gün yazılabilir", async () => {
+    const unlockDay = EV_DAY_SCENARIO_DAYS.unlockTarget;
+    const lockedWeek = await getJson<WeekLike>(WEEK(40));
+    expect(lockedWeek.locked_days).toEqual([unlockDay]);
+    const newCell: PutCell = { personnel_id: "per-1", work_date: unlockDay, hours: "9.0", code: null, section_id: "sec-1" };
+    const refused = await send("PUT", WEEK(40), { cells: [...weekCells(lockedWeek), newCell] });
+    expect(refused.status, "kilitliyken yazma 409").toBe(409);
+
+    const opened = await send("POST", `/sites/s-1/earned-value/days/${unlockDay}/unlock`, { reason: "Puantaj düzeltmesi" });
+    expect(opened.status).toBe(200);
+    const openWeek = await getJson<WeekLike>(WEEK(40));
+    expect(openWeek.locked_days).toEqual([]);
+    expect(openWeek.day_locks).toEqual([]);
+    const written = await send("PUT", WEEK(40), { cells: [...weekCells(openWeek), newCell] });
+    expect(written.status, "kilit açıldıktan sonra yazma serbest").toBe(200);
   });
 });

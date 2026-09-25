@@ -322,6 +322,10 @@ const SECTION_UPDATE_SCHEMA = loadBodySchema("SectionUpdate");
 const SITE_DIARY_ENTRY_CREATE_SCHEMA = loadBodySchema("SiteDiaryEntryCreate");
 const SITE_DIARY_ENTRY_UPDATE_SCHEMA = loadBodySchema("SiteDiaryEntryUpdate");
 const SITE_PLAN_CELL_INPUT_SCHEMA = loadBodySchema("SitePlanCellInput");
+/* PLN-F2.5a · günlük iç içe gövdeleri: işçi satırı (firma `hours` ≤ 24 ·
+ * `additionalProperties:false`) ve EV günü satırı (bölüm + aşım gerekçesi). */
+const SITE_DIARY_WORKER_COUNT_INPUT_SCHEMA = loadBodySchema("SiteDiaryWorkerCountInput");
+const SITE_DIARY_LINE_INPUT_SCHEMA = loadBodySchema("SiteDiaryLineInput");
 
 /* 🔴 SAT-IKIZ · AYNI KAPI, SATIN ALMA TALEBİ GÖVDESİ. `justification`
  * `maxLength: 2000`, `priority` üç üyeli bir enum'dur (`PurchasePriority`);
@@ -3394,12 +3398,22 @@ interface MockDiaryLine {
   unit: string;
   unit_price: string;
   quantity: string;
+  /**
+   * PLN-F2.5a · kalem × bölüm yaprağı (B2). YALNIZ EV gün senaryolarının
+   * satırlarında TANIMLIDIR (`evLines`); eski iskelet satırları bu alanı
+   * TAŞIMAZ ve yanıtları bayt bayt aynı kalır (Temmuz kareleri).
+   */
+  section_id?: string | null;
+  overrun_reason?: string | null;
 }
 interface MockDiaryWorkerCount {
   id: string;
   trade: string;
   source: "company" | "subcontractor" | "general";
   count: number;
+  /** PLN-F2.5a · FİRMA satırı (G10): taşeron kimliği + kişi başı saat. */
+  subcontractor_id?: string | null;
+  hours?: string | null;
 }
 interface MockDiaryEntry {
   id: string;
@@ -3409,6 +3423,10 @@ interface MockDiaryEntry {
   section_id: string | null;
   weather: components["schemas"]["Weather"] | null;
   temperature_c: string | null;
+  /** PLN-F2.5a · 10'lu hava + min/max/rüzgâr (B2.1). Eski kayıtlarda YOK → `null`. */
+  temp_min_c?: string | null;
+  temp_max_c?: string | null;
+  wind_ms?: string | null;
   work_done: string | null;
   chief_note: string | null;
   safety_meeting_held: boolean;
@@ -3422,6 +3440,21 @@ interface MockDiaryEntry {
   updated_at: string;
   lines: MockDiaryLine[];
   worker_counts: MockDiaryWorkerCount[];
+  /**
+   * PLN-F2.5a · EV gününün kaydı: satırlar İSKELET DEĞİL, gerçek backend
+   * gibi yalnız girilen (kalem × bölüm) satırlarıdır ve `PUT lines` TAM
+   * DEĞİŞTİRİR (bölüm + aşım gerekçesi korunur). Eski kayıtlar iskelet
+   * davranışını AYNEN sürdürür.
+   */
+  evLines?: boolean;
+  /**
+   * 🔒 TEST İZOLASYONU (`hiddenFromLists` emsali). Bölüm detayının günlük
+   * sekmesi AY SÜZGEÇSİZ listeyi okur (`section-detail-visual.spec.ts:176`
+   * notu) — EV senaryo kayıtları oraya girseydi sec-1'in "1 satır" iddiası ve
+   * notun metni/yüksekliği değişirdi. Ay süzgeçli liste (günlük ekranı) onları
+   * GÖRÜR. GERÇEK backend'de böyle bir dışlama YOKTUR.
+   */
+  hiddenFromUnfilteredList?: boolean;
 }
 
 const ALL_BOQ_ITEMS = BOQ_FIXTURE.flatMap((g) => g.items);
@@ -3461,7 +3494,46 @@ function buildDiaryLineRead(state: MockState, entry: MockDiaryEntry, line: MockD
     quantity: line.quantity,
     cumulative_quantity: qty3(diaryCumulativeQuantity(state, entry, line.boq_item_id)),
     line_amount: money2(Number(line.quantity) * Number(line.unit_price)),
+    ...(line.section_id === undefined ? {} : diaryLeafFields(state, entry, line)),
   };
+}
+
+/**
+ * PLN-F2.5a · yaprak türevleri (B2): planlı = BOQ tahsisi (bölümsüz yaprakta
+ * tahsis DIŞI kalan), yaprak kümülatifi = aynı şantiye · aynı kalem × bölüm ·
+ * bu güne KADAR (dahil). YALNIZ `section_id` taşıyan (EV) satırlarda basılır.
+ */
+function diaryLeafFields(
+  state: MockState,
+  entry: MockDiaryEntry,
+  line: MockDiaryLine,
+): Pick<
+  components["schemas"]["SiteDiaryLineRead"],
+  "section_id" | "overrun_reason" | "planned_quantity" | "leaf_cumulative_quantity" | "remaining_quantity"
+> {
+  const sectionId = line.section_id ?? null;
+  const cumulative = state.diaryEntries
+    .filter((e) => e.site_id === entry.site_id && e.entry_date <= entry.entry_date)
+    .flatMap((e) => e.lines.filter((l) => l.boq_item_id === line.boq_item_id && (l.section_id ?? null) === sectionId))
+    .reduce((sum, l) => sum + Number(l.quantity), 0);
+  const planned = diaryLeafPlanned(line.boq_item_id, sectionId);
+  return {
+    section_id: sectionId,
+    overrun_reason: line.overrun_reason ?? null,
+    planned_quantity: planned === null ? null : qty3(planned),
+    leaf_cumulative_quantity: qty3(cumulative),
+    remaining_quantity: planned === null ? null : qty3(planned - cumulative),
+  };
+}
+
+/** Yaprağın planlı miktarı: bölüm → tahsis; bölümsüz → tahsis dışı kalan. */
+function diaryLeafPlanned(boqItemId: string, sectionId: string | null): number | null {
+  const item = ALL_BOQ_ITEMS.find((candidate) => candidate.id === boqItemId);
+  if (item === undefined) return null;
+  const allocations = item.allocations ?? {};
+  if (sectionId !== null) return allocations[sectionId] === undefined ? null : Number(allocations[sectionId]);
+  const allocated = Object.values(allocations).reduce((sum, qty) => sum + Number(qty), 0);
+  return Number(item.quantity) - allocated;
 }
 
 function diaryLinesTotal(entry: MockDiaryEntry): number {
@@ -3484,6 +3556,9 @@ function buildDiaryEntryDetail(
     section_id: entry.section_id,
     weather: entry.weather,
     temperature_c: entry.temperature_c,
+    temp_min_c: entry.temp_min_c ?? null,
+    temp_max_c: entry.temp_max_c ?? null,
+    wind_ms: entry.wind_ms ?? null,
     work_done: entry.work_done,
     chief_note: entry.chief_note,
     safety_meeting_held: entry.safety_meeting_held,
@@ -3500,6 +3575,9 @@ function buildDiaryEntryDetail(
     lines_total: money2(diaryLinesTotal(entry)),
     worker_total: diaryWorkerTotal(entry),
     dropped_orphan_count: 0,
+    // EV-BORC-2 · puantajdan TÜRER (gerçek backend `site_diary/read.py:227`);
+    // puantajı olmayan gün boş liste (boş hâl).
+    own_crew_from_timesheet: evOwnCrewFromTimesheet(entry.site_id, entry.entry_date),
   };
 }
 
@@ -3576,7 +3654,178 @@ function buildDiaryEntryFixtures(): MockDiaryEntry[] {
       lines: buildDiaryLineSkeleton("d-3", { "bi-5": 320, "bi-6": 260 }),
       worker_counts: [{ id: "d-3-w-1", trade: "Duvarcı", source: "subcontractor", count: 10 }],
     },
+    ...buildEvDiaryScenarioEntries(),
   ];
+}
+
+/**
+ * PLN-F2.5a · EV gün senaryolarının günlük kayıtları (s-1 · EKİM 2026).
+ *
+ * 🔒 NEDEN EKİM: Temmuz görsel/okuma fikstürlerinindir, EYLÜL `site-diary.spec`
+ * mutasyon akışınındır ("Bu ayda henüz günlük kayıt yok" iddiası s-1 · 2026-09).
+ * Ekim'e hiçbir spec bakmaz. Ay süzgeçsiz listeden gizlidir
+ * (`hiddenFromUnfilteredList`). Gün ↔ senaryo tablosu: `EV_DAY_SCENARIO_DAYS`.
+ */
+function buildEvDiaryScenarioEntries(): MockDiaryEntry[] {
+  const base = {
+    site_id: "s-1", project_id: "p-1", section_id: "sec-1", temperature_c: null,
+    chief_note: null, safety_meeting_held: true, ppe_checked: true, has_incident: false,
+    incident_note: null, created_by: "u-2", evLines: true, hiddenFromUnfilteredList: true,
+  } as const;
+  return [
+    // (b) KİLİTLİ gün — gönderilmiş; 06.10 onaylı rapor kilidi (EV tarafı).
+    {
+      ...base, id: "d-4", entry_date: EV_DAY_SCENARIO_DAYS.locked,
+      weather: "sunny", temp_min_c: "15.0", temp_max_c: "26.0", wind_ms: "3.1",
+      work_done: "Kat 7 döşeme betonu döküldü, kolon demirleri bağlandı.",
+      status: "submitted", submitted_at: "2026-10-05T17:20:00Z",
+      created_at: "2026-10-05T08:00:00Z", updated_at: "2026-10-05T17:20:00Z",
+      lines: evDiaryLines("d-4", [["bi-3", "sec-1", 30], ["bi-4", "sec-1", 2.8], ["bi-5", null, 60]]),
+      worker_counts: [
+        { id: "d-4-w-1", trade: "Duvarcı", source: "subcontractor", count: 6, subcontractor_id: "sub-2", hours: "8.0" },
+      ],
+    },
+    // (c) GÖNDER ENGELLİ — miktar YOK + hava EKSİK (min/max/rüzgâr boş).
+    {
+      ...base, id: "d-5", entry_date: EV_DAY_SCENARIO_DAYS.blocked,
+      weather: "rainy", temp_min_c: null, temp_max_c: null, wind_ms: null,
+      work_done: "Yağış nedeniyle beton dökümü yapılamadı; kalıp hazırlığı sürdü.",
+      status: "draft", submitted_at: null,
+      created_at: "2026-10-06T08:00:00Z", updated_at: "2026-10-06T10:10:00Z",
+      lines: [],
+      worker_counts: [],
+    },
+    // (a) DOLU gün — dağıtım var, dağıtılmamış saat var, iki firma satırı.
+    {
+      ...base, id: "d-6", entry_date: EV_DAY_SCENARIO_DAYS.full,
+      weather: "partly_cloudy", temp_min_c: "17.0", temp_max_c: "28.0", wind_ms: "4.2",
+      work_done: "Kat 8 döşeme betonu döküldü, kat 9 kolon demiri bağlandı, tuğla duvar sürdü.",
+      chief_note: "Beton pompası 07:30'da sahada.",
+      status: "draft", submitted_at: null,
+      created_at: "2026-10-07T08:00:00Z", updated_at: "2026-10-07T16:45:00Z",
+      lines: evDiaryLines("d-6", [["bi-3", "sec-1", 28], ["bi-4", "sec-1", 3.4], ["bi-5", null, 52], ["bi-6", null, 90]]),
+      worker_counts: [
+        { id: "d-6-w-1", trade: "Duvarcı", source: "subcontractor", count: 7, subcontractor_id: "sub-2", hours: "8.0" },
+        { id: "d-6-w-2", trade: "Elektrikçi", source: "subcontractor", count: 3, subcontractor_id: "sub-1", hours: "8.0" },
+      ],
+    },
+    // (d) EV KURULU DEĞİL + kendi ekip BOŞ (puantaj yok) — çekirdek günlük.
+    {
+      ...base, id: "d-7", entry_date: EV_DAY_SCENARIO_DAYS.noEv,
+      weather: "cloudy", temp_min_c: "14.0", temp_max_c: "22.0", wind_ms: "5.0",
+      work_done: "Şantiye içi düzenleme ve malzeme sevkiyatı.",
+      status: "draft", submitted_at: null,
+      created_at: "2026-10-08T08:00:00Z", updated_at: "2026-10-08T09:30:00Z",
+      lines: evDiaryLines("d-7", [["bi-2", null, 40]]),
+      worker_counts: [],
+    },
+    // 🔒 (e) YAZMA HEDEFİ — taslak; hava tam, miktar var, 17 a-s dağıtılmamış.
+    {
+      ...base, id: "d-8", entry_date: EV_DAY_SCENARIO_DAYS.writeTarget,
+      weather: "sunny", temp_min_c: "16.0", temp_max_c: "27.0", wind_ms: "2.5",
+      work_done: "Kat 9 döşeme betonu hazırlığı.",
+      status: "draft", submitted_at: null,
+      created_at: "2026-10-09T08:00:00Z", updated_at: "2026-10-09T12:00:00Z",
+      lines: evDiaryLines("d-8", [["bi-3", "sec-1", 20]]),
+      worker_counts: [],
+    },
+    // 🔒 (f) KİLİT AÇMA HEDEFİ — gönderilmiş; 03.10 onaylı raporla kilitli.
+    {
+      ...base, id: "d-9", entry_date: EV_DAY_SCENARIO_DAYS.unlockTarget,
+      weather: "sunny", temp_min_c: "14.0", temp_max_c: "25.0", wind_ms: "2.0",
+      work_done: "Kat 7 kalıp hazırlığı.",
+      status: "submitted", submitted_at: "2026-10-02T17:00:00Z",
+      created_at: "2026-10-02T08:00:00Z", updated_at: "2026-10-02T17:00:00Z",
+      lines: evDiaryLines("d-9", [["bi-3", "sec-1", 10]]),
+      worker_counts: [],
+    },
+  ];
+}
+
+/** EV satırları: yalnız girilen (kalem × bölüm) yaprakları; snapshot BOQ'dan. */
+function evDiaryLines(
+  entryId: string,
+  rows: readonly (readonly [string, string | null, number])[],
+): MockDiaryLine[] {
+  return rows.map(([itemId, sectionId, quantity]) => {
+    const item = ALL_BOQ_ITEMS.find((candidate) => candidate.id === itemId);
+    if (item === undefined) throw new Error(`EV günlük satırı: bilinmeyen BOQ kalemi ${itemId}`);
+    return {
+      id: `${entryId}-l-${itemId}-${sectionId ?? "none"}`,
+      boq_item_id: item.id,
+      code: item.code,
+      description: item.description,
+      unit: item.unit,
+      unit_price: item.unit_price,
+      quantity: qty3(quantity),
+      section_id: sectionId,
+      overrun_reason: null,
+    };
+  });
+}
+
+/** `Numeric(4,1)` sütunu (hava sayıları · firma saati): `17` → `"17.0"`, boş → `null`. */
+function diaryDecimal1(raw: unknown): string | null {
+  if (raw === undefined || raw === null || raw === "") return null;
+  const value = Number(raw);
+  return Number.isFinite(value) ? value.toFixed(1) : null;
+}
+
+/**
+ * `PATCH /diary/{id}` · `worker_counts[]` elemanları `SiteDiaryWorkerCountInput`
+ * kapısından geçer (tanınmayan alan · firma saati 0 < h ≤ 24 · kişi ≥ 0).
+ * Tam küme (DEĞİŞTİRME) kuralı DEĞİŞMEDİ; yalnız eleman şekli denetlenir.
+ */
+function diaryWorkerCountsViolation(raw: unknown): EvViolationBody | null {
+  if (raw === undefined || raw === null) return null;
+  const list = evArrayViolation(raw, ["worker_counts"], undefined);
+  if (list !== null) return list;
+  return evEachViolation(raw as unknown[], SITE_DIARY_WORKER_COUNT_INPUT_SCHEMA, "worker_counts");
+}
+
+/**
+ * EV günü kaydının `PUT /diary/{id}/lines`i — gerçek backend semantiği
+ * (`site_diary/lines.py`): gövde TAM KÜMEDİR, geçmeyen satır SİLİNİR; satır
+ * kimliği (kalem, bölüm); snapshot BOQ'dan. Sıra: şekil 422 → gövde-içi çift
+ * 409 → poz 422 → yeni bölümlü satırın tahsisi 422. `null` = yazıldı.
+ */
+function diaryReplaceEvLines(
+  entry: MockDiaryEntry,
+  body: Record<string, unknown>,
+): { status: number; body: unknown } | null {
+  const shape =
+    evArrayViolation(body.lines ?? [], ["lines"], undefined) ??
+    evEachViolation((body.lines as unknown[] | undefined) ?? [], SITE_DIARY_LINE_INPUT_SCHEMA, "lines");
+  if (shape !== null) return { status: 422, body: shape };
+  const inputs = ((body.lines as Record<string, unknown>[] | undefined) ?? []).map((line) => ({
+    itemId: String(line.boq_item_id),
+    sectionId: typeof line.section_id === "string" ? line.section_id : null,
+    quantity: Number(line.quantity),
+    overrunReason: typeof line.overrun_reason === "string" && line.overrun_reason.trim() !== "" ? line.overrun_reason : null,
+  }));
+  const keys = inputs.map((input) => `${input.itemId}:${input.sectionId ?? "none"}`);
+  if (new Set(keys).size !== keys.length) {
+    return { status: 409, body: { detail: "Aynı poz (aynı bölümle) gövdede birden fazla kez gönderildi" } };
+  }
+  if (inputs.some((input) => !ALL_BOQ_ITEMS.some((item) => item.id === input.itemId))) {
+    return { status: 422, body: { detail: "Seçilen poz bu şantiyenin BOQ'suna ait değil" } };
+  }
+  const existing = new Set(entry.lines.map((line) => `${line.boq_item_id}:${line.section_id ?? "none"}`));
+  const unallocated = inputs.find(
+    (input, index) =>
+      input.sectionId !== null && !existing.has(keys[index]) && diaryLeafPlanned(input.itemId, input.sectionId) === null,
+  );
+  if (unallocated !== undefined) {
+    return {
+      status: 422,
+      body: { detail: "Kalemin bu bölüme tahsisi yok; miktarı Bölümsüz satıra yazın ya da önce BOQ'da tahsis edin" },
+    };
+  }
+  entry.lines = inputs.map((input) => ({
+    ...evDiaryLines(entry.id, [[input.itemId, input.sectionId, input.quantity]])[0],
+    overrun_reason: input.overrunReason,
+  }));
+  return null;
 }
 
 /**
@@ -4265,7 +4514,52 @@ const TIMESHEET_CELL_FIXTURES: MockTimesheetCell[] = [
   // kayıtlı. Aynı kişi-günü s-1'e yazmaya kalkan PUT çakışma alır. Hafta
   // BİLEREK ayrıdır: oyun alanı (W36) ve kadraj (W32) etkilenmez.
   { site_id: "s-2", personnel_id: "per-3", work_date: "2026-09-10", hours: "9.0", code: null, section_id: null },
+
+  // ── PLN-F2.5b · KİLİTLİ GÜN haftaları (s-1 · Ekim/Kasım 2026) ──
+  // Kilitler EV gün ikizinden gelir (`TIMESHEET_LOCK_SCENARIOS` +
+  // `evSeedApprovals`); W41'e (EV senaryo haftası) hücre KONMAZ. Hücre paleti
+  // kilitli kolonlarda da tam/eksik/FM tonu + izin/görev rozeti taşır (§3.14 P3).
+  ...timesheetLockWeekCells(),
 ];
+
+/** `[kişi, bölüm, {gün: saat | kod}]` → hücreler (yalnız s-1). */
+function timesheetRows(
+  rows: readonly (readonly [string, string, Readonly<Record<string, number | MockTimesheetCode>>])[],
+): MockTimesheetCell[] {
+  return rows.flatMap(([personnelId, sectionId, days]) =>
+    Object.entries(days).map(([workDate, value]) => ({
+      site_id: "s-1",
+      personnel_id: personnelId,
+      work_date: workDate,
+      hours: typeof value === "number" ? value.toFixed(1) : null,
+      code: typeof value === "number" ? null : value,
+      section_id: sectionId,
+    })),
+  );
+}
+
+function timesheetLockWeekCells(): MockTimesheetCell[] {
+  return timesheetRows([
+    // (a) 2026-W42 · 12–18 Eki — Pzt–Per kilitli (15.10 raporu).
+    ["per-1", "sec-1", { "2026-10-12": 9, "2026-10-13": 9, "2026-10-14": 11, "2026-10-15": 9, "2026-10-16": 9, "2026-10-17": 6 }],
+    ["per-2", "sec-1", { "2026-10-12": 9, "2026-10-13": 5, "2026-10-14": 9, "2026-10-15": "leave", "2026-10-16": 12 }],
+    ["per-3", "sec-1", { "2026-10-12": 9, "2026-10-13": 9, "2026-10-14": "temporary_duty", "2026-10-15": 9, "2026-10-16": 9 }],
+    ["per-4", "sec-2", { "2026-10-12": 9, "2026-10-13": 9, "2026-10-14": 9, "2026-10-15": 4, "2026-10-16": 9, "2026-10-18": 8 }],
+    // (b) 2026-W43 · 19–25 Eki — Pzt (19.10) · Sal AÇIK · Çar+Per (22.10).
+    ["per-1", "sec-1", { "2026-10-19": 9, "2026-10-20": 9, "2026-10-21": 9, "2026-10-22": 10, "2026-10-23": 9 }],
+    ["per-2", "sec-1", { "2026-10-19": 9, "2026-10-20": "leave", "2026-10-21": 9, "2026-10-22": 9, "2026-10-23": 9 }],
+    ["per-3", "sec-1", { "2026-10-19": 12, "2026-10-20": 9, "2026-10-21": 9, "2026-10-22": 9, "2026-10-23": 6 }],
+    ["per-4", "sec-2", { "2026-10-19": 9, "2026-10-20": 9, "2026-10-21": 5, "2026-10-22": 9, "2026-10-23": 9, "2026-10-24": 6 }],
+    // (c) 2026-W44 · 26 Eki – 1 Kas — yedi gün kilitli (01.11 raporu).
+    ["per-1", "sec-1", { "2026-10-26": 9, "2026-10-27": 9, "2026-10-28": 9, "2026-10-29": 9, "2026-10-30": 9, "2026-10-31": 6 }],
+    ["per-2", "sec-1", { "2026-10-26": 9, "2026-10-27": 11, "2026-10-28": 9, "2026-10-29": 9, "2026-10-30": 9 }],
+    ["per-3", "sec-1", { "2026-10-26": 9, "2026-10-27": 9, "2026-10-28": "leave", "2026-10-29": 9, "2026-10-30": 9 }],
+    ["per-4", "sec-2", { "2026-10-26": 9, "2026-10-27": 9, "2026-10-28": 9, "2026-10-29": 9, "2026-10-30": 4 }],
+    // 🔒 (e) 2026-W45 · 2–8 Kas — 409 hedefi (Pzt+Sal kilitli, 03.11 raporu).
+    ["per-1", "sec-1", { "2026-11-02": 9, "2026-11-03": 9, "2026-11-04": 9, "2026-11-05": 9 }],
+    ["per-2", "sec-1", { "2026-11-02": 9, "2026-11-03": 9, "2026-11-04": 9, "2026-11-05": 9 }],
+  ]);
+}
 
 function timesheetMonthDays(year: number, month: number): string[] {
   const dayCount = new Date(Date.UTC(year, month, 0)).getUTCDate();
@@ -4464,6 +4758,36 @@ function buildTimesheetMatrix(
 }
 
 /**
+ * PLN-F2.5b · backend `service._changed_days` ikizi — gelen ≠ mevcut olan
+ * günler: yeni hücre · silinen hücre · `hours`/`code`/`section_id`ten birinde
+ * fark. Kilit yalnız BU günlere sorulur (P5: değişmeden taşımak serbest).
+ */
+function timesheetChangedDays(
+  existing: readonly MockTimesheetCell[],
+  incoming: readonly MockTimesheetCell[],
+): string[] {
+  const keyOf = (cell: MockTimesheetCell) => `${cell.personnel_id}|${cell.work_date}`;
+  const before = new Map(existing.map((cell) => [keyOf(cell), cell]));
+  const after = new Set(incoming.map(keyOf));
+  const changed = new Set<string>();
+  for (const cell of incoming) {
+    const row = before.get(keyOf(cell));
+    if (
+      row === undefined ||
+      row.hours !== cell.hours ||
+      row.code !== cell.code ||
+      row.section_id !== cell.section_id
+    ) {
+      changed.add(cell.work_date);
+    }
+  }
+  for (const [key, row] of before) {
+    if (!after.has(key)) changed.add(row.work_date);
+  }
+  return [...changed];
+}
+
+/**
  * `GET|PUT /sites/{id}/timesheet/week` — E5'in haftalık ekranı.
  *
  * 🔴 Ay bilgisi haftanın PERŞEMBEsinden okunur: hafta iki ayı bölüyorsa
@@ -4476,6 +4800,7 @@ function buildTimesheetWeek(
   isoYear: number,
   isoWeek: number,
   sectionId: string | null,
+  dayLocks: readonly EvDayLockItem[],
 ): components["schemas"]["TimesheetWeek"] {
   const project = state.projects.find((p) => p.id === site.project_id);
   const section = sectionId ? state.sections.find((s) => s.id === sectionId) : undefined;
@@ -4570,6 +4895,10 @@ function buildTimesheetWeek(
     month_total_hours: hoursText(monthTotal),
     month_man_days: manDaysText(monthTotal),
     month_weeks: monthWeeks,
+    // PLN-F2.5b · haftanın kilitli günleri — EV gün kilidinden (`evDayLocks`,
+    // TEK kaynak). Bölüm süzgecinden BAĞIMSIZDIR (kilit gün bazlıdır).
+    locked_days: dayLocks.map((lock) => lock.day),
+    day_locks: dayLocks.map((lock) => ({ ...lock })),
   };
 }
 
@@ -7798,6 +8127,13 @@ export function startMockBackend(port: number): { server: Server; close: () => P
   const state = seedState();
   // PLN-F1.7a · Planlama (EV) durumu — ayrı tohum, dosya sonundaki blok.
   const evState = seedEarnedValueState();
+  // PLN-F2.5a · EV gün ikizi günlük/taşeron/bölüm verisini bu kapıdan OKUR
+  // (yazmaz): puantaj dışı kaynak satırları (firma), Gönder ön-koşulu, önceki gün.
+  const evDiaryPort: EvDiaryPort = {
+    entries: (siteId) => state.diaryEntries.filter((entry) => entry.site_id === siteId),
+    subcontractorName: (id) => state.subcontractors.find((sub) => sub.id === id)?.name ?? null,
+    sectionName: (id) => state.sections.find((section) => section.id === id)?.name ?? null,
+  };
   let milestoneSeq = 3;
 
   const server = createServer((req, res) => {
@@ -7866,6 +8202,7 @@ export function startMockBackend(port: number): { server: Server; close: () => P
         });
       },
       findSite: (siteId) => state.sites.find((site) => site.id === siteId),
+      diary: evDiaryPort,
     });
     if (evHandled) return;
 
@@ -10121,7 +10458,11 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       if (!week) return send(422, { detail: "iso_year/iso_week zorunlu" });
       const section = visibleSection(site.id);
       if (!section.ok) return send(404, { detail: "bolum yok" });
-      return send(200, buildTimesheetWeek(state, site, week.isoYear, week.isoWeek, section.id));
+      const days = weekDates(mondayOfIsoWeekNumbers(week.isoYear, week.isoWeek));
+      return send(
+        200,
+        buildTimesheetWeek(state, site, week.isoYear, week.isoWeek, section.id, evDayLocks(evState, site.id, days)),
+      );
     }
 
     // PUT /sites/{site_id}/timesheet/week — HAFTA + ŞANTİYE kapsamlı DEĞİŞTİRME.
@@ -10185,6 +10526,15 @@ export function startMockBackend(port: number): { server: Server; close: () => P
             section_id: typeof raw.section_id === "string" ? raw.section_id : null,
           });
         }
+        // 🔒 PLN-F2.5b · KİLİT (§3.14 P5, backend `service.save_week`): yalnız
+        // DEĞİŞEN günler sorulur — kilitli günü değişmeden taşıyan gövde
+        // serbesttir. Kilitliyse 409 `{detail, locked_days, day_locks}` (kapsam:
+        // haftanın 7 günü) ve HİÇBİR ŞEY yazılmaz (atomik).
+        const existing = state.timesheetCells.filter(
+          (c) => c.site_id === site.id && days.includes(c.work_date),
+        );
+        const locked = evDaysLockedBody(evState, site.id, timesheetChangedDays(existing, next), days);
+        if (locked !== null) return send(409, locked);
         state.timesheetCells = [
           // 🔴 YALNIZ bu HAFTANIN hücreleri düşer — ayın öbür haftaları durur.
           ...state.timesheetCells.filter(
@@ -10192,7 +10542,10 @@ export function startMockBackend(port: number): { server: Server; close: () => P
           ),
           ...next,
         ];
-        return send(200, buildTimesheetWeek(state, site, week.isoYear, week.isoWeek, null));
+        return send(
+          200,
+          buildTimesheetWeek(state, site, week.isoYear, week.isoWeek, null, evDayLocks(evState, site.id, days)),
+        );
       });
     }
 
@@ -10204,8 +10557,11 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       const { year, month } = diaryPeriod();
       const limit = Number(parsed.searchParams.get("limit") ?? "50");
       const offset = Number(parsed.searchParams.get("offset") ?? "0");
+      const isUnfiltered = year === null && month === null;
       const filtered = state.diaryEntries
         .filter((e) => e.site_id === site.id && diaryEntryInPeriod(e, year, month))
+        // 🔒 PLN-F2.5a test izolasyonu — bkz. `MockDiaryEntry.hiddenFromUnfilteredList`.
+        .filter((e) => !(isUnfiltered && e.hiddenFromUnfilteredList === true))
         .sort((a, b) => b.entry_date.localeCompare(a.entry_date) || a.id.localeCompare(b.id));
       return send(200, {
         items: filtered.slice(offset, offset + limit).map(buildDiaryEntryListItem),
@@ -10231,6 +10587,7 @@ export function startMockBackend(port: number): { server: Server; close: () => P
         }
         const id = `d-${state.diaryEntries.length + 1}`;
         const now = new Date().toISOString();
+        const isEvDay = evHasBaselineDay(evState, site.id, entryDate);
         const entry: MockDiaryEntry = {
           id,
           site_id: site.id,
@@ -10245,6 +10602,9 @@ export function startMockBackend(port: number): { server: Server; close: () => P
           temperature_c: body.temperature_c !== undefined && body.temperature_c !== null
             ? String(body.temperature_c)
             : null,
+          temp_min_c: diaryDecimal1(body.temp_min_c),
+          temp_max_c: diaryDecimal1(body.temp_max_c),
+          wind_ms: diaryDecimal1(body.wind_ms),
           work_done: body.work_done !== undefined && body.work_done !== null ? String(body.work_done) : null,
           chief_note: body.chief_note !== undefined && body.chief_note !== null ? String(body.chief_note) : null,
           safety_meeting_held: Boolean(body.safety_meeting_held),
@@ -10260,8 +10620,10 @@ export function startMockBackend(port: number): { server: Server; close: () => P
           created_by: "u-1",
           created_at: now,
           updated_at: now,
-          lines: buildDiaryLineSkeleton(id),
+          // PLN-F2.5a · EV günü: iskelet YOK, satırlar girildikçe doğar (B2).
+          lines: isEvDay ? [] : buildDiaryLineSkeleton(id),
           worker_counts: [],
+          ...(isEvDay ? { evLines: true, hiddenFromUnfilteredList: true } : {}),
         };
         state.diaryEntries.push(entry);
         return send(201, buildDiaryEntryDetail(state, entry));
@@ -10274,6 +10636,10 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       const entry = state.diaryEntries.find((e) => e.id === diarySubmitMatch[1]);
       if (!entry) return send(404, { detail: "gunluk kayit yok" });
       if (entry.status !== "draft") return send(409, { detail: "Yalnızca taslak kayıt gönderilebilir." });
+      // PLN-F2.5a · EV ön-koşulu (backend `DiarySubmitBlockedError` → 422
+      // `{detail, reasons, reason_items}`); aktif baseline'sız günde boş liste.
+      const blockers = evDaySubmitBlockers(evState, evDiaryPort, entry.site_id, entry);
+      if (blockers.length > 0) return send(422, evSubmitBlockedBody(blockers));
       entry.status = "submitted";
       entry.submitted_at = new Date().toISOString();
       entry.updated_at = entry.submitted_at;
@@ -10304,6 +10670,12 @@ export function startMockBackend(port: number): { server: Server; close: () => P
         return send(409, { detail: "Gönderilmiş kayıtta satır düzenlenemez." });
       }
       return withBody((body) => {
+        if (entry.evLines === true) {
+          const rejected = diaryReplaceEvLines(entry, body);
+          if (rejected !== null) return send(rejected.status, rejected.body);
+          entry.updated_at = new Date().toISOString();
+          return send(200, buildDiaryEntryDetail(state, entry));
+        }
         const rawLines = Array.isArray(body.lines) ? (body.lines as Array<Record<string, unknown>>) : [];
         const quantities: Record<string, number> = {};
         for (const line of rawLines) {
@@ -10333,7 +10705,9 @@ export function startMockBackend(port: number): { server: Server; close: () => P
         return send(409, { detail: "Gönderilmiş kayıt düzenlenemez." });
       }
       return withBody((body) => {
-        const schemaViolation = bodySchemaViolation(SITE_DIARY_ENTRY_UPDATE_SCHEMA, body);
+        const schemaViolation =
+          bodySchemaViolation(SITE_DIARY_ENTRY_UPDATE_SCHEMA, body) ??
+          diaryWorkerCountsViolation(body.worker_counts);
         if (schemaViolation !== null) return send(422, schemaViolation);
         if (body.entry_date !== undefined && body.entry_date !== null) {
           const nextDate = String(body.entry_date);
@@ -10354,6 +10728,10 @@ export function startMockBackend(port: number): { server: Server; close: () => P
         if (body.temperature_c !== undefined) {
           entry.temperature_c = body.temperature_c === null ? null : String(body.temperature_c);
         }
+        // PLN-F2.5a · B2.1 hava alanları (`Numeric(4,1)` → "17.0").
+        if (body.temp_min_c !== undefined) entry.temp_min_c = diaryDecimal1(body.temp_min_c);
+        if (body.temp_max_c !== undefined) entry.temp_max_c = diaryDecimal1(body.temp_max_c);
+        if (body.wind_ms !== undefined) entry.wind_ms = diaryDecimal1(body.wind_ms);
         if (body.work_done !== undefined) entry.work_done = (body.work_done as string | null) ?? null;
         if (body.chief_note !== undefined) entry.chief_note = (body.chief_note as string | null) ?? null;
         if (body.safety_meeting_held !== undefined) {
@@ -10375,6 +10753,10 @@ export function startMockBackend(port: number): { server: Server; close: () => P
             trade: String(w.trade ?? ""),
             source: (w.source as MockDiaryWorkerCount["source"]) ?? "company",
             count: Number(w.count ?? 0),
+            // PLN-F2.5a · FİRMA satırı alanları DÜŞÜRÜLMEZ (önceden sessizce
+            // atılıyordu → firma saati kaydedilip geri okunamıyordu).
+            ...(w.subcontractor_id === undefined ? {} : { subcontractor_id: (w.subcontractor_id as string | null) ?? null }),
+            ...(w.hours === undefined ? {} : { hours: diaryDecimal1(w.hours) }),
           }));
         }
         entry.updated_at = new Date().toISOString();
@@ -18808,6 +19190,16 @@ interface EvState {
   settings: Map<string, EvSchemas["SettingsRead"]>;
   boq: Map<string, EvSiteBoq>;
   revisions: Map<string, EvRevisionRecord[]>;
+  /** PLN-F2.5a · aktif baseline'lı günler (anahtar `evDayKey`) — bkz. EV GÜN İKİZİ. */
+  days: Map<string, EvDayRecord>;
+  /**
+   * PLN-F2.5b · GÜN KİLİDİNİN TEK KAYNAĞI — rapor onayları + gün istisnaları
+   * (backend `EvReportApproval` / `EvDayUnlock`). EV gün görünümü, dağıtım
+   * 409'u, kilit açma VE puantaj haftası (`locked_days`/`day_locks` + PUT 409'u)
+   * AYNI `evLockState`ten okur — bkz. EV GÜN İKİZİ "KİLİT" notu.
+   */
+  approvals: readonly EvReportApproval[];
+  unlocks: readonly EvDayUnlockRecord[];
   /** Yeni kayıt kimliği sayacı (`Date.now()` YASAK — determinizm). */
   seq: number;
 }
@@ -19269,6 +19661,9 @@ function seedEarnedValueState(): EvState {
       ["s-2", evSeedBoq(2, false)],
     ]),
     revisions: evSeedRevisions(),
+    days: evSeedDays(),
+    approvals: evSeedApprovals(),
+    unlocks: evSeedUnlocks(),
     seq: 0,
   };
 }
@@ -20031,6 +20426,8 @@ interface EvRequest {
   readBody: (handler: (body: Record<string, unknown>) => void) => void;
   /** Şantiye kaydı (durum için) — `state.sites`. */
   findSite: (siteId: string) => { id: string; status: string } | undefined;
+  /** PLN-F2.5a · günlük/taşeron/bölüm okuma kapısı (EV gün uçları). */
+  diary: EvDiaryPort;
 }
 
 type EvBody = Record<string, unknown>;
@@ -20049,6 +20446,7 @@ function handleEarnedValue(state: EvState, req: EvRequest): boolean {
     return true;
   }
   const rest = site[2];
+  if (rest === "code-tree" || rest.startsWith("days/")) return evDayRoute(state, req, record, rest);
   if (rest === "settings") return evSettingsRoute(state, req, record);
   if (rest === "budget" || rest.startsWith("budget/")) return evBudgetRoute(state, req, record, rest);
   return false;
@@ -20799,4 +21197,1026 @@ function evFreeze(state: EvState, req: EvRequest, site: { id: string; status: st
     }),
   );
   req.send(200, frozen.out);
+}
+
+/* ══════════════ PLN-F2.5a · SAHA (EV GÜN) İKİZİ ═════════════════════════════
+ * Backend B2 `earned_value/day_router`in 5 operasyonunun sahte karşılıkları:
+ * `GET …/code-tree` · `GET …/days/{day}` · `PUT …/days/{day}/allocation`
+ * (TAM DEĞİŞTİRME) · `GET …/days/{day}/previous-allocation` ·
+ * `POST …/days/{day}/unlock`. Günlük tarafına iki bağ: detaydaki
+ * `own_crew_from_timesheet` (`evOwnCrewFromTimesheet`) ve Gönder'in 422 gövdesi
+ * (`evDaySubmitBlockers` · `evSubmitBlockedBody`).
+ *
+ * 📅 SENARYO TABLOSU — s-1 · EKİM 2026 (`EV_DAY_SCENARIO_DAYS`; günlük
+ * kayıtları `buildEvDiaryScenarioEntries`):
+ *   (b) locked  2026-10-05 Pzt · d-4 GÖNDERİLMİŞ · 06.10 onaylı raporla KİLİTLİ
+ *   (c) blocked 2026-10-06 Sal · d-5 taslak · miktar YOK + hava EKSİK → Gönder engelli
+ *   (a) full    2026-10-07 Çar · d-6 taslak · dağıtım var, 34 a-s dağıtılmamış,
+ *               "puantaj değişti" (Mehmet Demir 9 → 11), iki firma satırı,
+ *               oransız yaprak (İç Sıva · Bölümsüz, K12)
+ *   (d) noEv    2026-10-08 Per · d-7 taslak · EV YOK (`has_baseline:false`) +
+ *               kendi ekip BOŞ (puantaj yok)
+ *   🔒 YAZMA HEDEFLERİ (paylaşılan ikiz · fullyParallel — görsel spec BAKMAZ):
+ *   (e) writeTarget  2026-10-09 Cum · d-8 taslak · `PUT allocation` + Gönder
+ *   (f) unlockTarget 2026-10-02 Cum · d-9 gönderilmiş · kilitli → `POST unlock`
+ *
+ * ⚠️ BİLİNEN SAPMALAR (bilinçli; determinizm ve spec izolasyonu için):
+ *   · Aktif baseline GÜN bazlıdır: yalnız (a)(b)(c) `has_baseline:true` döner.
+ *     Gerçek backend'de s-1'in HER günü baseline'lıdır (Rev 1 aktif); öyle
+ *     olsaydı Temmuz günlük kareleri uzantı alır ve `site-diary.spec` Eylül
+ *     akışının "Kaydet & Gönder"i EV ön-koşuluna (hava/miktar) takılırdı.
+ *     Baseline'sız gün = gerçek backend'in "aktif revizyon yok" yanıtı.
+ *   · Kod ağacı `/sites/{id}/boq` fikstüründen (bi-* · sec-*) türer; bütçe
+ *     ekranının mockup-kökenli EV-BOQ ağacından DEĞİL — günlük satırı ↔ yaprak
+ *     eşlemesi (`l:<kalem>:<bölüm|none>`) ancak böyle kurulur. Yalnız s-1.
+ *   · Puantaj kaynağı sabit tablodur (`EV_DAY_TIMESHEET`), puantaj ikizine
+ *     BAĞLI DEĞİLDİR (Ekim puantaj hücreleri yalnız W42+ haftalarındadır; EV
+ *     senaryo haftası W41'e puantaj hücresi KONMAZ — iki kaynak çelişmesin).
+ *   · 🔒 KİLİT (PLN-F2.5b · TEK KAYNAK `evLockState`): rapor onayı
+ *     (`EvReportApproval`) + gün istisnası (`EvDayUnlockRecord`). Kural
+ *     backend'inkidir: günü kapsayan onayların EN SONUNCUSU (`approved_at`)
+ *     kilidi koyar; o onaya bağlı istisna varsa gün açıktır, yeni onay eski
+ *     istisnayı ezer. SAPMA: onay kilitlediği günleri AÇIKÇA listeler
+ *     (gerçekte `report_date >= gün` olan HER gün) — aksi hâlde Ekim raporu
+ *     Ağustos/Eylül puantaj karelerini de kilitlerdi. İstisna onaya KİMLİKLE
+ *     bağlıdır (gerçekte `unlocked_at > approved_at`): sabit damga
+ *     (`EV_DAY_UNLOCKED_AT`) Ekim sonu onaylarında da kilidi açabilsin.
+ *     Kilit puantaj yazmasını (`PUT timesheet/week` → 409) ve EV dağıtımını
+ *     kilitler; GÜNLÜK yazmalarını (PATCH/submit) HÂLÂ kilitlemez.
+ *   · İlerleme motoru sadeleştirilmiştir: kazanılmış = miktar × oran; yaprağa
+ *     yazılan saat yaprağındır; `prorata_by_daily_qty` saati alt yaprakların
+ *     KAZANILMIŞ ağırlığıyla bölünür (ağırlık yoksa düğümde kalır); `direct`
+ *     kurallı üst düğüm saati düğümde kalır ve kalemin harcananına girer
+ *     (EV-BORC-2 kalem düğümü).
+ *   · Gönder engelinde `no_planning_permission` ÜRETİLMEZ: ikiz oturumu Patron
+ *     (`earned_value: admin`) sabittir; formen hâli istemcide
+ *     `withEarnedValueLevel` ile kurulur.
+ * ========================================================================= */
+
+type EvRowKind = EvSchemas["RowRef"]["kind"];
+type EvAllocationRule = EvSchemas["CodeIn"]["rule"];
+
+/** Günlük kaydının EV'nin OKUDUĞU yüzü (`MockDiaryEntry` yapısal olarak uyar). */
+interface EvDiaryEntryView {
+  readonly id: string;
+  readonly entry_date: string;
+  readonly status: "draft" | "submitted";
+  readonly weather: EvSchemas["Weather"] | null;
+  readonly temp_min_c?: string | null;
+  readonly temp_max_c?: string | null;
+  readonly wind_ms?: string | null;
+  readonly lines: readonly {
+    readonly boq_item_id: string;
+    readonly section_id?: string | null;
+    readonly quantity: string;
+    readonly overrun_reason?: string | null;
+  }[];
+  readonly worker_counts: readonly {
+    readonly trade: string;
+    readonly count: number;
+    readonly subcontractor_id?: string | null;
+    readonly hours?: string | null;
+  }[];
+}
+
+/** Ana durumdan EV'ye OKUMA kapısı (`startMockBackend` kurar). */
+interface EvDiaryPort {
+  entries: (siteId: string) => readonly EvDiaryEntryView[];
+  subcontractorName: (id: string) => string | null;
+  sectionName: (id: string) => string | null;
+}
+
+interface EvDayPerson {
+  readonly id: string;
+  readonly name: string;
+  readonly trade: string;
+}
+
+interface EvDayCode {
+  readonly nodeId: string;
+  readonly rule: EvAllocationRule;
+}
+
+interface EvDayCell {
+  readonly kind: EvRowKind;
+  readonly refId: string;
+  readonly nodeId: string;
+  readonly hours: number;
+}
+
+interface EvDayRecord {
+  readonly codes: readonly EvDayCode[];
+  readonly cells: readonly EvDayCell[];
+  /** Son dağıtım kaydındaki kaynak saat anlık görüntüsü (`evRowKey` → saat); boş = hiç kaydedilmedi. */
+  readonly savedRows: Readonly<Record<string, number>>;
+  readonly unallocatedReason: string | null;
+}
+
+/** Rapor onayı — kilidi KOYAN kayıt (backend `EvReportApproval`). */
+interface EvReportApproval {
+  readonly id: string;
+  readonly siteId: string;
+  readonly reportDate: string;
+  readonly approvedAt: string;
+  readonly approvedBy: EvSchemas["UserRef"];
+  /** ⚠️ SAPMA: kilitlediği günler AÇIKÇA (gerçekte `report_date >= gün` olan her gün). */
+  readonly days: readonly string[];
+}
+
+/** Gün istisnası (backend `EvDayUnlock`) — YALNIZ bağlı olduğu onayı ezer. */
+interface EvDayUnlockRecord {
+  readonly siteId: string;
+  readonly day: string;
+  readonly approvalId: string;
+  readonly unlock: EvSchemas["UnlockOut"];
+}
+
+/** Günün kilit durumu (backend `diary_adapter.LockState`). */
+interface EvLockState {
+  readonly approval: EvReportApproval | null;
+  readonly unlock: EvSchemas["UnlockOut"] | null;
+}
+
+/** `TimesheetDayLock` / 409 gövdesindeki `day_locks` öğesi. */
+interface EvDayLockItem {
+  day: string;
+  report_date: string | null;
+}
+
+/** `DaysLockedError` → 409 gövdesi (`exception_handlers._days_locked_handler`). */
+interface EvDaysLockedBody {
+  detail: string;
+  locked_days: string[];
+  day_locks: EvDayLockItem[];
+}
+
+/** Canlı kaynak satırı (puantaj kişisi ya da günlükteki firma satırı). */
+interface EvLiveRow {
+  readonly kind: EvRowKind;
+  readonly refId: string;
+  readonly label: string;
+  readonly trade: string | null;
+  readonly source: string | null;
+  readonly subcontractorName: string | null;
+  readonly headcount: number | null;
+  readonly hours: number;
+}
+
+interface EvDayLeaf {
+  readonly id: string;
+  readonly itemNodeId: string;
+  readonly itemId: string;
+  readonly sectionId: string | null;
+  readonly unitMhr: number | null;
+  readonly planned: number;
+  /** Kalem · grup · disiplin düğümleri (kök en sonda). */
+  readonly ancestors: readonly string[];
+}
+
+interface EvDayTree {
+  readonly nodes: readonly EvSchemas["CodeNodeOut"][];
+  readonly byId: ReadonlyMap<string, EvSchemas["CodeNodeOut"]>;
+  readonly leaves: readonly EvDayLeaf[];
+}
+
+interface EvSubmitBlockedBody {
+  detail: string;
+  reasons: string[];
+  reason_items: EvSchemas["SubmitReasonOut"][];
+}
+
+/** Kod ağacı + gün senaryoları YALNIZ bu şantiyede kuruludur. */
+const EV_DAY_SITE = "s-1";
+
+export const EV_DAY_SCENARIO_DAYS = {
+  locked: "2026-10-05",
+  blocked: "2026-10-06",
+  full: "2026-10-07",
+  noEv: "2026-10-08",
+  /** 🔒 YAZMA HEDEFİ (`PUT allocation` · Gönder) — görsel spec'ler BAKMAZ. */
+  writeTarget: "2026-10-09",
+  /** 🔒 KİLİT AÇMA HEDEFİ (`POST unlock`) — görsel spec'ler BAKMAZ. */
+  unlockTarget: "2026-10-02",
+} as const;
+
+/**
+ * Baseline başlangıcı (Pazartesi) — hafta no bundan sayılır ve mockup'la
+ * hizalıdır (24.09 → 21. hafta); gün no s-1 takviminin ÇALIŞMA günü sayısıdır
+ * (mockup'taki "142. gün" sabit bir örnek değerdir, takvimden türemez).
+ */
+const EV_DAY_BASELINE_START = "2026-05-04";
+/** Kilit açma damgası: onaydan (06.10) SONRA — makine saati DEĞİL. */
+const EV_DAY_UNLOCKED_AT = "2026-10-08T07:30:00Z";
+
+/** Backend `diary_adapter.py` / `guards.py` metinleri — BİREBİR. */
+const EV_DAY_MSG = {
+  siteCompleted: "Tamamlanmış şantiyede planlama kaydı salt okunurdur",
+  noBaseline: "Şantiyede aktif (dondurulmuş) baseline yok",
+  unknownRow: "Dağıtım satırı bu günün puantajında/taşeron kaydında yok",
+  notLocked: "Bu gün kilitli değil",
+  unknownCode: (node: string): string => `İş kodu aktif baseline'da yok: ${node}`,
+  unratedCode: (node: string): string => `Oransız yaprak iş kodu olamaz: ${node}`,
+  cellCodeMissing: (node: string): string => `Hücrenin iş kodu gün kodlarında yok: ${node}`,
+  locked: (reportDate: string): string =>
+    `Bu gün ${reportDate.slice(8, 10)}.${reportDate.slice(5, 7)}.${reportDate.slice(0, 4)} tarihli ilerleme raporuyla kilitli`,
+} as const;
+
+/** Gönder engeli kodları (EV-BORC-2 · `diary_adapter.py:461`) + metinleri. */
+const EV_SUBMIT_REASON = {
+  weather: { code: "weather_incomplete", message: "Hava bilgisi eksik (durum, min/max sıcaklık, rüzgâr)" },
+  noQuantity: { code: "no_quantity", message: "Miktar girilmedi" },
+  overrun: { code: "overrun_without_reason", message: "Planlı miktarı aşan satır gerekçesiz" },
+} as const;
+
+const EV_DAY_BODY = {
+  allocation: loadBodySchema("AllocationSave"),
+  code: loadBodySchema("CodeIn"),
+  cell: loadBodySchema("CellIn"),
+  row: loadBodySchema("RowRef"),
+  unlock: loadBodySchema("UnlockBody"),
+} as const;
+
+const EV_DAY_ARRAYS = loadArrayBounds("AllocationSave");
+
+/** `CellIn.hours` string dalının deseni (≤ 4 tam · ≤ 2 ondalık) — sözleşmeden. */
+const EV_CELL_HOURS_PATTERN = loadFieldPattern("CellIn", "hours");
+
+/** BOQ grubu → disiplin (EV-BOQ grup eşlemesinin gün ikizindeki karşılığı). */
+const EV_DAY_GROUP_DISCIPLINE: Readonly<Record<string, keyof typeof EV_DISCIPLINE_IDS>> = {
+  "bg-1": "KAB",
+  "bg-2": "KAB",
+  "bg-3": "DUV",
+};
+
+/**
+ * Aktif baseline'ın birim oranları (a-s/birim; katalog KAB-BET 1,8 · KAB-DEM
+ * ~12 · DUV-TUG 0,55). `null` = ORANSIZ (K12): İç Sıva yaprağı miktar alır,
+ * kazanılmış üretmez ve iş kodu olarak SEÇİLEMEZ.
+ */
+const EV_DAY_ITEM_RATES: Readonly<Record<string, number | null>> = {
+  "bi-1": 0.12,
+  "bi-2": 0.08,
+  "bi-3": 1.8,
+  "bi-4": 12,
+  "bi-5": 0.55,
+  "bi-6": null,
+};
+
+/** Puantaj kişileri — mockup İ:569-574 adları. */
+const EV_DAY_PEOPLE = {
+  mehmet: { id: evId("9e5", 1), name: "Mehmet Demir", trade: "Kalıpçı" },
+  ali: { id: evId("9e5", 2), name: "Ali Yıldız", trade: "Kalıpçı" },
+  mustafa: { id: evId("9e5", 3), name: "Mustafa Şahin", trade: "Kalıpçı" },
+  emre: { id: evId("9e5", 4), name: "Emre Koç", trade: "Betoncu" },
+  burak: { id: evId("9e5", 5), name: "Burak Kurt", trade: "Betoncu" },
+  kemal: { id: evId("9e5", 6), name: "Kemal Polat", trade: "Demirci" },
+  hakan: { id: evId("9e5", 7), name: "Hakan Erdoğan", trade: "Demirci" },
+  recep: { id: evId("9e5", 8), name: "Recep Uçar", trade: "Yardımcı" },
+  gokhan: { id: evId("9e5", 9), name: "Gökhan Sarı", trade: "Yardımcı" },
+} as const satisfies Record<string, EvDayPerson>;
+
+/** Günün puantajı (kişi × saat) — `timesheet.day_person_hours` karşılığı. */
+const EV_DAY_TIMESHEET: Readonly<Record<string, readonly (readonly [EvDayPerson, number])[]>> = (() => {
+  const p = EV_DAY_PEOPLE;
+  return {
+    [evDayKey(EV_DAY_SITE, EV_DAY_SCENARIO_DAYS.locked)]: [
+      [p.mehmet, 9], [p.ali, 9], [p.emre, 9], [p.kemal, 9], [p.recep, 8],
+    ],
+    [evDayKey(EV_DAY_SITE, EV_DAY_SCENARIO_DAYS.blocked)]: [[p.mehmet, 9], [p.ali, 9], [p.recep, 8]],
+    [evDayKey(EV_DAY_SITE, EV_DAY_SCENARIO_DAYS.writeTarget)]: [[p.emre, 9], [p.burak, 9], [p.recep, 8]],
+    [evDayKey(EV_DAY_SITE, EV_DAY_SCENARIO_DAYS.unlockTarget)]: [[p.mehmet, 9], [p.ali, 9]],
+    [evDayKey(EV_DAY_SITE, EV_DAY_SCENARIO_DAYS.full)]: [
+      [p.mehmet, 11], [p.ali, 9], [p.mustafa, 9], [p.emre, 11], [p.burak, 9],
+      [p.kemal, 9], [p.hakan, 10], [p.recep, 8], [p.gokhan, 8],
+    ],
+  };
+})();
+
+function evDayKey(siteId: string, day: string): string {
+  return `${siteId}|${day}`;
+}
+
+function evRowKey(kind: EvRowKind, refId: string): string {
+  return `${kind}:${refId}`;
+}
+
+function evDayLeafId(itemId: string, sectionId: string | null): string {
+  return `l:${itemId}:${sectionId ?? "none"}`;
+}
+
+function evHasBaselineDay(state: EvState, siteId: string, day: string): boolean {
+  return state.days.has(evDayKey(siteId, day));
+}
+
+/* ─────────────────────────────── gün kilidi ──────────────────────────────── */
+
+/**
+ * `diary_adapter.lock_state` ikizi — günü kapsayan onayların EN SONUNCUSU
+ * kilidi koyar; o onaya bağlı istisna varsa gün açıktır.
+ */
+function evLockState(state: EvState, siteId: string, day: string): EvLockState {
+  const approval = state.approvals
+    .filter((a) => a.siteId === siteId && a.days.includes(day))
+    .reduce<EvReportApproval | null>(
+      (latest, a) => (latest === null || a.approvedAt > latest.approvedAt ? a : latest),
+      null,
+    );
+  if (approval === null) return { approval: null, unlock: null };
+  const unlock =
+    state.unlocks.filter((u) => u.siteId === siteId && u.day === day && u.approvalId === approval.id).at(-1)
+      ?.unlock ?? null;
+  return { approval, unlock };
+}
+
+function evIsLocked(lock: EvLockState): lock is EvLockState & { approval: EvReportApproval } {
+  return lock.approval !== null && lock.unlock === null;
+}
+
+/** `day_hooks.day_locks` ikizi — kilitli günler + kilidi koyan rapor (sıralı, tekil). */
+function evDayLocks(state: EvState, siteId: string, days: readonly string[]): EvDayLockItem[] {
+  return [...new Set(days)].sort().flatMap((day) => {
+    const lock = evLockState(state, siteId, day);
+    return evIsLocked(lock) ? [{ day, report_date: lock.approval.reportDate }] : [];
+  });
+}
+
+/**
+ * `day_hooks.assert_days_unlocked` ikizi: `changedDays`ten biri kilitliyse
+ * 409 gövdesi, değilse `null`. `detail` İLK kilitli günün metnidir;
+ * `locked_days`/`day_locks` `scopeDays`in (puantajda haftanın 7 günü)
+ * kilitli günleridir.
+ */
+function evDaysLockedBody(
+  state: EvState,
+  siteId: string,
+  changedDays: readonly string[],
+  scopeDays: readonly string[],
+): EvDaysLockedBody | null {
+  const first = [...new Set(changedDays)]
+    .sort()
+    .map((day) => evLockState(state, siteId, day))
+    .find(evIsLocked);
+  if (first === undefined) return null;
+  const locks = evDayLocks(state, siteId, scopeDays);
+  return {
+    detail: EV_DAY_MSG.locked(first.approval.reportDate),
+    locked_days: locks.map((lock) => lock.day),
+    day_locks: locks,
+  };
+}
+
+/** Kilit tohumu yardımcısı: `from`dan başlayan `count` ardışık gün. */
+function evDayRun(from: string, count: number): string[] {
+  return Array.from({ length: count }, (_, index) => addDays(from, index));
+}
+
+const EV_APPROVER: EvSchemas["UserRef"] = { id: "u-2", full_name: "Sercan Öztürk" };
+
+/**
+ * 📅 KİLİT SENARYOLARI — s-1. EV gün kilitleri (W40/W41) + puantaj kilit
+ * haftaları (W42–W45; EV senaryo günleriyle ÇAKIŞMAZ, Eylül/Ağustos puantaj
+ * kareleri KİLİTSİZ kalır).
+ */
+export const TIMESHEET_LOCK_SCENARIOS = {
+  /** (a) kısmen kilitli · TEK rapor: Pzt 12 – Per 15 Eki ← 15.10 raporu. */
+  partial: { isoYear: 2026, isoWeek: 42, reportDate: "2026-10-15" },
+  /** (b) ardışık OLMAYAN · İKİ rapor: Pzt 19 ← 19.10 · Sal 20 AÇIK (istisna) · Çar 21 + Per 22 ← 22.10. */
+  twoReports: { isoYear: 2026, isoWeek: 43, reportDates: ["2026-10-19", "2026-10-22"] },
+  /** (c) tamamen kilitli: Pzt 26 Eki – Paz 1 Kas ← 01.11 raporu. */
+  full: { isoYear: 2026, isoWeek: 44, reportDate: "2026-11-01" },
+  /**
+   * 🔒 (e) YAZMA/409 HEDEFİ — Pzt 2 + Sal 3 Kas ← 03.11 raporu. Kilit 409'u
+   * ATOMİKTİR (yazmaz); yine de görsel kareler bu haftaya BAKMAZ.
+   */
+  conflict: { isoYear: 2026, isoWeek: 45, reportDate: "2026-11-03" },
+} as const;
+
+function evSeedApprovals(): EvReportApproval[] {
+  const approval = (
+    id: string,
+    reportDate: string,
+    approvedAt: string,
+    days: readonly string[],
+  ): EvReportApproval => ({ id, siteId: EV_DAY_SITE, reportDate, approvedAt, approvedBy: EV_APPROVER, days });
+  return [
+    // EV gün senaryoları (b) locked + (f) unlockTarget.
+    approval("ev-apr-1", EV_DAY_SCENARIO_DAYS.unlockTarget, "2026-10-03T16:00:00Z", [EV_DAY_SCENARIO_DAYS.unlockTarget]),
+    approval("ev-apr-2", EV_DAY_SCENARIO_DAYS.locked, "2026-10-06T16:30:00Z", [EV_DAY_SCENARIO_DAYS.locked]),
+    // Puantaj (a) — Pzt–Per.
+    approval("ev-apr-3", "2026-10-15", "2026-10-16T16:30:00Z", evDayRun("2026-10-12", 4)),
+    // Puantaj (b) — backend testinin örneği: gün1→rapor gün1 · gün2 açık ·
+    // gün3→rapor gün4 · gün4→rapor gün4. Sal 20'yi 22.10 onayı da kapsar;
+    // AÇIK olması o onaya bağlı istisnadandır (`evSeedUnlocks`).
+    approval("ev-apr-4", "2026-10-19", "2026-10-20T16:30:00Z", ["2026-10-19"]),
+    approval("ev-apr-5", "2026-10-22", "2026-10-23T16:30:00Z", evDayRun("2026-10-20", 3)),
+    // Puantaj (c) — yedi gün.
+    approval("ev-apr-6", "2026-11-01", "2026-11-02T16:30:00Z", evDayRun("2026-10-26", 7)),
+    // Puantaj (e) — 409 hedefi.
+    approval("ev-apr-7", "2026-11-03", "2026-11-04T16:30:00Z", evDayRun("2026-11-02", 2)),
+  ];
+}
+
+function evSeedUnlocks(): EvDayUnlockRecord[] {
+  return [
+    {
+      siteId: EV_DAY_SITE,
+      day: "2026-10-20",
+      approvalId: "ev-apr-5",
+      unlock: { unlocked_at: "2026-10-24T08:00:00Z", unlocked_by: EV_APPROVER, reason: "Puantaj düzeltmesi" },
+    },
+  ];
+}
+
+/* ─────────────────────────────── tohum ───────────────────────────────────── */
+
+function evDayCell(person: EvDayPerson | string, nodeId: string, hours: number): EvDayCell {
+  return typeof person === "string"
+    ? { kind: "subcontractor", refId: person, nodeId, hours }
+    : { kind: "personnel", refId: person.id, nodeId, hours };
+}
+
+/** Kaydedilmiş kaynak anlık görüntüsü: puantaj + firma saatleri (değişiklikler üstüne). */
+function evDaySnapshot(
+  day: string,
+  firms: Readonly<Record<string, number>>,
+  overrides: Readonly<Record<string, number>> = {},
+): Record<string, number> {
+  const people = EV_DAY_TIMESHEET[evDayKey(EV_DAY_SITE, day)] ?? [];
+  return {
+    ...Object.fromEntries(people.map(([person, hours]) => [evRowKey("personnel", person.id), hours])),
+    ...Object.fromEntries(Object.entries(firms).map(([id, hours]) => [evRowKey("subcontractor", id), hours])),
+    ...overrides,
+  };
+}
+
+function evSeedDays(): Map<string, EvDayRecord> {
+  const p = EV_DAY_PEOPLE;
+  const betonarme = "g:bg-2";
+  const beton = evDayLeafId("bi-3", "sec-1");
+  const demir = evDayLeafId("bi-4", "sec-1");
+  const tugla = evDayLeafId("bi-5", null);
+  const locked: EvDayRecord = {
+    codes: [{ nodeId: betonarme, rule: "prorata_by_daily_qty" }, { nodeId: tugla, rule: "direct" }],
+    cells: [
+      ...[p.mehmet, p.ali, p.emre, p.kemal].map((person) => evDayCell(person, betonarme, 9)),
+      evDayCell(p.recep, betonarme, 8),
+      evDayCell("sub-2", tugla, 48),
+    ],
+    savedRows: evDaySnapshot(EV_DAY_SCENARIO_DAYS.locked, { "sub-2": 48 }),
+    unallocatedReason: null,
+  };
+  const blocked: EvDayRecord = {
+    codes: [{ nodeId: betonarme, rule: "prorata_by_daily_qty" }],
+    cells: [evDayCell(p.mehmet, betonarme, 9), evDayCell(p.ali, betonarme, 9), evDayCell(p.recep, betonarme, 8)],
+    savedRows: evDaySnapshot(EV_DAY_SCENARIO_DAYS.blocked, {}),
+    unallocatedReason: null,
+  };
+  const full: EvDayRecord = {
+    codes: [
+      { nodeId: betonarme, rule: "prorata_by_daily_qty" },
+      { nodeId: beton, rule: "direct" },
+      { nodeId: demir, rule: "direct" },
+      { nodeId: "i:bi-3", rule: "direct" },
+      { nodeId: tugla, rule: "direct" },
+    ],
+    cells: [
+      ...[p.mehmet, p.ali, p.mustafa].map((person) => evDayCell(person, betonarme, 9)),
+      evDayCell(p.emre, beton, 11),
+      evDayCell(p.burak, beton, 9),
+      evDayCell(p.kemal, demir, 9),
+      evDayCell(p.hakan, demir, 10),
+      evDayCell(p.gokhan, "i:bi-3", 8),
+      evDayCell("sub-2", tugla, 56),
+    ],
+    // Mehmet Demir kayıtta 9 sa idi, puantaj sonra 11'e çıktı → "⚠ Puantaj değişti".
+    savedRows: evDaySnapshot(EV_DAY_SCENARIO_DAYS.full, { "sub-2": 56, "sub-1": 24 }, {
+      [evRowKey("personnel", p.mehmet.id)]: 9,
+    }),
+    unallocatedReason: null,
+  };
+  // 🔒 Yazma/kilit-açma hedefleri: paylaşılan ikizde (fullyParallel) görsel
+  // senaryoları (a)(b)(c) MUTASYONA UĞRAMASIN diye ayrı günler (`scpp-8` emsali).
+  const writeTarget: EvDayRecord = {
+    ...blocked,
+    codes: [{ nodeId: beton, rule: "direct" }],
+    cells: [evDayCell(p.emre, beton, 9)],
+    savedRows: evDaySnapshot(EV_DAY_SCENARIO_DAYS.writeTarget, {}),
+  };
+  const unlockTarget: EvDayRecord = {
+    ...blocked,
+    cells: [evDayCell(p.mehmet, betonarme, 9), evDayCell(p.ali, betonarme, 9)],
+    savedRows: evDaySnapshot(EV_DAY_SCENARIO_DAYS.unlockTarget, {}),
+  };
+  return new Map([
+    [evDayKey(EV_DAY_SITE, EV_DAY_SCENARIO_DAYS.unlockTarget), unlockTarget],
+    [evDayKey(EV_DAY_SITE, EV_DAY_SCENARIO_DAYS.writeTarget), writeTarget],
+    [evDayKey(EV_DAY_SITE, EV_DAY_SCENARIO_DAYS.locked), locked],
+    [evDayKey(EV_DAY_SITE, EV_DAY_SCENARIO_DAYS.blocked), blocked],
+    [evDayKey(EV_DAY_SITE, EV_DAY_SCENARIO_DAYS.full), full],
+  ]);
+}
+
+/* ─────────────────────────────── kod ağacı ───────────────────────────────── */
+
+function evDayCodeTree(state: EvState, port: EvDiaryPort): EvDayTree {
+  const nodes: EvSchemas["CodeNodeOut"][] = [];
+  const leaves: EvDayLeaf[] = [];
+  const disciplineKeys = [...new Set(BOQ_FIXTURE.map((group) => EV_DAY_GROUP_DISCIPLINE[group.id]))];
+  for (const key of disciplineKeys) {
+    const discipline = state.disciplines.find((d) => d.id === EV_DISCIPLINE_IDS[key]);
+    const disciplineNode = `d:${EV_DISCIPLINE_IDS[key]}`;
+    nodes.push(evCodeNode(disciplineNode, null, 1, discipline?.code ?? key, discipline?.name ?? "Disiplinsiz"));
+    for (const group of BOQ_FIXTURE.filter((g) => EV_DAY_GROUP_DISCIPLINE[g.id] === key)) {
+      const groupNode = `g:${group.id}`;
+      nodes.push(evCodeNode(groupNode, disciplineNode, 2, null, group.name));
+      for (const item of group.items) {
+        const itemNode = `i:${item.id}`;
+        nodes.push({ ...evCodeNode(itemNode, groupNode, 3, item.code, item.description), uom: item.unit });
+        const rate = EV_DAY_ITEM_RATES[item.id] ?? null;
+        const sections: (string | null)[] = [...Object.keys(item.allocations ?? {}), null];
+        for (const sectionId of sections) {
+          const planned = diaryLeafPlanned(item.id, sectionId) ?? 0;
+          if (sectionId === null && planned <= 0) continue;
+          const id = evDayLeafId(item.id, sectionId);
+          const label = (sectionId === null ? null : port.sectionName(sectionId)) ?? "Bölümsüz";
+          nodes.push({
+            ...evCodeNode(id, itemNode, 4, null, label),
+            uom: item.unit,
+            has_rate: rate !== null,
+            unit_mhr: rate === null ? null : evDec(rate),
+          });
+          leaves.push({
+            id, itemNodeId: itemNode, itemId: item.id, sectionId, unitMhr: rate, planned,
+            ancestors: [itemNode, groupNode, disciplineNode],
+          });
+        }
+      }
+    }
+  }
+  return { nodes, byId: new Map(nodes.map((node) => [node.id, node])), leaves };
+}
+
+function evCodeNode(
+  id: string,
+  parentId: string | null,
+  level: number,
+  code: string | null,
+  label: string,
+): EvSchemas["CodeNodeOut"] {
+  return { id, parent_id: parentId, level, code, label, uom: null, has_rate: null, unit_mhr: null };
+}
+
+/* ─────────────────────────────── gün görünümü ────────────────────────────── */
+
+function evDayEntry(port: EvDiaryPort, siteId: string, day: string): EvDiaryEntryView | undefined {
+  return port.entries(siteId).find((entry) => entry.entry_date === day);
+}
+
+/** Canlı kaynak: puantaj kişileri + günlükteki FİRMA satırları (kişi × saat; ada göre). */
+function evDayLiveRows(port: EvDiaryPort, siteId: string, day: string): EvLiveRow[] {
+  const people = (EV_DAY_TIMESHEET[evDayKey(siteId, day)] ?? []).map(([person, hours]): EvLiveRow => ({
+    kind: "personnel",
+    refId: person.id,
+    label: person.name,
+    trade: person.trade,
+    source: "company",
+    subcontractorName: null,
+    headcount: null,
+    hours,
+  }));
+  const firms = (evDayEntry(port, siteId, day)?.worker_counts ?? [])
+    .filter((row) => typeof row.subcontractor_id === "string" && typeof row.hours === "string")
+    .map((row): EvLiveRow => {
+      const name = port.subcontractorName(row.subcontractor_id ?? "") ?? row.trade;
+      return {
+        kind: "subcontractor",
+        refId: row.subcontractor_id ?? "",
+        label: name,
+        trade: row.trade,
+        source: "subcontractor",
+        subcontractorName: name,
+        headcount: row.count,
+        hours: row.count * Number(row.hours),
+      };
+    })
+    .sort((a, b) => a.label.localeCompare(b.label, "tr"));
+  return [...people, ...firms];
+}
+
+function evHours(value: number): string {
+  return value.toFixed(2);
+}
+
+function evDayLockOut(state: EvState, siteId: string, day: string): EvSchemas["LockOut"] {
+  const lock = evLockState(state, siteId, day);
+  return {
+    locked: evIsLocked(lock),
+    report_date: lock.approval?.reportDate ?? null,
+    approved_at: lock.approval?.approvedAt ?? null,
+    approved_by: lock.approval?.approvedBy ?? null,
+    unlock: lock.unlock,
+  };
+}
+
+/** Gün / hafta no (1'den): takvimin çalışma günleri · baseline başlangıcından haftalar. */
+function evDayNumbers(state: EvState, siteId: string, day: string): { dayNo: number; weekNo: number } {
+  const calendar = evCalendarOf(state, siteId);
+  const dayNo = evDaysInRange(EV_DAY_BASELINE_START, day).filter((d) => evIsWorkingDay(calendar, d)).length;
+  const elapsed = evDaysInRange(EV_DAY_BASELINE_START, day).length - 1;
+  return { dayNo, weekNo: Math.floor(elapsed / 7) + 1 };
+}
+
+function evDayView(state: EvState, port: EvDiaryPort, siteId: string, day: string): EvSchemas["DayView"] {
+  const record = state.days.get(evDayKey(siteId, day));
+  const tree = record === undefined ? null : evDayCodeTree(state, port);
+  const entry = evDayEntry(port, siteId, day);
+  const live = evDayLiveRows(port, siteId, day);
+  const source = live.reduce((sum, row) => sum + row.hours, 0);
+  const allocated = (record?.cells ?? []).reduce((sum, cell) => sum + cell.hours, 0);
+  const numbers = record === undefined ? null : evDayNumbers(state, siteId, day);
+  const blockers = entry === undefined ? null : evDaySubmitBlockers(state, port, siteId, entry);
+  return {
+    day,
+    day_no: numbers?.dayNo ?? null,
+    week_no: numbers?.weekNo ?? null,
+    has_baseline: record !== undefined,
+    revision_number:
+      record === undefined
+        ? null
+        : (evRevisionsOf(state, siteId).find((r) => r.out.status === "active")?.out.number ?? null),
+    lock: evDayLockOut(state, siteId, day),
+    rows: live.map((row) => {
+      const saved = record?.savedRows[evRowKey(row.kind, row.refId)];
+      return {
+        kind: row.kind,
+        ref_id: row.refId,
+        label: row.label,
+        trade: row.trade,
+        source: row.source,
+        subcontractor_name: row.subcontractorName,
+        headcount: row.headcount,
+        hours: evHours(row.hours),
+        saved_hours: saved === undefined ? null : evHours(saved),
+        changed: saved !== undefined && saved !== row.hours,
+      };
+    }),
+    codes: (record?.codes ?? []).map((code) => ({
+      node_id: code.nodeId,
+      rule: code.rule,
+      label: tree?.byId.get(code.nodeId)?.label ?? null,
+      level: tree?.byId.get(code.nodeId)?.level ?? null,
+    })),
+    cells: (record?.cells ?? []).map((cell) => ({
+      kind: cell.kind,
+      ref_id: cell.refId,
+      node_id: cell.nodeId,
+      hours: evHours(cell.hours),
+    })),
+    totals: {
+      source_hours: evHours(source),
+      allocated_hours: evHours(allocated),
+      unallocated_hours: evHours(source - allocated),
+    },
+    unallocated_reason: record?.unallocatedReason ?? null,
+    warnings: (record?.codes ?? [])
+      .filter((code) => tree !== null && !tree.byId.has(code.nodeId))
+      .map((code) => EV_DAY_MSG.unknownCode(code.nodeId)),
+    progress: record === undefined || tree === null ? null : evDayProgress(tree, record, entry),
+    submit:
+      blockers === null
+        ? null
+        : { can_submit: blockers.length === 0, reasons: blockers.map((r) => r.message), reason_items: blockers },
+  };
+}
+
+/* ─────────────────────────────── ilerleme (sade motor) ───────────────────── */
+
+function evPf(earned: number, spent: number): string | null {
+  return spent > 0 ? evDec(earned / spent) : null;
+}
+
+function evDayProgress(
+  tree: EvDayTree,
+  record: EvDayRecord,
+  entry: EvDiaryEntryView | undefined,
+): EvSchemas["ProgressOut"] {
+  const qty = new Map<string, number>();
+  for (const line of entry?.lines ?? []) {
+    const id = evDayLeafId(line.boq_item_id, line.section_id ?? null);
+    if (tree.leaves.some((leaf) => leaf.id === id)) qty.set(id, (qty.get(id) ?? 0) + Number(line.quantity));
+  }
+  const earned = new Map(tree.leaves.map((leaf) => [leaf.id, leaf.unitMhr === null ? 0 : (qty.get(leaf.id) ?? 0) * leaf.unitMhr]));
+  const spent = new Map(tree.leaves.map((leaf) => [leaf.id, 0]));
+  const held = new Map<string, number>();
+  const rules = new Map(record.codes.map((code) => [code.nodeId, code.rule]));
+  let spentDay = 0;
+  for (const cell of record.cells) {
+    if (!tree.byId.has(cell.nodeId)) continue;
+    spentDay += cell.hours;
+    if (spent.has(cell.nodeId)) {
+      spent.set(cell.nodeId, (spent.get(cell.nodeId) ?? 0) + cell.hours);
+      continue;
+    }
+    const kids = tree.leaves.filter((leaf) => leaf.ancestors.includes(cell.nodeId));
+    const weight = kids.reduce((sum, leaf) => sum + (earned.get(leaf.id) ?? 0), 0);
+    if (rules.get(cell.nodeId) === "prorata_by_daily_qty" && weight > 0) {
+      for (const leaf of kids) {
+        spent.set(leaf.id, (spent.get(leaf.id) ?? 0) + (cell.hours * (earned.get(leaf.id) ?? 0)) / weight);
+      }
+    } else {
+      held.set(cell.nodeId, (held.get(cell.nodeId) ?? 0) + cell.hours);
+    }
+  }
+  const leafOut = tree.leaves.map((leaf) => {
+    const e = earned.get(leaf.id) ?? 0;
+    const s = spent.get(leaf.id) ?? 0;
+    return { node_id: leaf.id, qty_day: evDec(qty.get(leaf.id) ?? 0), earned_day: evDec(e), spent_day: evDec(s), pf_day: evPf(e, s) };
+  });
+  const itemIds = [...new Set(tree.leaves.map((leaf) => leaf.itemNodeId))];
+  const items = itemIds.map((itemNodeId) => {
+    const kids = tree.leaves.filter((leaf) => leaf.itemNodeId === itemNodeId);
+    const q = kids.reduce((sum, leaf) => sum + (qty.get(leaf.id) ?? 0), 0);
+    const e = kids.reduce((sum, leaf) => sum + (earned.get(leaf.id) ?? 0), 0);
+    const s = kids.reduce((sum, leaf) => sum + (spent.get(leaf.id) ?? 0), 0) + (held.get(itemNodeId) ?? 0);
+    return { node_id: itemNodeId, qty_day: evDec(q), earned_day: evDec(e), spent_day: evDec(s), pf_day: evPf(e, s) };
+  });
+  const earnedDay = [...earned.values()].reduce((sum, value) => sum + value, 0);
+  return {
+    leaves: leafOut,
+    items,
+    earned_day: evDec(earnedDay),
+    spent_day: evDec(spentDay),
+    pf_day: evPf(earnedDay, spentDay),
+  };
+}
+
+/* ─────────────────────────────── Gönder ön-koşulu ────────────────────────── */
+
+/**
+ * Backend `diary_adapter.submit_blockers` sırası: (yetki) → hava → miktar YA DA
+ * gerekçesiz aşım → dağıtılmamış saat. Aktif baseline'sız günde BOŞ (B2-3).
+ */
+function evDaySubmitBlockers(
+  state: EvState,
+  port: EvDiaryPort,
+  siteId: string,
+  entry: EvDiaryEntryView,
+): EvSchemas["SubmitReasonOut"][] {
+  const record = state.days.get(evDayKey(siteId, entry.entry_date));
+  if (record === undefined) return [];
+  const reasons: EvSchemas["SubmitReasonOut"][] = [];
+  const weather = [entry.weather, entry.temp_min_c, entry.temp_max_c, entry.wind_ms];
+  if (weather.some((value) => value === null || value === undefined)) reasons.push({ ...EV_SUBMIT_REASON.weather });
+  if (entry.lines.length === 0) reasons.push({ ...EV_SUBMIT_REASON.noQuantity });
+  else if (evHasOverrunWithoutReason(state, port, siteId, entry)) reasons.push({ ...EV_SUBMIT_REASON.overrun });
+  const source = evDayLiveRows(port, siteId, entry.entry_date).reduce((sum, row) => sum + row.hours, 0);
+  const allocated = record.cells.reduce((sum, cell) => sum + cell.hours, 0);
+  const unallocated = source - allocated;
+  if (Math.abs(unallocated) > 1e-9 && (record.unallocatedReason ?? "").trim() === "") {
+    reasons.push({ code: "undistributed_hours", message: `${evHours(unallocated)} a-s dağıtılmamış; gerekçe gerekli` });
+  }
+  return reasons;
+}
+
+/** Önceki GÖNDERİLMİŞ günler + bugün > planlı ve gerekçe yok (`_has_line_overrun_without_reason`). */
+function evHasOverrunWithoutReason(
+  state: EvState,
+  port: EvDiaryPort,
+  siteId: string,
+  entry: EvDiaryEntryView,
+): boolean {
+  const leaves = new Map(evDayCodeTree(state, port).leaves.map((leaf) => [leaf.id, leaf]));
+  const earlier = port.entries(siteId).filter((e) => e.status === "submitted" && e.entry_date < entry.entry_date);
+  return entry.lines.some((line) => {
+    const sectionId = line.section_id ?? null;
+    const leaf = leaves.get(evDayLeafId(line.boq_item_id, sectionId));
+    if (leaf === undefined || (line.overrun_reason ?? "").trim() !== "") return false;
+    const previous = earlier
+      .flatMap((e) => e.lines)
+      .filter((l) => l.boq_item_id === line.boq_item_id && (l.section_id ?? null) === sectionId)
+      .reduce((sum, l) => sum + Number(l.quantity), 0);
+    return previous + Number(line.quantity) > leaf.planned;
+  });
+}
+
+/** `DiarySubmitBlockedError` → 422 gövdesi (`exception_handlers.py:68`). */
+function evSubmitBlockedBody(reasons: readonly EvSchemas["SubmitReasonOut"][]): EvSubmitBlockedBody {
+  const messages = reasons.map((reason) => reason.message);
+  return { detail: messages.join("; "), reasons: messages, reason_items: reasons.map((reason) => ({ ...reason })) };
+}
+
+/** EV-BORC-2 · günün puantajı → (meslek, kaynak) başına kişi + saat; (meslek, kaynak) sıralı. */
+function evOwnCrewFromTimesheet(siteId: string, day: string): EvSchemas["OwnCrewFromTimesheet"][] {
+  const groups = new Map<string, { trade: string; hours: number; headcount: number }>();
+  for (const [person, hours] of EV_DAY_TIMESHEET[evDayKey(siteId, day)] ?? []) {
+    const current = groups.get(person.trade) ?? { trade: person.trade, hours: 0, headcount: 0 };
+    groups.set(person.trade, { ...current, hours: current.hours + hours, headcount: current.headcount + 1 });
+  }
+  return [...groups.values()]
+    .sort((a, b) => (a.trade < b.trade ? -1 : a.trade > b.trade ? 1 : 0))
+    .map((group) => ({ trade: group.trade, source: "company", headcount: group.headcount, hours: evHours(group.hours) }));
+}
+
+/* ─────────────────────────────── istek işleyicisi ────────────────────────── */
+
+function evIsIsoDay(raw: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return false;
+  const parsed = new Date(`${raw}T00:00:00Z`);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === raw;
+}
+
+function evDayRoute(state: EvState, req: EvRequest, site: { id: string; status: string }, rest: string): boolean {
+  if (rest === "code-tree") {
+    if (req.method !== "GET") return evMethodNotAllowed(req);
+    req.send(200, site.id === EV_DAY_SITE ? evDayCodeTree(state, req.diary).nodes : []);
+    return true;
+  }
+  const match = /^days\/([^/]+)(?:\/(allocation|previous-allocation|unlock))?$/.exec(rest);
+  if (match === null) return false;
+  const [, day, sub = ""] = match;
+  const methods: Readonly<Record<string, string>> = { "": "GET", allocation: "PUT", "previous-allocation": "GET", unlock: "POST" };
+  const allowed = methods[sub];
+  if (req.method !== allowed) return evMethodNotAllowed(req);
+  if (!evIsIsoDay(day)) {
+    req.send(422, {
+      detail: [{ type: "date_from_datetime_parsing", loc: ["path", "day"], msg: "Input should be a valid date or datetime", input: day }],
+    });
+    return true;
+  }
+  if (sub === "") req.send(200, evDayView(state, req.diary, site.id, day));
+  else if (sub === "previous-allocation") req.send(200, evPreviousAllocation(state, req.diary, site.id, day));
+  else if (sub === "allocation") req.readBody((body) => evPutAllocation(state, req, site, day, body));
+  else req.readBody((body) => evUnlockDay(state, req, site, day, body));
+  return true;
+}
+
+/* ---- dağıtım yazma: gövde kapısı + tam küme kuralları + TAM DEĞİŞTİRME ---- */
+
+/** `CellIn.hours` — Decimal(6,2) > 0, ≤ 1000 (sayısal sınırlar `bodySchemaViolation`da). */
+function evCellHoursViolation(value: unknown, loc: EvLoc): EvViolationBody | null {
+  if (typeof value !== "number" && typeof value !== "string") {
+    return evViolation("decimal_type", loc, "Decimal input should be an integer, float, string or Decimal object", value);
+  }
+  const text = String(value).trim();
+  if (!Number.isFinite(Number(text)) || text === "") {
+    return evViolation("decimal_parsing", loc, "Input should be a valid decimal", value);
+  }
+  if (typeof value === "string" && !EV_CELL_HOURS_PATTERN.test(text)) {
+    return evViolation("decimal_max_places", loc, "Decimal input should have no more than 2 decimal places", value);
+  }
+  if (typeof value === "number" && (text.split(".")[1] ?? "").length > 2) {
+    return evViolation("decimal_max_places", loc, "Decimal input should have no more than 2 decimal places", value);
+  }
+  return null;
+}
+
+/**
+ * `AllocationSave` gövdesi (FastAPI sırası): üst düzey (tanınmayan alan ·
+ * zorunlu `codes`/`cells` · gerekçe ≤ 2000) → dizi tipi/sınırları → her kod
+ * (`CodeIn`) → her hücre (`CellIn` + iç içe `RowRef` + saat).
+ */
+function evAllocationViolation(body: EvBody): EvViolationBody | null {
+  const top = bodySchemaViolation(EV_DAY_BODY.allocation, body) as EvViolationBody | null;
+  if (top !== null) return top;
+  for (const field of ["codes", "cells"] as const) {
+    const list = evArrayViolation(body[field], [field], EV_DAY_ARRAYS.get(field));
+    if (list !== null) return list;
+  }
+  const codes = evEachViolation(body.codes as unknown[], EV_DAY_BODY.code, "codes");
+  if (codes !== null) return codes;
+  const cells = body.cells as unknown[];
+  const cellShape = evEachViolation(cells, EV_DAY_BODY.cell, "cells");
+  if (cellShape !== null) return cellShape;
+  for (const [index, cell] of cells.entries()) {
+    const raw = cell as EvBody;
+    const row = evNestedViolation(EV_DAY_BODY.row, raw.row, ["cells", index, "row"]);
+    if (row !== null) return row;
+    const hours = evCellHoursViolation(raw.hours, ["cells", index, "hours"]);
+    if (hours !== null) return hours;
+  }
+  return null;
+}
+
+/**
+ * Tam küme kuralları (backend `save_allocation`): her kod aktif ağaçta ve
+ * oranlı yaprak/üst düğüm; her hücrenin satırı günün CANLI kaynağında ve
+ * düğümü GÖVDENİN kod kümesinde. İlk ihlal metni döner.
+ */
+function evAllocationRuleViolation(tree: EvDayTree, live: readonly EvLiveRow[], body: EvBody): string | null {
+  const codes = body.codes as { node_id: string }[];
+  for (const code of codes) {
+    const node = tree.byId.get(code.node_id);
+    if (node === undefined) return EV_DAY_MSG.unknownCode(code.node_id);
+    if (node.has_rate === false) return EV_DAY_MSG.unratedCode(code.node_id);
+  }
+  const codeIds = new Set(codes.map((code) => code.node_id));
+  const rows = new Set(live.map((row) => evRowKey(row.kind, row.refId)));
+  for (const cell of body.cells as { row: { kind: EvRowKind; ref_id: string }; node_id: string }[]) {
+    if (!rows.has(evRowKey(cell.row.kind, cell.row.ref_id))) return EV_DAY_MSG.unknownRow;
+    if (!codeIds.has(cell.node_id)) return EV_DAY_MSG.cellCodeMissing(cell.node_id);
+  }
+  return null;
+}
+
+/** TAM DEĞİŞTİRME: kod + hücre kümesi gövdenin AYNISI olur (aynı satır×düğüm toplanır, 0 düşer). */
+function evApplyAllocation(record: EvDayRecord, live: readonly EvLiveRow[], body: EvBody): EvDayRecord {
+  const merged = new Map<string, EvDayCell>();
+  for (const cell of body.cells as { row: { kind: EvRowKind; ref_id: string }; node_id: string; hours: unknown }[]) {
+    const key = `${evRowKey(cell.row.kind, cell.row.ref_id)}|${cell.node_id}`;
+    const hours = (merged.get(key)?.hours ?? 0) + Number(cell.hours);
+    merged.set(key, { kind: cell.row.kind, refId: cell.row.ref_id, nodeId: cell.node_id, hours });
+  }
+  const reason = typeof body.unallocated_reason === "string" ? body.unallocated_reason.trim() : "";
+  return {
+    ...record,
+    codes: (body.codes as { node_id: string; rule: EvAllocationRule }[]).map((code) => ({ nodeId: code.node_id, rule: code.rule })),
+    cells: [...merged.values()].filter((cell) => cell.hours > 0),
+    savedRows: Object.fromEntries(live.map((row) => [evRowKey(row.kind, row.refId), row.hours])),
+    unallocatedReason: reason === "" ? null : reason,
+  };
+}
+
+/** Sıra (backend): tamamlanmış şantiye 409 → gövde 422 → kilitli gün 409 → baseline yok 409 → kural 422. */
+function evPutAllocation(
+  state: EvState,
+  req: EvRequest,
+  site: { id: string; status: string },
+  day: string,
+  body: EvBody,
+): void {
+  if (site.status === "completed") return req.send(409, { detail: EV_DAY_MSG.siteCompleted });
+  const violation = evAllocationViolation(body);
+  if (violation !== null) return req.send(422, violation);
+  const key = evDayKey(site.id, day);
+  const record = state.days.get(key);
+  // Backend `_assert_writable` → `assert_days_unlocked(site, [day])`: gövde
+  // `{detail, locked_days, day_locks}` (kapsam = yalnız bu gün).
+  const locked = evDaysLockedBody(state, site.id, [day], [day]);
+  if (locked !== null) return req.send(409, locked);
+  if (record === undefined) return req.send(409, { detail: EV_DAY_MSG.noBaseline });
+  const live = evDayLiveRows(req.diary, site.id, day);
+  const rule = evAllocationRuleViolation(evDayCodeTree(state, req.diary), live, body);
+  if (rule !== null) return req.send(422, { detail: rule });
+  state.days = new Map(state.days).set(key, evApplyAllocation(record, live, body));
+  req.send(200, evDayView(state, req.diary, site.id, day));
+}
+
+/* ---- önceki gün deseni + kilit açma ---- */
+
+/** B2-7: `day`den ÖNCEKİ, günlüğü GÖNDERİLMİŞ ve dağıtımı kaydedilmiş en son gün. */
+function evPreviousAllocation(
+  state: EvState,
+  port: EvDiaryPort,
+  siteId: string,
+  day: string,
+): EvSchemas["PreviousAllocationOut"] {
+  const previous = port
+    .entries(siteId)
+    .filter((entry) => entry.status === "submitted" && entry.entry_date < day)
+    .map((entry) => entry.entry_date)
+    .filter((d) => Object.keys(state.days.get(evDayKey(siteId, d))?.savedRows ?? {}).length > 0)
+    .sort()
+    .at(-1);
+  const record = previous === undefined ? undefined : state.days.get(evDayKey(siteId, previous));
+  if (previous === undefined || record === undefined) return { day: null, codes: [], rows: [] };
+  const rows = Object.keys(record.savedRows).flatMap((rowKey) => {
+    const cells = record.cells.filter((cell) => evRowKey(cell.kind, cell.refId) === rowKey);
+    const total = cells.reduce((sum, cell) => sum + cell.hours, 0);
+    if (total === 0) return [];
+    return [{
+      kind: cells[0].kind,
+      ref_id: cells[0].refId,
+      shares: cells.map((cell) => ({ node_id: cell.nodeId, share: evDec(cell.hours / total, 6) })),
+    }];
+  });
+  return { day: previous, codes: record.codes.map((code) => ({ node_id: code.nodeId, rule: code.rule })), rows };
+}
+
+/** Sıra (backend): tamamlanmış şantiye 409 → gövde 422 → kilitli değil 409. */
+function evUnlockDay(
+  state: EvState,
+  req: EvRequest,
+  site: { id: string; status: string },
+  day: string,
+  body: EvBody,
+): void {
+  if (site.status === "completed") return req.send(409, { detail: EV_DAY_MSG.siteCompleted });
+  const violation =
+    (bodySchemaViolation(EV_DAY_BODY.unlock, body) as EvViolationBody | null) ??
+    (typeof body.reason === "string" ? null : evViolation("string_type", ["reason"], "Input should be a valid string", body.reason));
+  if (violation !== null) return req.send(422, violation);
+  // Backend `unlock_day` baseline SORMAZ: kilitli her gün açılabilir (puantaj
+  // kilidi de AYNI kaynaktan okunduğu için orada da açılır).
+  const lock = evLockState(state, site.id, day);
+  if (!evIsLocked(lock)) return req.send(409, { detail: EV_DAY_MSG.notLocked });
+  state.unlocks = [
+    ...state.unlocks,
+    {
+      siteId: site.id,
+      day,
+      approvalId: lock.approval.id,
+      unlock: { unlocked_at: EV_DAY_UNLOCKED_AT, unlocked_by: EV_ACTOR, reason: String(body.reason).trim() },
+    },
+  ];
+  req.send(200, evDayLockOut(state, site.id, day));
 }
