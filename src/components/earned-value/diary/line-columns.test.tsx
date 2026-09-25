@@ -26,23 +26,40 @@ describe("buildLineColumns — genişletilmiş yuvalar", () => {
     expect(columns(null).caption).toBeUndefined();
   });
 
-  it("renderItemCells: headers ile aynı uzunluk; kalemin yapraklarının payload kazanılmışı toplanır", () => {
+  it("renderItemCells: headers ile aynı uzunluk; kazanılmış + PF KALEM düğümünden (`progress.items`, EV-BORC-2)", () => {
     const cols = columns();
     const cells = cols.renderItemCells?.(ITEM_KALIP) ?? [];
     expect(cells).toHaveLength(cols.headers.length);
     render(<>{cells}</>);
     expect(screen.getByText("79,1")).toBeInTheDocument();
+    // Yaprak PF'si 0,94; kalem PF'si kaleme doğrudan yazılan saati de sayar → 0,44 (istemci hesaplamaz).
+    expect(screen.getByText("0,44")).toBeInTheDocument();
   });
 
-  it("kalem PF'si payload'da yoksa boş ('—'); yaprağı olmayan kalemde kazanılmış '—'", () => {
-    render(<>{columns().renderItemCells?.(ITEM_KALIP)}</>);
-    expect(screen.getByText("—")).toHaveClass("ev-diary-pf--none");
-    const other = columns().renderItemCells?.(ITEM_PRIZ) ?? [];
-    const { container } = render(<>{other}</>);
+  it("kazanılmış yaprak toplamından DEĞİL kalem düğümünden okunur", () => {
+    const view = dayView();
+    const progress = {
+      ...view.progress!,
+      items: [{ node_id: `i:${ITEM_KALIP}`, qty_day: "93", earned_day: "81.24", spent_day: "18", pf_day: "0.4513" }],
+    };
+    const cols = buildLineColumns({
+      lines: [],
+      progress,
+      index: buildCodeIndex(codeTree()),
+      bands: DEFAULT_PF_BANDS,
+      budgetHref: null,
+      revisionNumber: 1,
+    });
+    render(<>{cols.renderItemCells?.(ITEM_KALIP)}</>);
+    expect(screen.getByText("81,2")).toBeInTheDocument();
+  });
+
+  it("kalem düğümü yoksa (ör. oransız ya da hiç yazılmamış kalem) kazanılmış ve PF '—'", () => {
+    const { container } = render(<>{columns().renderItemCells?.(ITEM_PRIZ)}</>);
     expect(container.textContent).toBe("——");
   });
 
-  it("miktarsız yaprağın kazanılmışı 0 toplanır (Beton: '0,0')", () => {
+  it("miktarsız kalemin düğümü de basılır (Beton: kazanılmış '0,0')", () => {
     render(<>{columns().renderItemCells?.(ITEM_BETON)}</>);
     expect(screen.getByText("0,0")).toBeInTheDocument();
   });

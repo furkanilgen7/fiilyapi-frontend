@@ -87,8 +87,13 @@ export function dayView(overrides: Partial<EvDayView> = {}): EvDayView {
         { node_id: LEAF_KALIP, qty_day: "93", earned_day: "79.05", spent_day: "13.5", pf_day: "0.9449" },
         { node_id: LEAF_BETON, qty_day: "0", earned_day: "0", spent_day: "4.5", pf_day: "0" },
       ],
+      // EV-BORC-2: kalem düğümü alt ağaç + kaleme DOĞRUDAN yazılan saati taşır (Kalıp'a +4,5 sa).
+      items: [
+        { node_id: `i:${ITEM_KALIP}`, qty_day: "93", earned_day: "79.05", spent_day: "18", pf_day: "0.4392" },
+        { node_id: `i:${ITEM_BETON}`, qty_day: "0", earned_day: "0", spent_day: "4.5", pf_day: "0" },
+      ],
     },
-    submit: { can_submit: true, reasons: [] },
+    submit: { can_submit: true, reasons: [], reason_items: [] },
     ...overrides,
   };
 }

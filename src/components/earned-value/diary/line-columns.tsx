@@ -3,7 +3,6 @@ import Link from "next/link";
 import type { DiaryLineColumns, DiaryLineRef } from "@/components/site-diary/diary-extension";
 import { ArrowRightIcon, XIcon } from "@/components/ui/icons";
 import type { EvDayProgress } from "@/lib/api/models";
-import { sumDecimalStrings } from "@/lib/decimal";
 import type { PfBandSettings } from "@/lib/earned-value";
 import { EMPTY_CELL } from "@/lib/format";
 
@@ -54,21 +53,15 @@ export function buildLineColumns(input: LineColumnsInput): DiaryLineColumns {
 }
 
 /**
- * G2 kalem BAŞLIK satırı: kazanılmış = kalemin (oranlı) yapraklarının payload
- * değerlerinin toplamı (§3.2 `earned_day(N) = Σ yaprak`); PF yalnız payload
- * kalem düğümünü (`i:<kalem>`) taşırsa — bugün taşımıyor → "—" (raporda istek:
- * doğrudan kalem koduna yazılan saat yapraklarda görünmez, istemci bölemez).
+ * G2 kalem BAŞLIK satırı: kazanılmış + PF kalem düğümünden (`progress.items`,
+ * `i:<kalem>` — EV-BORC-2). Düğüm alt ağacı VE kaleme doğrudan yazılan saati
+ * taşır; istemci yaprakları toplamaz (doğrudan saat yapraklarda görünmez).
  */
-function itemCells(boqItemId: string, { progress, index, bands }: LineColumnsInput) {
-  const prefix = `l:${boqItemId}:`;
-  const leaves = (progress?.leaves ?? []).filter(
-    (leaf) => leaf.node_id.startsWith(prefix) && index.get(leaf.node_id)?.has_rate !== false,
-  );
-  const earned = leaves.length === 0 ? EMPTY_CELL : formatEarned(sumDecimalStrings(leaves.map((leaf) => leaf.earned_day)));
-  const itemNode = progress?.leaves.find((leaf) => leaf.node_id === `i:${boqItemId}`);
+function itemCells(boqItemId: string, { progress, bands }: LineColumnsInput) {
+  const item = progress?.items?.find((node) => node.node_id === `i:${boqItemId}`);
   return [
-    <span key="earned" className="ev-diary-earned">{earned}</span>,
-    <PfBadge key="pf" value={itemNode?.pf_day ?? null} bands={bands} />,
+    <span key="earned" className="ev-diary-earned">{item ? formatEarned(item.earned_day) : EMPTY_CELL}</span>,
+    <PfBadge key="pf" value={item?.pf_day ?? null} bands={bands} />,
   ];
 }
 

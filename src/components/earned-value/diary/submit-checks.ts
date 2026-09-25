@@ -7,8 +7,8 @@
  * yalnız KENDİ bildiğini ekler: kilitli gün ve — taslak kirliyken — önizlenen
  * saat gerekçesi (kayıt `onBeforeSave` ile gönderimden önce yazılır, S1).
  *
- * ⚠️ Çiplerin sınıflandırması backend METNİNE bakar (yapısal kod yok —
- * raporda istek). Tanınmayan gerekçe kaybolmaz: ayrı bir uyarı çipi olur.
+ * Çipler backend gerekçe KODUNA göre ayrılır (EV-BORC-2 `reason_items`); metin
+ * yalnız gösterilir. Tanınmayan kod kaybolmaz: kendi metniyle ayrı uyarı çipi olur.
  */
 import type { EvSubmitCheck } from "@/lib/api/models";
 import type { AccessLevel } from "@/lib/auth/permissions";
@@ -47,18 +47,27 @@ export const LOCKED_DAY_REASON = "Gün kilitli";
 
 export type ReasonKind = "quantity" | "overrun" | "weather" | "hours" | "other";
 
-/**
- * Backend gerekçesinin TÜRÜ — çip ayrımının TEK yeri. Backend bugün yalnız
- * metin döner (`SubmitCheckOut.reasons: string[]`, B2 `submit_blockers`);
- * ⚠️ `reasons[].code` gelince bu fonksiyon koda bakacak şekilde değişir,
- * çağıranlar değişmez (raporda backend isteği).
- */
-export function classifyReason(reason: string): ReasonKind {
-  if (/^Miktar girilmedi/.test(reason)) return "quantity";
-  if (/aşan satır/.test(reason)) return "overrun";
-  if (/^Hava/.test(reason)) return "weather";
-  if (/dağıtılmamış/.test(reason)) return "hours";
-  return "other";
+interface SubmitReason {
+  code: string;
+  message: string;
+}
+
+/** Backend `diary_adapter.submit_blockers` kodları; kalanlar (izin, `unspecified`, yeni kodlar) "other". */
+const KIND_BY_CODE: ReadonlyMap<string, ReasonKind> = new Map([
+  ["no_quantity", "quantity"],
+  ["overrun_without_reason", "overrun"],
+  ["weather_incomplete", "weather"],
+  ["undistributed_hours", "hours"],
+]);
+
+/** Gerekçe kodunun çip TÜRÜ — ayrımın TEK yeri; bilinmeyen kod güvenli varsayılana ("other") düşer. */
+export function reasonKind(code: string): ReasonKind {
+  return KIND_BY_CODE.get(code) ?? "other";
+}
+
+/** `reason_items` yoksa (eski yanıt) her metin kodsuz sayılır — kaybolmaz, "other" çipi olur. */
+function reasonItems(submit: EvSubmitCheck): readonly SubmitReason[] {
+  return submit.reason_items ?? submit.reasons.map((message) => ({ code: "unspecified", message }));
 }
 
 function check(key: string, tone: CheckTone, label: string, canWriteReason = false): SubmitCheck {
@@ -73,15 +82,15 @@ function hoursCheck(unallocated: Centi, reason: string): SubmitCheck {
   return check("hours", "warn", `${formatHours(Math.abs(unallocated))} a-s ${direction} · ${tail}`, !hasReason);
 }
 
-function buildChecks(reasons: readonly string[], input: SubmitInput): SubmitCheck[] {
-  const quantity = reasons.find((r) => ["quantity", "overrun"].includes(classifyReason(r)));
-  const weather = reasons.find((r) => classifyReason(r) === "weather");
-  const others = reasons.filter((r) => classifyReason(r) === "other");
+function buildChecks(reasons: readonly SubmitReason[], input: SubmitInput): SubmitCheck[] {
+  const quantity = reasons.find((r) => ["quantity", "overrun"].includes(reasonKind(r.code)));
+  const weather = reasons.find((r) => reasonKind(r.code) === "weather");
+  const others = reasons.filter((r) => reasonKind(r.code) === "other");
   return [
-    quantity ? check("quantity", "warn", quantity) : check("quantity", "ok", "Miktarlar girildi"),
+    quantity ? check("quantity", "warn", quantity.message) : check("quantity", "ok", "Miktarlar girildi"),
     hoursCheck(input.unallocated, input.reason),
     weather ? check("weather", "warn", "Hava eksik") : check("weather", "ok", "Hava girildi"),
-    ...others.map((r, i) => check(`other-${i}`, "warn", r)),
+    ...others.map((r, i) => check(`other-${i}`, "warn", r.message)),
   ];
 }
 
@@ -93,9 +102,8 @@ function buildChecks(reasons: readonly string[], input: SubmitInput): SubmitChec
  */
 function buildGate(input: SubmitInput): SubmitState["gate"] {
   if (input.submit === null) return null;
-  const reasons = input.isDirty
-    ? input.submit.reasons.filter((r) => classifyReason(r) !== "hours")
-    : [...input.submit.reasons];
+  const items = reasonItems(input.submit);
+  const reasons = (input.isDirty ? items.filter((r) => reasonKind(r.code) !== "hours") : items).map((r) => r.message);
   const hoursBlocked = input.unallocated !== 0 && input.reason.trim() === "";
   if (input.isDirty && hoursBlocked) reasons.push(`${formatHours(input.unallocated)} a-s dağıtılmamış; gerekçe gerekli`);
   if (input.isLocked) reasons.push(LOCKED_DAY_REASON);
@@ -106,18 +114,19 @@ function buildGate(input: SubmitInput): SubmitState["gate"] {
 function buildNote(input: SubmitInput, gate: SubmitState["gate"]): SubmitState["note"] {
   if (input.isLocked) return { text: "Gün kilitli", tone: "warn" };
   if (input.isForeman) return { text: "Gönderim mühendiste", tone: "warn" };
-  const reasons = gate?.reasons ?? [];
   if (input.unallocated !== 0 && input.reason.trim() === "") {
     return { text: "Dağıtılmamış saat gönderimi engelliyor", tone: "warn" };
   }
-  if (reasons.some((r) => classifyReason(r) === "overrun")) return { text: "Aşım gerekçesi gönderimi engelliyor", tone: "warn" };
+  const items = input.submit === null ? [] : reasonItems(input.submit);
+  if (items.some((r) => reasonKind(r.code) === "overrun")) return { text: "Aşım gerekçesi gönderimi engelliyor", tone: "warn" };
   if (gate !== null && !gate.canSubmit) return { text: "Gönderim engelli", tone: "warn" };
   return { text: input.unallocated !== 0 ? "Gerekçeyle gönderilebilir" : "Gönderime hazır", tone: "ok" };
 }
 
 export function buildSubmitState(input: SubmitInput): SubmitState {
   const gate = buildGate(input);
-  return { checks: buildChecks(input.submit?.reasons ?? [], input), note: buildNote(input, gate), gate };
+  const items = input.submit === null ? [] : reasonItems(input.submit);
+  return { checks: buildChecks(items, input), note: buildNote(input, gate), gate };
 }
 
 export interface AccessInput {

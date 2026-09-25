@@ -39,6 +39,8 @@ import { useDiaryProgressExtension } from "./useDiaryProgressExtension";
 // (`SiteDiaryEntryView` / `GeneralSiteDiaryView`) → adaptörün yuvaları. Çekirdek
 // hook'ları çekirdeğin kendi testindeki gibi sahtelenir; EV hook'ları da.
 
+
+const WEATHER = { code: "weather_incomplete", message: "Hava bilgisi eksik (durum, min/max sıcaklık, rüzgâr)" };
 vi.mock("next/navigation", () => ({
   useParams: () => ({ projectId: "p-1", siteId: "s-1" }),
   usePathname: () => "/projeler/p-1/santiyeler/s-1/gunluk-kayit",
@@ -238,11 +240,11 @@ describe("şantiye rotası → adaptör → çekirdek", () => {
   });
 
   it("Gönder kapısı: backend engeli çekirdeğin Gönder düğmesini kapatır, gerekçe ekranda", () => {
-    mockDay(dayView({ day: TODAY, submit: { can_submit: false, reasons: ["Hava bilgisi eksik (durum, min/max sıcaklık, rüzgâr)"] } }));
+    mockDay(dayView({ day: TODAY, submit: { can_submit: false, reasons: [WEATHER.message], reason_items: [WEATHER] } }));
     renderWithClient(<SiteDiaryPage />);
     expect(screen.getByRole("button", { name: /^(Kaydet & )?Gönder$/ })).toBeDisabled();
     // S4 — gerekçe yalnız kontrol çubuğunda; çekirdek kendi kutusunda LİSTELEMEZ.
-    expect(screen.queryByText("Hava bilgisi eksik (durum, min/max sıcaklık, rüzgâr)")).not.toBeInTheDocument();
+    expect(screen.queryByText(WEATHER.message)).not.toBeInTheDocument();
     expect(screen.getByText("Hava eksik")).toBeInTheDocument();
   });
 

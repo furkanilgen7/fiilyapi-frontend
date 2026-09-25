@@ -1,6 +1,22 @@
 import { describe, expect, it } from "vitest";
 
-import { buildSubmitState, classifyReason, resolveAllocationAccess, type SubmitInput } from "./submit-checks";
+import type { EvSubmitCheck } from "@/lib/api/models";
+
+import { buildSubmitState, reasonKind, resolveAllocationAccess, type SubmitInput } from "./submit-checks";
+
+const QTY = { code: "no_quantity", message: "Miktar girilmedi" };
+const WEATHER = { code: "weather_incomplete", message: "Hava bilgisi eksik (durum, min/max sıcaklık, rüzgâr)" };
+const HOURS = { code: "undistributed_hours", message: "16 a-s dağıtılmamış; gerekçe gerekli" };
+const OVERRUN = { code: "overrun_without_reason", message: "Planlı miktarı aşan satır gerekçesiz" };
+const NO_PERMISSION = {
+  code: "no_planning_permission",
+  message: "Günlüğü göndermek planlama yazma yetkisi ister (formen gönderemez)",
+};
+
+/** Backend 422/gün yanıtı: `reasons` (metin) + `reason_items` (kod) — EV-BORC-2. */
+function withReasons(...items: { code: string; message: string }[]): EvSubmitCheck {
+  return { can_submit: items.length === 0, reasons: items.map((item) => item.message), reason_items: items };
+}
 
 function input(overrides: Partial<SubmitInput> = {}): SubmitInput {
   return {
@@ -27,8 +43,8 @@ describe("buildSubmitState — Gönder kontrol çubuğu (İ:493-510) + submitGat
   });
 
   it("backend 'can_submit: false' ise kapı KAPALI ve gerekçeler backend'in (tek kaynak)", () => {
-    const reasons = ["Miktar girilmedi", "Hava bilgisi eksik (durum, min/max sıcaklık, rüzgâr)"];
-    const state = buildSubmitState(input({ submit: { can_submit: false, reasons } }));
+    const reasons = [QTY.message, WEATHER.message];
+    const state = buildSubmitState(input({ submit: withReasons(QTY, WEATHER) }));
     expect(state.gate).toEqual({ canSubmit: false, reasons, showReasonsInCore: false });
     expect(state.checks.map((c) => [c.label, c.tone])).toEqual([
       ["Miktar girilmedi", "warn"],
@@ -39,7 +55,7 @@ describe("buildSubmitState — Gönder kontrol çubuğu (İ:493-510) + submitGat
 
   it("dağıtılmamış saat: gerekçe yoksa 'gerekçe yaz' bağlantısı, varsa 'gerekçe yazıldı'", () => {
     const blocked = buildSubmitState(
-      input({ unallocated: 1600, submit: { can_submit: false, reasons: ["16 a-s dağıtılmamış; gerekçe gerekli"] } }),
+      input({ unallocated: 1600, submit: withReasons(HOURS) }),
     );
     expect(blocked.checks[1]).toEqual({
       key: "hours",
@@ -55,7 +71,7 @@ describe("buildSubmitState — Gönder kontrol çubuğu (İ:493-510) + submitGat
   });
 
   it("kirli taslak kapıyı KAPATMAZ (Kaydet & Gönder önce dağıtımı yazar, S1); saat gerekçesi önizlemeden", () => {
-    const backendHours = { can_submit: false, reasons: ["16 a-s dağıtılmamış; gerekçe gerekli"] };
+    const backendHours = withReasons(HOURS);
     // Taslakta gerekçe yazıldı → backend'in (kaydedilmiş hâle ait) saat gerekçesi düşer.
     expect(buildSubmitState(input({ isDirty: true, unallocated: 1600, reason: "temizlik", submit: backendHours })).gate).toEqual({
       canSubmit: true,
@@ -69,7 +85,7 @@ describe("buildSubmitState — Gönder kontrol çubuğu (İ:493-510) + submitGat
       showReasonsInCore: false,
     });
     // Saat dışı backend gerekçesi kirlilikte de korunur.
-    const weather = { can_submit: false, reasons: ["Hava bilgisi eksik (durum, min/max sıcaklık, rüzgâr)"] };
+    const weather = withReasons(WEATHER);
     expect(buildSubmitState(input({ isDirty: true, submit: weather })).gate?.canSubmit).toBe(false);
   });
 
@@ -77,10 +93,10 @@ describe("buildSubmitState — Gönder kontrol çubuğu (İ:493-510) + submitGat
     expect(buildSubmitState(input({ isLocked: true })).note.text).toBe("Gün kilitli");
     expect(buildSubmitState(input({ isLocked: true })).gate?.canSubmit).toBe(false);
     const foreman = buildSubmitState(
-      input({ isForeman: true, submit: { can_submit: false, reasons: ["Günlüğü göndermek planlama yazma yetkisi ister (formen gönderemez)"] } }),
+      input({ isForeman: true, submit: withReasons(NO_PERMISSION) }),
     );
     expect(foreman.note.text).toBe("Gönderim mühendiste");
-    expect(foreman.checks.at(-1)).toMatchObject({ tone: "warn", label: "Günlüğü göndermek planlama yazma yetkisi ister (formen gönderemez)" });
+    expect(foreman.checks.at(-1)).toMatchObject({ tone: "warn", label: NO_PERMISSION.message });
   });
 
   it("kayıt yokken (submit null) kapı verilmez — çekirdek bugünkü gibi", () => {
@@ -88,15 +104,51 @@ describe("buildSubmitState — Gönder kontrol çubuğu (İ:493-510) + submitGat
   });
 });
 
-describe("classifyReason — backend metni → çip türü (TEK yer; reasons[].code gelince değişir)", () => {
+describe("reasonKind — backend gerekçe KODU → çip türü (EV-BORC-2 `reason_items`; metne bakılmaz)", () => {
   it.each([
-    ["Miktar girilmedi", "quantity"],
-    ["Planlı miktarı aşan satır gerekçesiz", "overrun"],
-    ["Hava bilgisi eksik (durum, min/max sıcaklık, rüzgâr)", "weather"],
-    ["16 a-s dağıtılmamış; gerekçe gerekli", "hours"],
-    ["Günlüğü göndermek planlama yazma yetkisi ister (formen gönderemez)", "other"],
-  ])("%s → %s", (reason, kind) => {
-    expect(classifyReason(reason)).toBe(kind);
+    ["no_quantity", "quantity"],
+    ["overrun_without_reason", "overrun"],
+    ["weather_incomplete", "weather"],
+    ["undistributed_hours", "hours"],
+    ["no_planning_permission", "other"],
+    ["unspecified", "other"],
+    ["ileride_eklenecek_kod", "other"],
+    ["constructor", "other"],
+  ])("%s → %s", (code, kind) => {
+    expect(reasonKind(code)).toBe(kind);
+  });
+
+  it("sınıflandırma KODA bakar: metni tanınmayan ama kodu bilinen gerekçe doğru çipe düşer", () => {
+    const state = buildSubmitState(input({ submit: withReasons({ code: "weather_incomplete", message: "Rüzgâr yok" }) }));
+    expect(state.checks.map((c) => [c.key, c.tone])).toEqual([
+      ["quantity", "ok"],
+      ["hours", "ok"],
+      ["weather", "warn"],
+    ]);
+  });
+
+  it("bilinmeyen kod KAYBOLMAZ: kendi metniyle ayrı uyarı çipi olur ve kapıyı kapatır", () => {
+    const state = buildSubmitState(input({ submit: withReasons({ code: "yeni_kural", message: "Yeni kural engelliyor" }) }));
+    expect(state.checks.at(-1)).toMatchObject({ tone: "warn", label: "Yeni kural engelliyor" });
+    expect(state.gate).toEqual({ canSubmit: false, reasons: ["Yeni kural engelliyor"], showReasonsInCore: false });
+  });
+
+  it("`reason_items` yoksa (eski yanıt) metinler kaybolmaz — hepsi ayrı uyarı çipi", () => {
+    const state = buildSubmitState(input({ submit: { can_submit: false, reasons: ["Miktar girilmedi"] } }));
+    expect(state.checks.map((c) => [c.label, c.tone])).toEqual([
+      ["Miktarlar girildi", "ok"],
+      ["Bütün saatler dağıtıldı", "ok"],
+      ["Hava girildi", "ok"],
+      ["Miktar girilmedi", "warn"],
+    ]);
+    expect(state.gate?.canSubmit).toBe(false);
+  });
+
+  it("aşım notu koddan: 'Aşım gerekçesi gönderimi engelliyor'", () => {
+    expect(buildSubmitState(input({ submit: withReasons(OVERRUN) })).note).toEqual({
+      text: "Aşım gerekçesi gönderimi engelliyor",
+      tone: "warn",
+    });
   });
 });
 
