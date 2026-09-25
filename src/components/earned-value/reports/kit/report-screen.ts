@@ -41,6 +41,15 @@ export interface ReportScreenProps {
   siteId: string;
   /** Başlık bloğu için; bilinmiyorsa "". */
   siteName: string;
+  /**
+   * PLN-F3.6a (lider eki) · Başlık bloğu "firma · proje · şantiye" basar
+   * (GİR/QURR mockup'ları — "FİİL Yapı · Güneşkent Konut · A-Blok Şantiyesi").
+   * Üretici `views/` sarmalayıcılarıdır (firma `useCompany`, proje `useSite`/
+   * kök ikizde `EvSiteOption.projectName`); bilinmiyorsa "".
+   */
+  companyName: string;
+  /** Yukarıdaki gibi — proje adı, bilinmiyorsa "". */
+  projectName: string;
   /** Tamamlanmış şantiye → salt okunur (onay düğmesi YOK). */
   siteCompleted: boolean;
   links: ReportLinks;

@@ -1,0 +1,60 @@
+/* PLN-F3.4 · PrintSheet — A4 yatay çerçevesi (GİR:299-386, 297x210mm). */
+.ev-print-sheet {
+  width: 1123px;
+  height: 794px;
+  flex-shrink: 0;
+  background: var(--color-surface);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.12);
+  padding: 26px 30px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+  overflow: hidden;
+}
+
+.ev-print-sheet__content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  min-height: 0;
+}
+
+.ev-print-sheet__footer {
+  position: absolute;
+  left: 30px;
+  right: 30px;
+  bottom: 14px;
+  border-top: 1px solid var(--color-border-strong);
+  padding-top: 6px;
+  display: flex;
+  gap: 16px;
+  font-size: 9px;
+  color: var(--color-text-secondary);
+}
+
+.ev-print-sheet__page-no {
+  margin-left: auto;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+/* Gerçek yazdırma: A4 yatay, ekran ölçeğinden bağımsız sayfa boyutu. */
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 0;
+  }
+
+  .ev-print-sheet {
+    width: 297mm;
+    height: 210mm;
+    box-shadow: none;
+    break-after: page;
+  }
+
+  .ev-print-sheet:last-child {
+    break-after: auto;
+  }
+}
