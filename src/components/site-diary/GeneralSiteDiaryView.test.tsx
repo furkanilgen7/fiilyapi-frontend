@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useSubcontractors } from "@/lib/api/hooks/useSubcontractors";
 
@@ -251,6 +251,10 @@ describe("GeneralSiteDiaryView · şantiye seçici", () => {
   it("URL zaten hizaliysa TEKRAR yazilmaz (donguye girmez)", () => {
     searchParams = new URLSearchParams({ site: "s-2" });
     render(<GeneralSiteDiaryView />);
+    // PLN-F3.0-ek (lider denetimi): çekirdeğin `?tarih=` efekti AÇILIŞTA
+    // yazmaz (`?tarih=` yoksa ilk değer zaten BUGÜNE düşer — URL'e "bugün"ü
+    // yazmak gereksiz bir yumuşak navigasyon + kardeş `?site=` efektiyle
+    // aynı ilk karede yarış olurdu). Bu yüzden `replace` HİÇ çağrılmaz.
     expect(replace).not.toHaveBeenCalled();
   });
 
@@ -258,6 +262,44 @@ describe("GeneralSiteDiaryView · şantiye seçici", () => {
     mockOptions([]);
     render(<GeneralSiteDiaryView />);
     expect(replace).not.toHaveBeenCalled();
+  });
+
+  it("PLN-F3.0-ek · açılışta `?tarih=` yoksa replace ÇAĞRILMAZ (yalnız `?site=` hizası varsa çağrılır, tarih için değil)", () => {
+    searchParams = new URLSearchParams();
+    render(<GeneralSiteDiaryView />);
+    // `?site=` hiç yoktu → tek çağrı SİTE hizasıdır; tarih hiçbir çağrıda YOKTUR.
+    for (const call of replace.mock.calls) {
+      expect(new URL(call[0] as string, "http://x").searchParams.has("tarih")).toBe(false);
+    }
+  });
+
+  it("PLN-F3.0-ek · gün DEĞİŞİNCE `?tarih=` yazılır ve `?site=` KORUNUR", async () => {
+    const user = userEvent.setup();
+    searchParams = new URLSearchParams({ site: "s-1" });
+    const createMutate = vi.fn().mockResolvedValue({
+      id: "e-9",
+      entry_date: "2026-01-15",
+      status: "draft",
+      lines: [],
+      worker_counts: [],
+      own_crew_from_timesheet: [],
+      updated_at: "2026-01-15T00:00:00Z",
+    });
+    vi.mocked(useCreateSiteDiaryEntry).mockReturnValue({
+      mutateAsync: createMutate,
+      mutate: vi.fn(),
+      isPending: false,
+    } as never);
+    render(<GeneralSiteDiaryView />);
+    replace.mockClear(); // açılış hizası (varsa) bu testin konusu değil
+
+    await user.click(screen.getByRole("button", { name: "Taslak Kaydet" }));
+
+    await waitFor(() =>
+      expect(replace).toHaveBeenCalledWith("/gunluk-kayit?site=s-1&tarih=2026-01-15", {
+        scroll: false,
+      }),
+    );
   });
 
   it("secim URL'e yazilir (paylasilabilir baglanti, yol ELLE kurulmaz)", async () => {

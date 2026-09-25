@@ -109,6 +109,35 @@ describe("routes — uretilen URL bicimi (elle yazilmis beklentiler)", () => {
   });
 });
 
+// PLN-F3.0 · `?tarih=` — Günlük Kayıt'ın açık günü (F3-SOZLESME.md §2).
+describe("routes — Günlük Kayıt `?tarih=`", () => {
+  it("tarih verilmezse eklenMEZ — bugünkü çıplak yolla BİREBİR", () => {
+    expect(routes.projects.sites.diary({ projectId: P, siteId: S })).toBe(
+      `/projeler/${P}/santiyeler/${S}/gunluk-kayit`,
+    );
+    expect(routes.siteDiary()).toBe("/gunluk-kayit");
+  });
+
+  it("şantiye altı ikiz: `date` verilirse `?tarih=` eklenir", () => {
+    expect(routes.projects.sites.diary({ projectId: P, siteId: S, date: "2026-09-24" })).toBe(
+      `/projeler/${P}/santiyeler/${S}/gunluk-kayit?tarih=2026-09-24`,
+    );
+  });
+
+  it("kök ikiz: `site` ve `date` İKİSİ de opsiyonel, birlikte de taşınabilir", () => {
+    expect(routes.siteDiary({ site: S })).toBe(`/gunluk-kayit?site=${S}`);
+    expect(routes.siteDiary({ date: "2026-09-24" })).toBe("/gunluk-kayit?tarih=2026-09-24");
+    expect(routes.siteDiary({ site: S, date: "2026-09-24" })).toBe(
+      `/gunluk-kayit?site=${S}&tarih=2026-09-24`,
+    );
+  });
+
+  it("DIARY_DATE_PARAM okuyan tarafla (ekran) aynı sabittir", async () => {
+    const { DIARY_DATE_PARAM } = await import("@/lib/routes");
+    expect(DIARY_DATE_PARAM).toBe("tarih");
+  });
+});
+
 describe("routes — DET-1.2 bolum sekmesi + gunluk kayit detayi", () => {
   it("bolum detayi `sekme` VERILMEZSE ciplak yol kalir (bugunku baglantilar DEGISMEZ)", () => {
     expect(

@@ -1,5 +1,5 @@
 import type { BoqListResponse } from "@/lib/api/hooks/useBoq";
-import { formatDateDots } from "@/lib/format";
+import { formatDateDots, TR_WEEKDAYS_LONG } from "@/lib/format";
 
 /**
  * Yerel takvime göre `YYYY-MM-DD`. `toISOString()` KULLANILMAZ — UTC'ye
@@ -18,8 +18,33 @@ export function isoPeriod(iso: string): { year: number; month: number } {
   return { year: Number(iso.slice(0, 4)), month: Number(iso.slice(5, 7)) };
 }
 
-/** Haftanın günleri, tam ad — dizinin sırası `Date.getUTCDay()` ile aynı (0 = Pazar). */
-const TR_WEEKDAYS_LONG = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"] as const;
+/**
+ * `YYYY-MM-DD` biçimi VE takvimde GERÇEKTEN var olan bir gün mü?
+ * (`2026-02-30` biçimen doğru ama takvimde yoktur — girdi UTC'de kurulup
+ * bileşenler GERİ OKUNUR: `Date` taşan günleri SESSİZCE bir sonraki aya
+ * kaydırırdı, bu karşılaştırma o kaymayı yakalar.)
+ */
+export function isValidIsoDate(value: string): boolean {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (match === null) return false;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
+}
+
+/**
+ * PLN-F3.0 · `?tarih=` (`routes.DIARY_DATE_PARAM`) okuma — Günlük Kayıt'ın
+ * açık GÜNÜNÜN başlangıç değeri. Eksik/geçersiz/takvimde yok → BUGÜN (adres
+ * çürükse ekran sessizce çökmez, en son bilinen iyi hâle düşer —
+ * `GeneralSiteDiaryView`in `?site=` için yazdığı "ADRES ile EKRAN ÇELİŞMEZ"
+ * ilkesinin aynısı).
+ */
+export function parseDiaryDateParam(raw: string | null): string {
+  if (raw !== null && isValidIsoDate(raw)) return raw;
+  return isoDate(new Date());
+}
 
 /**
  * `YYYY-MM-DD` → "24.09.2026 Perşembe" (PLN-F2.5e · karar 1, İ:113 başlık alt

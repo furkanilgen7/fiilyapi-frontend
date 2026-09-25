@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useParams, usePathname } from "next/navigation";
+import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { AccessDenied } from "@/components/settings/AccessDenied";
 import { SiteDetailTabs } from "@/components/site-detail/SiteDetailTabs";
@@ -43,7 +43,7 @@ import { DiaryRecentEntriesCard } from "./DiaryRecentEntriesCard";
 import { DiarySafetyCard } from "./DiarySafetyCard";
 import { DiaryWorkerCountsCard } from "./DiaryWorkerCountsCard";
 import { DIARY_STATUS_LABELS } from "./diary-labels";
-import { diaryDayParts, isoDate, isoPeriod } from "./derive";
+import { diaryDayParts, isoDate, isoPeriod, parseDiaryDateParam } from "./derive";
 import { computeDiaryAccrual } from "./payment-accrual";
 import { buildRecentEntryRows, DIARY_RECENT_ENTRY_LIMIT } from "./recent-entries";
 import { buildDiaryWorkerRows } from "./worker-counts";
@@ -76,7 +76,7 @@ import {
 import "@/components/site-detail/site-detail.css";
 import "./site-diary.css";
 import "./site-diary-progress.css";
-import { routes } from "@/lib/routes";
+import { DIARY_DATE_PARAM, routes } from "@/lib/routes";
 
 export interface DiaryEntryScreenProps extends DiaryExtensionProps {
   /**
@@ -115,6 +115,9 @@ export function DiaryEntryScreen({
   extension,
   onExtensionContext,
 }: DiaryEntryScreenProps) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const siteQuery = useSite(siteKey, { project: projectKey });
   // 🔴 SLUG -> KANONIK KIMLIK GECIS NOKTASI (bkz. `routes.ts` YOL/SORGU kurali).
   const siteId = siteQuery.data?.id ?? "";
@@ -122,9 +125,38 @@ export function DiaryEntryScreen({
   const boqQuery = useBoq(siteId);
   const permission = useModulePermission("site_diary");
 
-  // Hangi GÜNÜN kaydı düzenleniyor. Varsayılan BUGÜN (mockup'taki sabit tarih
-  // KOPYALANMAZ — tarih artefaktı istisnası, spec başlığı).
-  const [activeDate, setActiveDate] = useState<string>(() => isoDate(new Date()));
+  // PLN-F3.0 · Hangi GÜNÜN kaydı düzenleniyor. İlk değer `?tarih=`den (geçersiz/
+  // eksik → BUGÜN — mockup'taki sabit tarih KOPYALANMAZ, tarih artefaktı
+  // istisnası spec başlığı; `useState` BAŞLATICISINDA hesaplanır, HER render'da
+  // DEĞİL). Kullanıcı gün değiştirince aşağıdaki efekt URL'i günceller (diğer
+  // parametreler — kök ikizde `?site=` — KORUNUR).
+  //
+  // 🔴 AÇILIŞTA YAZILMAZ, ama SONRA HER SAPMADA yazar (lider denetimi
+  // PLN-F3.0-ek, İKİNCİ tur — ilk düzeltme "İLK DEĞERDEN sapma" diye kontrol
+  // ediyordu ve şu sınıfı KAÇIRIYORDU: bugün aç → düne geç (`?tarih=dün`
+  // yazılır) → TEKRAR bugüne dön — `activeDate` yine İLK DEĞERE eşit olduğu
+  // için efekt SESSİZCE çıkıyor, URL `?tarih=dün`de KALIYOR; adres ile ekran
+  // çelişiyordu. Doğrusu: URL'in GÜNCEL `?tarih=`i `activeDate`ten FARKLIYSA
+  // yaz — "ilk değerden sapma" değil "şu an URL'de yazan DEĞERden sapma".
+  //
+  // ÜÇÜNCÜ tur (lider denetimi): mount-bayrağı (`hasMountedRef`) React
+  // StrictMode'da (Next dev'de varsayılan) KIRILIYORDU — StrictMode efekti
+  // mount→cleanup→mount sırasıyla İKİ KEZ koşturur; ikinci koşuda bayrak
+  // zaten `true` olduğundan `?tarih=` YOKKEN bile açılışta yine yazılıyordu.
+  // DURUMSUZ karşılaştırmaya geçildi: hiçbir `ref` YOK, yalnız "URL'in bugün
+  // ANLATTIĞI gün (`parseDiaryDateParam` ile — yoksa/geçersizse BUGÜN) ekrandaki
+  // ile AYNI mı" sorusu — StrictMode'un çift koşusu bu karşılaştırmayı
+  // ETKİLEMEZ (idempotent).
+  const [activeDate, setActiveDate] = useState<string>(() =>
+    parseDiaryDateParam(searchParams.get(DIARY_DATE_PARAM)),
+  );
+  useEffect(() => {
+    if (parseDiaryDateParam(searchParams.get(DIARY_DATE_PARAM)) === activeDate) return;
+    const params = new URLSearchParams(searchParams.toString());
+    params.set(DIARY_DATE_PARAM, activeDate);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeDate]);
   const [form, setForm] = useState<DiaryFormState>(() => emptyDiaryForm(isoDate(new Date())));
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [hasDateConflict, setHasDateConflict] = useState(false);

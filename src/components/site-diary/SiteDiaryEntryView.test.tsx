@@ -1,3 +1,4 @@
+import { StrictMode } from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -36,9 +37,25 @@ import type { MeResponse } from "@/lib/auth/types";
 // dosyalarında test edilir (form-state / worker-counts / recent-entries) —
 // burada YALNIZ ekranın kararları doğrulanır.
 
+// PLN-F3.0 · `?tarih=` — `router.replace` PAYLAŞILAN bir casus (`routerReplace`):
+// her `useRouter()` çağrısı AYNI fonksiyonu döner, yani ekran içindeki yazma
+// çağrıları burada TEK bir mock geçmişinde toplanır. `useSearchParams`in
+// döndürdüğü nesne de PAYLAŞILAN ve `routerReplace` tarafından İÇTEN
+// GÜNCELLENEN tek bir `URLSearchParams`tir (PLN-F3.0-ek 3. tur) — gerçek
+// Next.js'te `router.replace` sonraki render'da `useSearchParams()`ı
+// GÜNCEL döner; sabit/boş bir mock bu geri-besleme döngüsünü KAÇIRIRDI ve
+// "başka güne geçip geri dönme" testi yanlış (iyimser) bir ortamda geçerdi.
+const routerReplace = vi.fn((url: string) => {
+  const query = url.split("?")[1] ?? "";
+  for (const key of [...sharedSearchParams.keys()]) sharedSearchParams.delete(key);
+  for (const [key, value] of new URLSearchParams(query)) sharedSearchParams.set(key, value);
+});
+const sharedSearchParams = new URLSearchParams();
 vi.mock("next/navigation", () => ({
   useParams: () => ({ projectId: "p-1", siteId: "s-1" }),
   usePathname: () => "/projeler/p-1/santiyeler/s-1/gunluk-kayit",
+  useRouter: () => ({ replace: routerReplace }),
+  useSearchParams: () => sharedSearchParams,
 }));
 vi.mock("@/components/shell/SessionProvider", () => ({ useSession: vi.fn() }));
 vi.mock("@/lib/api/hooks/useSiteDiary", () => ({
@@ -205,6 +222,10 @@ function mockScreen(options: { entry?: SiteDiaryEntryDetail; entriesError?: unkn
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // PLN-F3.0-ek (3. tur) · `sharedSearchParams` testler arası PAYLAŞILIR
+  // (gerçekçi geri-besleme için) — her testin `?tarih=`SİZ AÇILMASI gerekir,
+  // yoksa önceki testin `router.replace` çağrısı sonrakine SIZAR.
+  for (const key of [...sharedSearchParams.keys()]) sharedSearchParams.delete(key);
   mockSession({ site_diary: "full", progress_payments: "view" });
   mockScreen();
   vi.mocked(useSite).mockReturnValue({
@@ -497,6 +518,89 @@ describe("SiteDiaryEntryView · 409 akışı", () => {
 });
 
 describe("SiteDiaryEntryView · kaydetme akışı", () => {
+  it("PLN-F3.0-ek · açılışta `?tarih=` yoksa replace ÇAĞRILMAZ; sunucu FARKLI bir gün döndürünce URL'e YAZILIR", async () => {
+    const user = setupUser();
+    mockScreen();
+    render(<SiteDiaryEntryView />);
+    // Açılışta `?tarih=` YOKTU → ilk değer zaten BUGÜNE düşer; URL'i "bugüne"
+    // yazmak GEREKSİZ bir yumuşak navigasyon olurdu — çağrılmaz.
+    expect(routerReplace).not.toHaveBeenCalled();
+
+    createMutate.mockResolvedValue(entryDetail({ entry_date: "2026-01-15" }));
+    await user.click(screen.getByRole("button", { name: "Taslak Kaydet" }));
+
+    await waitFor(() =>
+      expect(routerReplace).toHaveBeenCalledWith(
+        "/projeler/p-1/santiyeler/s-1/gunluk-kayit?tarih=2026-01-15",
+        { scroll: false },
+      ),
+    );
+  });
+
+  it("PLN-F3.0-ek (3. tur) · React.StrictMode'da (efekt mount→cleanup→mount) açılışta YİNE de replace ÇAĞRILMAZ", async () => {
+    mockScreen();
+    render(
+      <StrictMode>
+        <SiteDiaryEntryView />
+      </StrictMode>,
+    );
+    // StrictMode geliştirmede efekti iki kez çalıştırır (mount→cleanup→mount);
+    // durumsuz karşılaştırma (`parseDiaryDateParam(...) === activeDate`) bu
+    // çift koşudan ETKİLENMEZ — `?tarih=` yoktu, ikinci koşuda da hâlâ yok.
+    await waitFor(() => expect(screen.getByRole("heading", { name: /Günlük Kayıt/ })).toBeInTheDocument());
+    expect(routerReplace).not.toHaveBeenCalled();
+  });
+
+  it("PLN-F3.0-ek (2. tur) · başka güne geçip TEKRAR ilk güne dönünce URL SON durumu yansıtır (adres ile ekran çelişmez)", async () => {
+    const user = setupUser();
+    const OTHER = "2026-01-15";
+    // "Son Kayıtlar" listesi iki gün taşır — satıra tıklamak `setActiveDate`i
+    // DOĞRUDAN çağırır (mutasyon/entry eşleşmesi gerekmez, sözleşmeye en
+    // sadık senaryo: GK359 "satır tıklanınca o günün kaydına geçilir").
+    vi.mocked(useSiteDiaryEntries).mockReturnValue({
+      data: {
+        items: [listItem({ id: "e-today", entry_date: TODAY }), listItem({ id: "e-other", entry_date: OTHER })],
+        total: 2,
+        limit: 50,
+        offset: 0,
+      } satisfies SiteDiaryEntryListResponse,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: refetchEntries,
+    } as never);
+    vi.mocked(useSiteDiaryEntry).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as never);
+    render(<SiteDiaryEntryView />);
+    expect(routerReplace).not.toHaveBeenCalled();
+    const recentSection = screen.getByText("Son Kayıtlar").closest("section");
+    if (!recentSection) throw new Error("Son Kayıtlar kartı bulunamadı");
+
+    // 1) bugünden BAŞKA bir güne (liste DESC sıralı → ikinci satır) geç.
+    await user.click(within(recentSection).getAllByRole("button")[1]!);
+    await waitFor(() =>
+      expect(routerReplace).toHaveBeenLastCalledWith(
+        `/projeler/p-1/santiyeler/s-1/gunluk-kayit?tarih=${OTHER}`,
+        { scroll: false },
+      ),
+    );
+
+    // 2) TEKRAR ilk güne (BUGÜN) dön — `activeDate` şimdi İLK DEĞERE eşit,
+    // ama URL hâlâ ÖNCEKİ günü yazıyor: efekt YİNE de yazmalı ("ilk değerden
+    // sapma" değil "URL'in güncel değerinden sapma" kontrolü).
+    await user.click(within(recentSection).getAllByRole("button")[0]!);
+    await waitFor(() =>
+      expect(routerReplace).toHaveBeenLastCalledWith(
+        `/projeler/p-1/santiyeler/s-1/gunluk-kayit?tarih=${TODAY}`,
+        { scroll: false },
+      ),
+    );
+  });
+
   it("kayıt YOKKEN 'Taslak Kaydet' önce kaydı açar (satır iskeleti sunucudan)", async () => {
     const user = setupUser();
     mockScreen();

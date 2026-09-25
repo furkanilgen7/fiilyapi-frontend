@@ -179,8 +179,9 @@ export function SiteTimesheetView() {
         />
       )}
       emptyMessage={(isLoading, isError) => timesheetEmptyMessage(isLoading, isError, siteId)}
-      // PLN-F2.4 · kilit bandı/popover'ı → bu şantiyenin günlük kaydı (rota anahtarlarıyla).
-      diaryHref={routes.projects.sites.diary({ projectId: projectKey, siteId: siteKey })}
+      // PLN-F3.0 · kilit bandı/popover'ı → bu şantiyenin günlük kaydı, KİLİDİN
+      // GÜNÜNE `?tarih=` ile (rota anahtarlarıyla).
+      diaryHref={(day) => routes.projects.sites.diary({ projectId: projectKey, siteId: siteKey, date: day })}
     />
   );
 }

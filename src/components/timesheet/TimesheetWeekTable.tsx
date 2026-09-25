@@ -71,8 +71,11 @@ export interface TimesheetWeekTableProps {
   onCommitCode?: (personnelId: string, workDate: string, code: TimesheetCode | null) => void;
   /** PLN-F2.4 · Kilitli günler (sunucu `locked_days` ∪ kilit 409'u). */
   dayLocks?: readonly TimesheetDayLock[];
-  /** Salt okunur popover'ın "Günlük kaydına git →" hedefi; yoksa bağlantı basılmaz. */
-  diaryHref?: string | null;
+  /**
+   * PLN-F3.0 · Salt okunur popover'ın "Günlük kaydına git →" hedefi — üreticidir
+   * (gün → yol), popover KENDİ hücresinin gününü verir; yoksa bağlantı basılmaz.
+   */
+  diaryHref?: ((day: string) => string) | null;
 }
 
 const STALE_TITLE =
@@ -470,7 +473,7 @@ function LockedWeekCell({
   day: TimesheetWeekDayColumn;
   lock: TimesheetDayLock;
   normalDayHours: string;
-  diaryHref: string | null;
+  diaryHref: ((day: string) => string) | null;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const cell = row.cells[day.workDate];
@@ -507,7 +510,7 @@ function LockedWeekCell({
           hours={hours}
           code={code}
           reportDate={lock.reportDate}
-          diaryHref={diaryHref}
+          diaryHref={diaryHref ? diaryHref(day.workDate) : null}
           onClose={() => setIsOpen(false)}
         />
       )}

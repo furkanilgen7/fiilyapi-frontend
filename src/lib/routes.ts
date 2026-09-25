@@ -94,6 +94,27 @@ export const SECTION_TAB_PARAM = "sekme";
  */
 export type SectionTabKey = "is-kalemleri" | "puantaj" | "stok" | "hakedisler" | "gunluk-kayit";
 
+/**
+ * PLN-F3.0 · `?tarih=` — Günlük Kayıt'ın açık GÜNÜNÜN sorgu anahtarı.
+ *
+ * `donus`/`sekme` deseninde TEK tanımdır: üreten (`routes.projects.sites.diary`
+ * / `routes.siteDiary`) ile okuyan (`SiteDiaryEntryView` — `DiaryEntryScreen`)
+ * aynı sabiti paylaşır. `YYYY-MM-DD` taşır; verilmezse (ya da geçersizse)
+ * ekran BUGÜNE düşer.
+ */
+export const DIARY_DATE_PARAM = "tarih";
+
+/** Günlük Kayıt'ın şantiye altı ikizi — gün opsiyoneldir (`?tarih=`). */
+export interface SiteDiaryParams extends SiteParams {
+  date?: string;
+}
+
+/** Günlük Kayıt'ın KÖK ikizi — şantiye ve gün ikisi de URL'de opsiyoneldir. */
+export interface GeneralDiaryParams {
+  site?: RouteId;
+  date?: string;
+}
+
 /** Tek bir yol segmentini güvenle kodlar (slug'da Türkçe karakter olabilir). */
 function seg(value: RouteId): string {
   return encodeURIComponent(value);
@@ -232,7 +253,7 @@ export const routes = {
       stockEntry: (p: SiteParams) => `${siteBase(p)}/stok/giris`,
       timesheet: ({ section, isoYear, isoWeek, ...p }: SiteTimesheetParams) =>
         `${siteBase(p)}/puantaj${qs({ section, iso_year: isoYear, iso_week: isoWeek })}`,
-      diary: (p: SiteParams) => `${siteBase(p)}/gunluk-kayit`,
+      diary: ({ date, ...p }: SiteDiaryParams) => `${siteBase(p)}/gunluk-kayit${qs({ [DIARY_DATE_PARAM]: date })}`,
       diarySummary: (p: SiteParams) => `${siteBase(p)}/gunluk-kayit/ozet`,
       diaryPlanning: (p: SiteParams) => `${siteBase(p)}/gunluk-kayit/planlama`,
       /**
@@ -379,7 +400,8 @@ export const routes = {
    * emsalinde olduğu gibi seçici `usePathname()` üzerine yazar, yani kök yol
    * elle kurulmaz (URL-1).
    */
-  siteDiary: () => "/gunluk-kayit",
+  siteDiary: (params: GeneralDiaryParams = {}) =>
+    `/gunluk-kayit${qs({ site: params.site, [DIARY_DATE_PARAM]: params.date })}`,
 
   /**
    * PLN-F1 · kabuk nav'ının "Planlama" grubu (K21). `budget` şantiye kapsamlı

@@ -238,8 +238,13 @@ export function formatPeriod(year: number, month: number): string {
   return name ? `${name} ${year}` : `${month}/${year}`;
 }
 
-/** `TR_MONTHS`in standart 3 harfli kısaltmaları — `formatPeriodShort` bundan türer. */
-const TR_MONTHS_SHORT = TR_MONTHS.map((name) => name.slice(0, 3));
+/**
+ * `TR_MONTHS`in standart 3 harfli kısaltmaları — `formatPeriodShort` bundan
+ * türer. İHRAÇ EDİLİR (PLN-F3.0-borç, lider denetimi): başka modüllerin
+ * KENDİ kopyasını yazması yerine TEK kaynaktan alması için — bkz. bu dosyanın
+ * en altındaki "TEK KAYNAK" notu.
+ */
+export const TR_MONTHS_SHORT = TR_MONTHS.map((name) => name.slice(0, 3));
 
 /**
  * Hakediş listesi dönem hücresi (F-TH T2, Ekran 2 satır 143: "Tem 2026",
@@ -371,6 +376,14 @@ export function parseDateDots(display: string): string {
 
 /** Haftanın günleri — dizinin sırası `Date.getUTCDay()` ile aynıdır (0 = Pazar). */
 const TR_WEEKDAYS_SHORT = ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"];
+
+/**
+ * Haftanın günleri, TAM ad — dizinin sırası `Date.getUTCDay()` ile aynıdır
+ * (0 = Pazar). İHRAÇ EDİLİR (PLN-F3.0-borç, lider denetimi): `site-diary/
+ * derive.ts` ve `earned-value/reports/kit/report-date-format.ts` aynı diziyi
+ * KENDİ private kopyalarında taşıyordu — TEK kaynak burası.
+ */
+export const TR_WEEKDAYS_LONG = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"] as const;
 
 /**
  * `YYYY-MM-DD` → "Pzt" (F-SD GK327 · F-PL P111-117). TEK KAYNAK: hem günlük

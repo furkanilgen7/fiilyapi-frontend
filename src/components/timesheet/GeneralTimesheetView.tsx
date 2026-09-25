@@ -48,14 +48,17 @@ export function GeneralTimesheetView() {
   // çizer — boş bir seçici uydurulmaz).
   const siteParam = searchParams.get("site");
   const selectedSiteId = siteParam ?? siteOptions.options[0]?.siteId ?? "";
-  // PLN-F2.4 · kilit bandının "Günlük kaydına git →" hedefi: seçili şantiyenin
-  // günlük rotası. Seçenek listesinde yoksa (yükleniyor / erişim dışı) `null`.
+  // PLN-F3.0 · kilit bandının "Günlük kaydına git →" hedefi: seçili şantiyenin
+  // günlük rotası, KİLİDİN GÜNÜNE `?tarih=` ile. Seçenek listesinde yoksa
+  // (yükleniyor / erişim dışı) `null`.
   const selectedOption = siteOptions.options.find((option) => option.siteId === selectedSiteId);
   const diaryHref = selectedOption
-    ? routes.projects.sites.diary({
-        projectId: selectedOption.projectId,
-        siteId: selectedOption.siteId,
-      })
+    ? (day: string) =>
+        routes.projects.sites.diary({
+          projectId: selectedOption.projectId,
+          siteId: selectedOption.siteId,
+          date: day,
+        })
     : null;
 
   if (!permission.canView) return <AccessDenied />;
