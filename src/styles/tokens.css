@@ -415,6 +415,20 @@
   --min-width-timesheet-week-table: 1080px; /* 180 + 7×74 + 3×66 */
   --text-timesheet-week-total: 14px; /* satır türev kolonu (E5 247) */
   --text-timesheet-week-sum: 15px; /* Hafta Toplam (E5 249) */
+  /* F-SUBPX · puantaj ızgaralarının (haftalık + aylık) satır aralıkları TAM
+     PİKSEL. Mockup (E5 · ŞP · Kilitli Gün) satır aralığı vermez; gövdenin 1.5
+     mirası 11/13/15 px yazıda 16.5/19.5/22.5 px satır üretiyordu → satır
+     sınırları yarım pikselde kalıyor, yapışkan Personel kolonu raster
+     turları arasında kayabiliyordu (DET-1 günlük ızgarasıyla aynı sınıf).
+     Değerler 1.5 mirasının tam pikselidir; .5'ler AŞAĞI yuvarlanır (mockup
+     `normal` satır aralığına daha yakın). */
+  --leading-timesheet-meta: 15px; /* 10 px: meslek satırı · gün tarihi · türev başlığı (E5 219, 224, 235 · ŞP 127, 149) */
+  --leading-timesheet-head: 16px; /* 11 px: kolon başlığı · ayak etiketi (E5 216-217, 313 · ŞP 125, 231) */
+  --leading-timesheet-sm: 18px; /* 12 px: şantiye ad satırı · boş satır (ŞP 149) */
+  --leading-timesheet-body: 19px; /* 13 px: ad · hücre · ayak değeri (E5 235, 314 · ŞP 166, 248) */
+  --leading-timesheet-total: 21px; /* 14 px: satır türev kolonu (E5 247) */
+  --leading-timesheet-sum: 22px; /* 15 px: Hafta Toplam (E5 249, 326) */
+  --leading-timesheet-error: 13px; /* 9 px: hücre doğrulama hatası */
 
   /* ── Personel Ekle formu (F-PT T4) ─────────────────────────────────────────
      Kanon: projedesign "Form - Personel Ekle.dc.html". Parantez içi sayılar o
@@ -623,6 +637,17 @@
   --color-ev-diary-group-cell-bg: #fafbff; /* grup kodu gövde hücresi zemini (İ 666) */
   --color-ev-diary-sub-row-bg: #fcfcfd; /* taşeron satırı zemini (İ 664) */
   --shadow-ev-diary-submit-bar: 0 8px 24px rgba(15, 23, 42, 0.1); /* gönder çubuğu (İ 493 · EF 591) */
+  /* F-SUBPX · Saat Dağıtımı ızgarasının satır aralıkları TAM PİKSEL. Mockup
+     (İ 441-486) satır aralığı vermez; gövdenin 1.5 mirası 12.5/10.5/11.5 px
+     yazıda 18.75/15.75/17.25 px satır üretiyordu → satır sınırları yarım/çeyrek
+     pikselde kalıyor, yapışkan kişi kolonu Linux baseline turlarında dönüşümlü
+     1 px kayıyordu (DET-1 ölçümü). Değerler 1.5 mirasının EN YAKIN tam pikselidir. */
+  --leading-ev-diary-row: 19px; /* 12.5–13 px: ad · saat · alt toplam · PF satırı (İ 462, 466, 480, 485) */
+  --leading-ev-diary-meta: 16px; /* 10.5–11 px: meslek · uyarı · ayırıcı · kolon başlığı (İ 441, 455, 463, 464) */
+  --leading-ev-diary-code: 14px; /* 11.5 px kod adı — mockup 1.2 (13.8) (İ 445) */
+  --leading-ev-diary-rule: 11px; /* 9.5 px kip düğmesi — mockup UA `normal` (İ 447) */
+  --leading-ev-diary-pf: 17px; /* 11.5 px PF rozeti: 17 + 2 dolgu = satır 19 (İ 486) */
+  --leading-ev-diary-row-tablet: 21px; /* tablet 14 px ad (İ 527-558) */
 
   /* PLN-F2.5 · Bilgi popover'ı (öneri / kilitli hücre) — Planlama - Adam-Saat
      Bütçesi.dc.html:245 · Şantiye - Puantaj (Kilitli Gün).dc.html:340. */

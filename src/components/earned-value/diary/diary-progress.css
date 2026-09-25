@@ -341,7 +341,15 @@
 .ev-diary-bulk__hours .input { height: 28px; padding: 0 var(--space-2); border-color: var(--color-primary-border-soft); font-size: var(--text-body); }
 .btn.ev-diary-bulk__apply { height: 28px; padding: 0 var(--space-3); border-radius: var(--radius-6); font-size: var(--text-xs); font-weight: var(--weight-semibold); }
 
-/* ── Izgara — İ:446-489; ilk kolon yapışkan (TimesheetWeekTable emsali) ── */
+/* ── Izgara — İ:446-489; ilk kolon yapışkan (TimesheetWeekTable emsali) ──
+   🔴 F-SUBPX · SATIR YÜKSEKLİKLERİ TAM PİKSEL: ızgaradaki her satırın (başlık ·
+   ayırıcı · gövde · toplam · PF) yüksekliği tam sayı olmalı; yoksa satır
+   sınırları yarım/çeyrek pikselde kalır ve yapışkan kişi kolonu (`__lead`)
+   rasterde dönüşümlü 1 px kayar (DET-1: iki Linux baseline turu farklı kare).
+   Bu yüzden ızgaradaki metinler gövdenin 1.5 mirasını DEĞİL `--leading-ev-diary-*`
+   tam piksel satır aralığını taşır; karışık yazı boylu satır kutusu (strut +
+   satır içi blok) kesir üretir, o yüzden kip düğmesi blok, PF rozeti üste
+   hizalıdır. Bekçi: diary-progress.css.test.ts "F-SUBPX". */
 .ev-diary-grid-scroll { overflow-x: auto; border-top: 1px solid var(--color-border); }
 /* Izgara kolon toplamı kadar geniştir (İ:447 `min-width: gridMin`); az kolonda sağ boş kalır. */
 .ev-diary-grid {
@@ -367,6 +375,7 @@
   padding: var(--space-2) 10px var(--space-2) 14px;
   vertical-align: bottom;
   font-size: var(--text-table-head);
+  line-height: var(--leading-ev-diary-meta);
   font-weight: var(--weight-semibold);
   color: var(--color-text-muted);
   text-transform: uppercase;
@@ -387,18 +396,23 @@
   overflow: hidden;
   font-size: 11.5px;
   font-weight: var(--weight-semibold);
-  line-height: 1.2;
+  line-height: var(--leading-ev-diary-code);
   color: var(--color-text);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* Blok (İ:447 `align-self: flex-start` — kendi satırında, içerik genişliğinde):
+   satır içi blok olsaydı hücrenin 13 px strut'uyla taban çizgisine hizalanıp
+   kesirli satır kutusu (19.497 px) üretirdi. */
 .ev-diary-rule {
+  display: block;
   margin-top: 2px;
   padding: 1px 5px;
   border: none;
   border-radius: 3px;
   font-size: 9.5px;
   font-weight: var(--weight-bold);
+  line-height: var(--leading-ev-diary-rule);
   cursor: pointer;
 }
 .ev-diary-rule--prorata_by_daily_qty { background: var(--color-primary-soft); color: var(--color-primary); }
@@ -415,6 +429,7 @@
   padding: var(--space-2) 14px var(--space-2) var(--space-2);
   vertical-align: bottom;
   font-size: var(--text-table-head);
+  line-height: var(--leading-ev-diary-meta);
   font-weight: var(--weight-semibold);
   color: var(--color-text-muted);
   text-transform: uppercase;
@@ -430,6 +445,7 @@
   border-bottom: 1px solid var(--color-border);
   font-size: 10.5px;
   font-weight: var(--weight-bold);
+  line-height: var(--leading-ev-diary-meta);
   color: var(--color-text-secondary);
   letter-spacing: var(--tracking-wide);
   text-align: left;
@@ -443,18 +459,19 @@
 .ev-diary-grid__who { display: flex; flex: 1; flex-direction: column; min-width: 0; }
 .ev-diary-grid__name,
 .ev-diary-grid__job { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ev-diary-grid__name { font-size: 12.5px; font-weight: var(--weight-medium); color: var(--color-text); }
-.ev-diary-grid__job { font-size: 10.5px; color: var(--color-text-subtle); }
+.ev-diary-grid__name { font-size: 12.5px; font-weight: var(--weight-medium); line-height: var(--leading-ev-diary-row); color: var(--color-text); }
+.ev-diary-grid__job { font-size: 10.5px; line-height: var(--leading-ev-diary-meta); color: var(--color-text-subtle); }
 .ev-diary-grid__changed {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
   font-size: 10.5px;
   font-weight: var(--weight-semibold);
+  line-height: var(--leading-ev-diary-meta);
   color: var(--color-warning-body-text);
 }
 .ev-diary-grid__changed > svg { width: 11px; height: 11px; flex-shrink: 0; }
-.ev-diary-grid__hours { font-family: var(--font-mono); font-size: var(--text-body); font-weight: var(--weight-semibold); color: var(--color-text-secondary); }
+.ev-diary-grid__hours { font-family: var(--font-mono); font-size: var(--text-body); font-weight: var(--weight-semibold); line-height: var(--leading-ev-diary-row); color: var(--color-text-secondary); }
 
 .ev-diary-cell { padding: var(--space-1) 5px; border-left: 1px solid var(--color-ev-diary-cell-line); } /* İ:469 */
 .ev-diary-grid__row > .ev-diary-cell { background-clip: padding-box; }
@@ -490,13 +507,14 @@
 
 /* İ:481-489 — alt satırlar */
 .ev-diary-grid__num { padding: var(--space-2); border-left: 1px solid var(--color-ev-diary-grid-line); font-family: var(--font-mono); font-size: 12.5px; text-align: right; }
-.ev-diary-grid__total > * { background: var(--color-surface-2); border-top: 1.5px solid var(--color-border-strong); font-weight: var(--weight-bold); }
+.ev-diary-grid__total > * { background: var(--color-surface-2); border-top: 1.5px solid var(--color-border-strong); font-weight: var(--weight-bold); line-height: var(--leading-ev-diary-row); }
 .ev-diary-grid__total .ev-diary-grid__lead { padding: var(--space-2) 10px var(--space-2) 14px; font-size: 12.5px; }
 .ev-diary-grid__foot-lead { display: flex; justify-content: space-between; }
-.ev-diary-grid__pf > * { border-top: 1px solid var(--color-divider); }
+.ev-diary-grid__pf > * { border-top: 1px solid var(--color-divider); line-height: var(--leading-ev-diary-row); }
 .ev-diary-grid__pf .ev-diary-grid__lead { padding: 7px 10px 7px 14px; font-size: 11.5px; color: var(--color-text-muted); }
-.ev-diary-grid__pf .ev-diary-pf { padding: 1px 5px; font-size: 11.5px; }
-.ev-diary-grid__pf .ev-diary-muted { font-size: 11.5px; }
+/* Üste hizalı: taban çizgisine hizalı rozet/metin mono strut'la kesirli satır kutusu üretir. */
+.ev-diary-grid__pf .ev-diary-pf { padding: 1px 5px; font-size: 11.5px; line-height: var(--leading-ev-diary-pf); vertical-align: top; }
+.ev-diary-grid__pf .ev-diary-muted { font-size: 11.5px; vertical-align: top; }
 
 /* ── Gönder kontrol çubuğu — İ:493-510 ── */
 .ev-diary-submit {
@@ -615,7 +633,7 @@
   .ev-diary-grid__code { width: 104px; min-width: 104px; padding: var(--space-2); }
   .ev-diary-grid__remain { width: 96px; min-width: 96px; padding: 6px var(--space-3); }
   .ev-diary-grid__row { height: 52px; }
-  .ev-diary-grid__name { font-size: var(--text-sm); }
+  .ev-diary-grid__name { font-size: var(--text-sm); line-height: var(--leading-ev-diary-row-tablet); }
   .ev-diary-grid__job { font-size: var(--text-small); }
   .ev-diary-grid__select { width: 36px; height: 36px; }
   .ev-diary-cell { padding: 6px; }

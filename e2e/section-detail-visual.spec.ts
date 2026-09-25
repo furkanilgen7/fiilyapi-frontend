@@ -175,25 +175,18 @@ async function openSectionFrame(
 }
 
 /**
- * 🔴 GÜNLÜK KAYIT NOTU MASKELENİR — ve bu bir SÜS DEĞİL, DOĞRULUK KOŞULUDUR.
+ * Günlük kayıt notu (`section-diary-note`) — MASKE YOK (F-SUBPX, 2026-09-25).
  *
- * ÖLÇÜLDÜ: `SectionDiaryPanel` AY SÜZGECİ UYGULAMAZ (`useSiteDiaryEntries(siteId)`
- * tüm filtreleri `null` geçer — önbelleği şantiye günlüğü ekranıyla PAYLAŞMAK
- * için, bkz. `SectionDetailView.tsx`). `e2e/site-diary.spec.ts` ise mutasyon
- * akışını bilerek **2026-09 · s-1**'de yürütür ve orada BÖLÜMSÜZ
- * (`section_id: null`) bir kayıt AÇAR. O kayıt listeye GİRMEZ (null bu sekmede
- * gösterilmez) ama `unassignedCount`u 0→1 yapar, yani notun METNİ ve YÜKSEKLİĞİ
- * o spec'in `fullyParallel` altında ne zaman koştuğuna göre DEĞİŞİR.
- *
- * Diğer spec'lerin ay-tabanlı izolasyonu bu ekranı KORUMAZ, çünkü koruma
- * "görsel spec'ler Temmuz'a bakar" varsayımına dayanıyordu — bu panel HİÇBİR
- * aya bakmaz. Satırların KENDİSİ deterministiktir (sec-1 → yalnız `d-1`),
- * bu yüzden kare korunur ve YALNIZ not maskelenir. Notun İÇERİĞİ zaten
- * `section-detail-tabs.spec.ts`te davranışsal olarak bekçilenir.
+ * DET-1'den önce panel istemci süzgeciyle "başka bölüme atanmış N kayıt"
+ * notunu basıyordu ve `e2e/site-diary.spec.ts`in açtığı bölümsüz kayıt bu
+ * sayacı koşu sırasına göre değiştirdiği için not maskeleniyordu. DET-1 ile
+ * süzgeç SUNUCUYA geçti (Kural A); not artık YALNIZ sayfa kırpılmasında
+ * (`total > items`) basılır ve bu karelerde kırpma yoktur. Maske yerine notun
+ * YOKLUĞU iddia edilir — beklenmedik biçimde basılırsa kare değil iddia kırılır.
  */
-const DIARY_NOTE_MASK = (page: import("@playwright/test").Page) => [
-  page.getByTestId("section-diary-note"),
-];
+const expectNoDiaryNote = async (page: import("@playwright/test").Page) => {
+  await expect(page.getByTestId("section-diary-note")).toHaveCount(0);
+};
 
 test("bolum detay gunluk kayit sekmesi gorsel", async ({ page }) => {
   await openSectionFrame(page, "sec-1", "Kat 6–10 Kaba İnşaat");
@@ -210,11 +203,10 @@ test("bolum detay gunluk kayit sekmesi gorsel", async ({ page }) => {
   await expect(page.getByTestId("section-workers-row")).toHaveCount(3);
   await expect(page.getByText("Yükleniyor…")).toHaveCount(0);
 
+  await expectNoDiaryNote(page);
+
   await prepareFrame(page);
-  await expect(page).toHaveScreenshot("bolum-detay-gunluk-kayit.png", {
-    fullPage: true,
-    mask: DIARY_NOTE_MASK(page),
-  });
+  await expect(page).toHaveScreenshot("bolum-detay-gunluk-kayit.png", { fullPage: true });
 });
 
 /**
@@ -233,11 +225,10 @@ test("bolum detay gunluk kayit sekmesi BOS hali gorsel", async ({ page }) => {
   await expect(page.getByTestId("section-workers-empty")).toBeVisible();
   await expect(page.getByText("Yükleniyor…")).toHaveCount(0);
 
+  await expectNoDiaryNote(page);
+
   await prepareFrame(page);
-  await expect(page).toHaveScreenshot("bolum-detay-gunluk-kayit-bos.png", {
-    fullPage: true,
-    mask: DIARY_NOTE_MASK(page),
-  });
+  await expect(page).toHaveScreenshot("bolum-detay-gunluk-kayit-bos.png", { fullPage: true });
 });
 
 /**

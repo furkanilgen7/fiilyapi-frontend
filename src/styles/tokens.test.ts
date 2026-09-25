@@ -272,9 +272,32 @@ describe("tokens.css", () => {
       ["--color-ev-diary-group-cell-bg", "#fafbff"], // grup kodu gövde hücresi zemini (İ 666)
       ["--color-ev-diary-sub-row-bg", "#fcfcfd"], // taşeron satırı zemini (İ 664)
       ["--shadow-ev-diary-submit-bar", "0 8px 24px rgba(15, 23, 42, 0.1)"], // gönder çubuğu (İ 493 · EF 591)
+      // F-SUBPX — ızgara satır aralıkları tam piksel (gerekçe tokens.css + diary-progress.css.test.ts).
+      ["--leading-ev-diary-row", "19px"], // ad · saat · alt toplam · PF satırı (İ 462, 466, 480, 485)
+      ["--leading-ev-diary-meta", "16px"], // meslek · uyarı · ayırıcı · kolon başlığı (İ 441, 455, 463, 464)
+      ["--leading-ev-diary-code", "14px"], // kod adı (İ 445)
+      ["--leading-ev-diary-rule", "11px"], // kip düğmesi (İ 447)
+      ["--leading-ev-diary-pf", "17px"], // PF rozeti (İ 486)
+      ["--leading-ev-diary-row-tablet", "21px"], // tablet ad (İ 527-558)
     ];
     for (const [token, value] of diaryTokens) {
       expect(tokensCss).toMatch(new RegExp(`${token}:\\s*${value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*;`));
+    }
+  });
+
+  it("puantaj ızgaraları (F-SUBPX) satır aralığı token'ları tanımlı ve tam px", () => {
+    // Gerekçe tokens.css + timesheet.css.test.ts "F-SUBPX".
+    const timesheetTokens: ReadonlyArray<readonly [string, string]> = [
+      ["--leading-timesheet-meta", "15px"], // 10 px
+      ["--leading-timesheet-head", "16px"], // 11 px
+      ["--leading-timesheet-sm", "18px"], // 12 px
+      ["--leading-timesheet-body", "19px"], // 13 px
+      ["--leading-timesheet-total", "21px"], // 14 px
+      ["--leading-timesheet-sum", "22px"], // 15 px
+      ["--leading-timesheet-error", "13px"], // 9 px
+    ];
+    for (const [token, value] of timesheetTokens) {
+      expect(tokensCss).toMatch(new RegExp(`${token}:\\s*${value}\\s*;`));
     }
   });
 
