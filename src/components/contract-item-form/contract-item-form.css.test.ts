@@ -53,3 +53,23 @@ describe("contract-item-form.css — Poz Ekle mockup'larına bağlı kurallar", 
     expect(withoutComments).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
   });
 });
+
+/**
+ * F-SUBPX-3 (lider denetimi, ÇALIŞMA ZAMANI ölçüldü) · `.pif-rule` satır
+ * aralığı KESİR ÜRETMEZ. Eskiden `line-height: var(--leading-loose)` (`1.7`)
+ * × `font-size: 12px` = `20.4px` — TAM SAYI DEĞİL — üretiyordu; DOM'da
+ * yukarıdan aşağı taranınca `poz-ekle-isveren-yeni-grup` karesindeki kesrin
+ * İLK kaynağı buydu (`timesheet.css`teki `.ts-info` ile AYNI 20.4px). Paylaşılan
+ * `--leading-loose` (`tokens.css:291`) oranına DOKUNULMADI (on iki ayrı dosyada
+ * kullanılıyor); yalnız bu TEK kuralın SONUCU tam piksele (20px) oturtuldu.
+ */
+describe("contract-item-form.css — .pif-rule satır aralığı tam piksel (F-SUBPX-3)", () => {
+  it("`line-height` tam PİKSEL değeridir — paylaşılan kesirli orana SARILMAZ", () => {
+    const match = css.match(/\.pif-rule\s*{([^}]*)}/);
+    expect(match, ".pif-rule kuralı bulunamadı").not.toBeNull();
+    const body = match![1];
+    expect(body).toMatch(/line-height:\s*20px\s*;/);
+    expect(body).not.toMatch(/line-height:\s*var\(--leading-loose\)/);
+    expect(body).not.toMatch(/line-height:\s*1\.7/);
+  });
+});

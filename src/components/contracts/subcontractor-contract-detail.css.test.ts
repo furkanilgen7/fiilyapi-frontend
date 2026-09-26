@@ -64,3 +64,35 @@ describe("subcontractor-contract-detail.css — TSD mockup'ına bağlı kurallar
     expect(css.match(/#[0-9a-fA-F]{3,8}\b/g)).toBeNull();
   });
 });
+
+/**
+ * F-SUBPX-3 (lider denetimi) · `.tsd-progress__fill` geri düşüş deseni —
+ * `contracts.css`teki `.szl-progress__fill` bekçisiyle BİREBİR aynı gerekçe
+ * (orada belgeli): `@supports` STATİK sorgusu, art arda iki çıplak `width`
+ * bildirimi DEĞİL (o desen `var()` yüzünden IACVT ile `width`i `auto`ya
+ * sıfırlar, çubuk kaybolur).
+ */
+describe("subcontractor-contract-detail.css — .tsd-progress__fill geri düşüş (F-SUBPX-3)", () => {
+  it("`@supports` DIŞINDA yalnız TEK `width` bildirimi vardır (düz özel özellik)", () => {
+    const fillRule = css.match(/\.tsd-progress__fill\s*{([^}]*)}/);
+    expect(fillRule, "üst düzey .tsd-progress__fill kuralı bulunamadı").not.toBeNull();
+    const body = fillRule![1];
+    const widthDecls = body.match(/width\s*:/g) ?? [];
+    expect(widthDecls, "üst düzey kuralda TEK width bildirimi olmalı").toHaveLength(1);
+    expect(body).toMatch(/width:\s*var\(--contract-progress-width\)\s*;/);
+    expect(body).not.toMatch(/round\(/);
+  });
+
+  it("`round()` geri düşüşü `@supports (width: round(...))` bloğunun İÇİNDEDİR", () => {
+    expect(css).toMatch(
+      /@supports\s*\(width:\s*round\(down,\s*1%,\s*1px\)\)\s*{\s*\.tsd-progress__fill\s*{[^}]*width:\s*round\(down,\s*var\(--contract-progress-width\),\s*1px\)/s,
+    );
+  });
+
+  it("`@supports` bloğu ana kuraldan SONRA gelir (üzerine yazma sırası doğru)", () => {
+    const baseIndex = css.indexOf(".tsd-progress__fill {");
+    const supportsIndex = css.indexOf("@supports (width: round(down, 1%, 1px))");
+    expect(baseIndex).toBeGreaterThan(-1);
+    expect(supportsIndex).toBeGreaterThan(baseIndex);
+  });
+});

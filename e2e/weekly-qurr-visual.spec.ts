@@ -155,17 +155,44 @@ test("haftalik qurr baseline yok gorsel", async ({ page }) => {
 // STİL mockup'la aynı mı) bu şekilde eksiksiz doğrulanır; `max-height:680px`
 // kırpmasının KENDİSİ (iskeleti ekranda dursun) F3.6b kapsamı DEĞİL, ekran
 // ana karesinde zaten görünür durumda.
+//
+// KIRPIK KARE KÖK NEDENİ (F-SUBPX-3 ajan B, ölçüldü): bu test `?hafta=`
+// VERMEDEN açılır → `WeeklyQurrScreen` ilk isteği hafta PARAMETRESİZ atar,
+// yanıttaki `week_no`yu URL'e YAZAR (S1 kanonikleştirme,
+// `WeeklyQurrScreen.tsx:294-297` — KASITLI ürün davranışı). URL değişince
+// `useWeeklyReport`in queryKey'i `"current"`dan gerçek hafta sayısına
+// DEĞİŞİR (`useEvReports.ts:113-124`) — bu YENİ, önbellek dışı bir anahtar
+// olduğundan İKİNCİ bir istek + ikinci bir render turu tetiklenir (ağ izinde
+// doğrulandı: `…/reports/weekly` ve ardından `…/reports/weekly?week=21`,
+// ~100ms arayla). Yavaş bir CI koşucusunda bu ikinci tur, testin ilk
+// `aria-busy` kontrolünden SONRA ama ekran görüntüsünden ÖNCE tamamlanabilir
+// ve düğüme yazılan İNLINE `style.maxHeight` bu ikinci render'da sessizce
+// silinir. Düzeltme: (1) ikinci turun bitişini ZAMAN AŞIMI değil, URL'in
+// kanonik hafta parametresini TAŞIDIĞINI bekleyerek ölç, SONRA `aria-busy`yi
+// TEKRAR sıfır bekle; (2) düğüme değil bir `<style>` etiketine `!important`
+// kural yaz — bu, React'ın yönetmediği bir katmanda yaşar ve olası bir
+// sonraki remount'tan ETKİLENMEZ.
 // ---------------------------------------------------------------------------
 test("haftalik qurr tablo sonu gorsel", async ({ page }) => {
   await openWeeklyQurr(page, { siteId: ACTIVE_SITE_ID });
   await expect(page.getByText("Kaba İnşaat")).toBeVisible();
   await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
 
-  await page.locator(".qurr-table-card__scroll").evaluate((node) => {
-    (node as HTMLElement).style.maxHeight = "none";
-  });
+  // S1 kanonikleştirmesi (yukarıdaki not): `?hafta=` yazılana VE ardından
+  // gelen ikinci istek/render turu bitene kadar deterministik bekle.
+  await page.waitForURL(/[?&]hafta=/);
+  await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+
+  await page.addStyleTag({ content: ".qurr-table-card__scroll { max-height: none !important; }" });
   await expect(page.getByText("Doğrudan toplam")).toBeVisible();
   await expect(page.getByText("Doğrudan + Dolaylı toplam")).toBeVisible();
+  // Kalıcı bekçi: kabın hesaplanmış `max-height`i override'ı taşıyor mu —
+  // ekran görüntüsü anında SESSİZCE geri dönmediğini kanıtlar.
+  await expect
+    .poll(() =>
+      page.locator(".qurr-table-card__scroll").evaluate((node) => getComputedStyle(node).maxHeight),
+    )
+    .toBe("none");
 
   await prepareFrame(page);
   await expect(page).toHaveScreenshot("haftalik-qurr-tablo-sonu.png", { fullPage: true });

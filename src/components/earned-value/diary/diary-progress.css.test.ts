@@ -152,3 +152,45 @@ describe("diary-progress.css — F-SUBPX ızgara satır aralıkları tam piksel"
     expect(ruleBody(baseRules(), ".ev-diary-grid__pf .ev-diary-muted")).toMatch(/vertical-align:\s*top/);
   });
 });
+
+/**
+ * F-SUBPX-3 (lider denetimi) · `.input.ev-diary-cell__input` genişlik geri
+ * düşüşü — ÇALIŞMA ZAMANI ÖLÇÜLDÜ (Playwright, 1024 tablet): `.ev-diary-grid`
+ * `table-layout: auto`tur ve iş kodu kolonları (`.ev-diary-grid__code`)
+ * BAŞLIK METNİ yüzünden `width: 104px` ipucunun ÜSTÜNE kesirli piksellere
+ * genişliyor (ölçülen kolon genişlikleri: 127.5 / 275.96875 / 270.40625 /
+ * 151.125 / 188.71875 px — TAMSAYI DEĞİL). `width:100%` olan girdi o kesirli
+ * kolonun içinde kesirli bir kutu basıyordu; `round()` GERİ DÜŞÜŞÜYLE
+ * girdinin KENDİ genişliği tam piksele oturtuldu (kolonun kendisi
+ * DOKUNULMADI — metin ölçüsüne bağlı, kesilirse ürün kararı olur).
+ *
+ * 🔴 KANON (contracts.css'teki `.szl-progress__fill` ile AYNI): geri düşüş
+ * `@supports` STATİK sorgusuyla yapılır, art arda iki çıplak `width`
+ * bildirimiyle DEĞİL.
+ */
+describe("diary-progress.css — .input.ev-diary-cell__input geri düşüş (F-SUBPX-3)", () => {
+  it("`@supports` DIŞINDA yalnız TEK `width` bildirimi vardır (düz %100)", () => {
+    // Üst düzey (medya sorgusu/`@supports` DIŞI) kural gövdesi — bir önceki
+    // `}` veya dosya başından hemen sonra gelen `.input.ev-diary-cell__input {…}`.
+    const match = withoutComments.match(/(?:^|})\s*\.input\.ev-diary-cell__input\s*{([^}]*)}/);
+    expect(match, "üst düzey .input.ev-diary-cell__input kuralı bulunamadı").not.toBeNull();
+    const body = match![1];
+    const widthDecls = body.match(/width\s*:/g) ?? [];
+    expect(widthDecls, "üst düzey kuralda TEK width bildirimi olmalı").toHaveLength(1);
+    expect(body).toMatch(/width:\s*100%\s*;/);
+    expect(body).not.toMatch(/round\(/);
+  });
+
+  it("`round()` geri düşüşü `@supports (width: round(...))` bloğunun İÇİNDEDİR", () => {
+    expect(withoutComments).toMatch(
+      /@supports\s*\(width:\s*round\(down,\s*1%,\s*1px\)\)\s*{\s*\.input\.ev-diary-cell__input\s*{[^}]*width:\s*round\(down,\s*100%,\s*1px\)/s,
+    );
+  });
+
+  it("`@supports` bloğu ana kuraldan SONRA gelir (üzerine yazma sırası doğru)", () => {
+    const baseIndex = withoutComments.indexOf(".input.ev-diary-cell__input {");
+    const supportsIndex = withoutComments.indexOf("@supports (width: round(down, 1%, 1px))");
+    expect(baseIndex).toBeGreaterThan(-1);
+    expect(supportsIndex).toBeGreaterThan(baseIndex);
+  });
+});
