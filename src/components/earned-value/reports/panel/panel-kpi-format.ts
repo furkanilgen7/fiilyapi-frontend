@@ -4,12 +4,21 @@
  * YALNIZ ilerleme çubuğunun CSS genişliği için (SVG'nin koordinat kuralıyla
  * AYNI gerekçe — görsel geometri, iş kararı DEĞİL).
  */
-import { compareDecimalStrings, formatPf, type PfBand } from "@/lib/earned-value";
+import { compareDecimalStrings, formatPf, toPoints, type PfBand } from "@/lib/earned-value";
 
-/** Kazanılmış/Bütçe çubuğunun genişliği (%), 0–100 KIRPILIR. */
+/**
+ * Kazanılmış/Bütçe çubuğunun genişliği (%), 0–100 KIRPILIR.
+ *
+ * 🔴 LİDER DENETİMİ KUSURU (FIX-F1, Kusur 1) — backend `progress_pct_cum`
+ * 0–1 KESİRdir (`schemas_reports.py`), bu fonksiyon ÖNCEDEN 0–100 YÜZDE
+ * bekliyordu → çubuk hep %0 basıyordu. `toPoints` (×100, kayıpsız) ile
+ * kesirden yüzdeye çevrilir; kırpma/karşılaştırma Decimal string üzerinde
+ * (`compareDecimalStrings`), `Number` YALNIZ son CSS genişliği için.
+ */
 export function progressBarWidth(pct: string | null): number {
-  if (pct === null) return 0;
-  const clampedLow = compareDecimalStrings(pct, "0") < 0 ? "0" : pct;
+  const points = toPoints(pct);
+  if (points === null) return 0;
+  const clampedLow = compareDecimalStrings(points, "0") < 0 ? "0" : points;
   const clampedHigh = compareDecimalStrings(clampedLow, "100") > 0 ? "100" : clampedLow;
   return Math.round(Number(clampedHigh));
 }

@@ -4094,7 +4094,9 @@ function buildDiarySummary(
       amount: money2(quantity * unitPrice),
       boq_quantity: item.quantity,
       boq_amount: money2(boqQuantity * unitPrice),
-      completion_ratio: boqQuantity > 0 ? ((quantity / boqQuantity) * 100).toFixed(2) : null,
+      // FIX-F1 Kusur 2: backend `_completion_ratio` (summary.py:46-52) 0–1
+      // KESİRdir, `_RATIO_STEP = Decimal("0.0001")` — 4 ondalık, YÜZDE DEĞİL.
+      completion_ratio: boqQuantity > 0 ? (quantity / boqQuantity).toFixed(4) : null,
       contract_item_id: DIARY_BOQ_BRIDGE[item.id]?.employerItemId ?? null,
       contract_item_quantity: null,
       contract_item_unit_price: null,

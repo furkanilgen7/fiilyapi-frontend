@@ -206,6 +206,19 @@ function fromScaledBigInt(scaled: bigint, scale: number): string {
   return negative && magnitude !== 0n ? `-${unsigned}` : unsigned;
 }
 
+/**
+ * İki geçerli ondalık string'i kayıpsız karşılaştırır: −1 · 0 · 1.
+ *
+ * FIX-F1: `lib/earned-value/decimal-input`ten buraya taşındı (genel kullanım) —
+ * site-diary EV'i İTHAL EDEMEDİĞİ için (`core-planning-import-guard`) aynı
+ * karşılaştırmayı buradan alır; EV tarafı AYNI fonksiyonu buradan yeniden ihraç eder.
+ */
+export function compareDecimalStrings(a: string, b: string): -1 | 0 | 1 {
+  const difference = subtractDecimalStrings(a, b);
+  if (isZeroDecimalString(difference)) return 0;
+  return difference.startsWith("-") ? -1 : 1;
+}
+
 /** Ondalık alan girdisi: backend Decimal alanı string, istemci türevi number gelebilir. */
 export type DecimalLike = string | number | null | undefined;
 
