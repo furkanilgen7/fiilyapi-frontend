@@ -10,10 +10,9 @@
  * (ROUND_HALF_UP, sıfırdan uzağa — Python `decimal`la aynı, backend paritesi).
  */
 import {
+  compareDecimalStrings,
   divideDecimalStrings,
-  isZeroDecimalString,
   multiplyDecimalStrings,
-  subtractDecimalStrings,
   toDecimalString,
   type DecimalLike,
 } from "@/lib/decimal";
@@ -22,6 +21,12 @@ export type EvNumber = DecimalLike;
 
 /** Geçerli bir ondalık string ya da `null` — genel `lib/decimal`dan (PLN-F2.1). */
 export { toDecimalString };
+
+/**
+ * İki geçerli ondalık string'i kayıpsız karşılaştırır: −1 · 0 · 1 — genel
+ * `lib/decimal`dan (FIX-F1: site-diary de EV'i import ETMEDEN aynısını kullanır).
+ */
+export { compareDecimalStrings };
 
 /** ROUND_HALF_UP ile `scale` basamağa yuvarlar: "0.9450" @2 → "0.95". */
 export function roundHalfUp(value: EvNumber, scale: number): string | null {
@@ -33,11 +38,4 @@ export function roundHalfUp(value: EvNumber, scale: number): string | null {
 export function toPoints(value: EvNumber): string | null {
   const decimal = toDecimalString(value);
   return decimal === null ? null : multiplyDecimalStrings(decimal, "100");
-}
-
-/** İki geçerli ondalık string'i kayıpsız karşılaştırır: −1 · 0 · 1. */
-export function compareDecimalStrings(a: string, b: string): -1 | 0 | 1 {
-  const difference = subtractDecimalStrings(a, b);
-  if (isZeroDecimalString(difference)) return 0;
-  return difference.startsWith("-") ? -1 : 1;
 }

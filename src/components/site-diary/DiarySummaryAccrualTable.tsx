@@ -1,3 +1,4 @@
+import { compareDecimalStrings, multiplyDecimalStrings } from "@/lib/decimal";
 import { formatAmount, formatCurrencyPrecise, formatPercent } from "@/lib/format";
 import type { SiteDiarySummary } from "@/lib/api/hooks/useSiteDiary";
 
@@ -6,8 +7,22 @@ import { clampWidthPct } from "./summary-kpis";
 /**
  * HÖ142/148/154/160 · yüzde çubuğunun rengi mockup'ta ikilidir: %75/%60/%80
  * mavi, %48 turuncu. Eşik mockup'tan okunur — %50'nin ALTI uyarı tonudur.
+ *
+ * Decimal string (yüzde ölçeği) — `Number` karşılaştırması Decimal kanonuna
+ * aykırı, `compareDecimalStrings`le kıyaslanır.
  */
-const LOW_COMPLETION_THRESHOLD = 50;
+const LOW_COMPLETION_THRESHOLD = "50";
+
+/**
+ * 🔴 FIX-F1 Kusur 2 — backend `completion_ratio` 0–1 KESİRdir
+ * (`backend/app/modules/site_diary/summary.py:46-52` `_completion_ratio`,
+ * test golden'ı `test_summary.py:500` `Decimal("0.7500")`), `formatPercent`/
+ * `clampWidthPct` YÜZDE (0-100) bekler. Kayıpsız ×100 (`multiplyDecimalStrings`)
+ * ile ölçek düzeltilir; `null` girdi `null` kalır.
+ */
+function toCompletionPercent(ratio: string | null): string | null {
+  return ratio === null ? null : multiplyDecimalStrings(ratio, "100");
+}
 
 export interface DiarySummaryAccrualTableProps {
   summary: SiteDiarySummary | undefined;
@@ -75,8 +90,9 @@ export function DiarySummaryAccrualTable({
           </thead>
           <tbody>
             {items.map((item) => {
-              const ratio = item.completion_ratio;
-              const isLow = ratio !== null && Number(ratio) < LOW_COMPLETION_THRESHOLD;
+              const percent = toCompletionPercent(item.completion_ratio);
+              const isLow =
+                percent !== null && compareDecimalStrings(percent, LOW_COMPLETION_THRESHOLD) < 0;
               return (
                 <tr key={item.boq_item_id}>
                   {/* HÖ139 */}
@@ -99,7 +115,7 @@ export function DiarySummaryAccrualTable({
                         className={`diary-summary-table__bar-fill${
                           isLow ? " diary-summary-table__bar-fill--low" : ""
                         }`}
-                        style={{ width: `${clampWidthPct(ratio)}%` }}
+                        style={{ width: `${clampWidthPct(percent)}%` }}
                       />
                     </div>
                     <span
@@ -107,7 +123,7 @@ export function DiarySummaryAccrualTable({
                         isLow ? " diary-summary-table__pct-label--low" : ""
                       }`}
                     >
-                      {ratio === null ? "—" : formatPercent(ratio)}
+                      {percent === null ? "—" : formatPercent(percent)}
                     </span>
                   </td>
                 </tr>

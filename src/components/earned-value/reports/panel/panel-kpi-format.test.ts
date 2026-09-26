@@ -2,26 +2,32 @@ import { describe, it, expect } from "vitest";
 
 import { pfBandDescription, progressBarWidth, varianceTone } from "./panel-kpi-format";
 
+/**
+ * 🔴 FIX-F1 Kusur 1 — backend `progress_pct_cum` 0–1 KESİRdir
+ * (`app/modules/earned_value/engine/metrics.py` / `schemas_reports.py:190…`),
+ * fikstür `panel-fixtures.ts:161` "0.458856" örneğiyle BİREBİR. Girdi KESİR,
+ * çıktı 0–100 YÜZDE (çubuk genişliği).
+ */
 describe("progressBarWidth", () => {
   it("null → 0", () => {
     expect(progressBarWidth(null)).toBe(0);
   });
 
-  it("normal aralıkta AYNEN (yuvarlanmış) döner", () => {
-    expect(progressBarWidth("45.9")).toBe(46);
+  it("backend kesri (0.458856) → 46 (yarım-yukarı)", () => {
+    expect(progressBarWidth("0.458856")).toBe(46);
   });
 
   it("0'ın ALTI 0'a KIRPILIR", () => {
-    expect(progressBarWidth("-5")).toBe(0);
+    expect(progressBarWidth("-0.05")).toBe(0);
   });
 
-  it("100'ün ÜSTÜ 100'e KIRPILIR (aşım kalemi çubuğu taşmaz)", () => {
-    expect(progressBarWidth("142.7")).toBe(100);
+  it("1'in ÜSTÜ 100'e KIRPILIR (aşım kalemi çubuğu taşmaz)", () => {
+    expect(progressBarWidth("1.427")).toBe(100);
   });
 
-  it("tam sınırlar (0, 100) DEĞİŞMEZ", () => {
+  it("tam sınırlar (0, 1) DEĞİŞMEZ", () => {
     expect(progressBarWidth("0")).toBe(0);
-    expect(progressBarWidth("100")).toBe(100);
+    expect(progressBarWidth("1")).toBe(100);
   });
 });
 
