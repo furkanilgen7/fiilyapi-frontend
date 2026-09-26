@@ -108,7 +108,7 @@ function WeekNav({ weekNo, weekStart, weekEnd, minWeek, maxWeek, onChange }: Wee
 }
 
 /**
- * PLN-F3.5 · Rapor ekranlarının ortak gün/hafta gezgini (F3-SOZLESME.md §2).
+ * PLN-F3.5 · Rapor ekranlarının ortak gün/hafta gezgini.
  * Gün modu Günlük İlerleme Raporu (GİR:87-95), hafta modu QURR (Q:88-106).
  * Sınır dışına çıkan ok `disabled` olur; sınırın KENDİSİ (bir sonraki gün/hafta)
  * hesaplanıp karşılaştırılır — `PlanWeekNav`in `prevDis`/`nextDis` desenindeki

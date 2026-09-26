@@ -87,6 +87,27 @@ describe("useEvSiteParam", () => {
     expect(replace).toHaveBeenLastCalledWith("/planlama/panel?site=s-2", { scroll: false });
   });
 
+  /**
+   * FIX-F2 · Ajan B madde 3 — KANIT. `selected` hesaplaması `siteOptions.isLoading`u
+   * HİÇ görmez: `?site=X` bağlantısıyla açılan bir ekranda, projeler listesi
+   * geldiği ama X'in ait olduğu projenin şantiye sorgusu HENÜZ dönmediği ANDA
+   * (soğuk önbellek — `useEvSiteOptions` `useQueries` ile PROJE BAŞINA AYRI
+   * sorgu açar, biri dönerken diğeri BEKLEYEBİLİR) `options` X'i içermez;
+   * kod bunu "böyle bir şantiye yok" sanıp İLK seçeneğe düşer ve URL'i O ANDA
+   * (hâlâ `isLoading===true`İKEN) EZER. X sonradan gelince artık URL'de DEĞİL.
+   */
+  it("soğuk önbellekte `?site=X` bağlantısı, X yüklenmeden ÖNCE (isLoading=true) başka şantiyeyle EZİLMEMELİ", async () => {
+    // Yalnız s-2 yüklendi (s-1'in sorgusu HENÜZ dönmedi), isLoading HÂLÂ true.
+    mockOptions([OPTIONS[1]!], true);
+    searchParams = new URLSearchParams({ site: "s-1" });
+    render(<Probe />);
+
+    // KIRMIZI: bugün `isLoading` kontrol edilmediği için `replace` hemen
+    // s-2'ye yazar — s-1 bağlantısı kalıcı olarak kaybolur.
+    await new Promise((r) => setTimeout(r, 0));
+    expect(replace).not.toHaveBeenCalled();
+  });
+
   it("paramName özelleştirilebilir", async () => {
     searchParams = new URLSearchParams({ konum: "s-2" });
     function CustomProbe() {

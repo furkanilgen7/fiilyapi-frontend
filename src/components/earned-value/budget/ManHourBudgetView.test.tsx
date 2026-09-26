@@ -507,6 +507,23 @@ describe("tamamlanmış şantiye (B1-12 · PLN-F1.6.2) — backend editable:true
     expect(screen.getByRole("textbox", { name: "Revizyon adı" })).toBeDisabled();
   });
 
+  /**
+   * FIX-F2 · Ajan B madde 4 — KANIT. `useSite` hata dönerse (404/ağ, forbidden
+   * DEĞİL) `site.data` `undefined` kalır, `siteId=""` `BudgetScreen`e geçer;
+   * `BudgetScreen` içindeki bütçe sorgusu boş id'de sessizce idle'da durur —
+   * hiç hata basılmadan SONSUZ İSKELET görünür. Emsal (`SitePlanningView.tsx:91`).
+   */
+  it("useSite hata dönerse (forbidden DEĞİL) BudgetScreen render EDİLMEZ, hata basılır", () => {
+    state = defaultState();
+    wireBackend(state);
+    mockPermission("approve");
+    vi.mocked(useSite).mockReturnValue({ data: undefined, isError: true, error: new Error("network") } as never);
+    renderWithQuery(<ManHourBudgetView />);
+    // KIRMIZI: bugün useSite hatası HİÇ kontrol edilmediği için bütçe
+    // iskeleti (yükleniyor durumu) sonsuza dek gösterilir.
+    expect(screen.getByText("Şantiye yüklenemedi")).toBeInTheDocument();
+  });
+
   it("yarış: şantiye ekranda açıkken tamamlanırsa 409 mesajı bildirimde görünür", async () => {
     const { user } = setup({}, "draft");
     vi.mocked(backendClient.PATCH).mockImplementation((() =>

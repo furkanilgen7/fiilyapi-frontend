@@ -2,7 +2,7 @@
  * PLN-F3.1 · QURR (haftalık rapor) hata sınıflandırması.
  *
  * `GET /sites/{id}/earned-value/reports/weekly` iki özel durumda 4xx döner
- * (F3-SOZLESME.md §0, ölçüldü main'de):
+ * (PLANLAMA-SPEC.md §3.15 S6 — NO_BASELINE, ölçüldü main'de):
  *  - **409** aktif (dondurulmuş) baseline yoksa — backend metni sabittir
  *    (kaynak: `app/modules/earned_value/diary_adapter.py NO_BASELINE`).
  *  - **404** istenen hafta proje takviminde yoksa — backend metni sabittir

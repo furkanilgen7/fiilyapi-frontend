@@ -1,7 +1,7 @@
 /**
  * PLN-F3.5 · QURR tablosunun 18 a–r kolonu — SAF değer okuma + biçim seçimi.
- * İş değeri (bant, sapma, toplam) BURADA HESAPLANMAZ (F3-SOZLESME.md §0
- * "istemcide türetme yok") — bu dosya yalnız HANGİ alanın HANGİ kolona
+ * İş değeri (bant, sapma, toplam) BURADA HESAPLANMAZ (PLANLAMA-SPEC.md §3.15
+ * S2 — bant kararı backend'de tek yerde) — bu dosya yalnız HANGİ alanın HANGİ kolona
  * gittiğini ve GÖRÜNTÜLEME biçimini (ondalık basamak, "aşım" kırmızısı)
  * taşır; hepsi mockup'ın kendi sabitleri (Q:294-330).
  */

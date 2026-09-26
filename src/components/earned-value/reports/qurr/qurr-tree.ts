@@ -1,7 +1,7 @@
 /**
  * PLN-F3.5 · QURR tablosunun SAF ağaç kurucusu.
  *
- * F3-SOZLESME.md §0: "İSTEMCİDE TÜRETME YOK — ağaç `parent_id`den". Backend
+ * PLANLAMA-SPEC.md §3.15 S1: "İSTEMCİDE TÜRETME YOK — ağaç `parent_id`den". Backend
  * `rows[]` (L3 iş tipleri) ve `totals[]` (disiplin/alt grup/Σ D/Σ D+DL ara
  * toplamları) DÜZ dizilerdir; her ikisi de kendi `parent_id`sini taşır.
  * Bu fonksiyon iki diziyi TEK bir `parent_id` ilişkisiyle `TreeTable`ın

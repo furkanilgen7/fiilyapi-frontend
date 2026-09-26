@@ -13,7 +13,7 @@ const NO_PERMISSION = {
   message: "Günlüğü göndermek planlama yazma yetkisi ister (formen gönderemez)",
 };
 
-/** Backend 422/gün yanıtı: `reasons` (metin) + `reason_items` (kod) — EV-BORC-2. */
+/** Backend 422/gün yanıtı: `reasons` (metin) + `reason_items` (kod) — EV-BORC-2 kapandı. */
 function withReasons(...items: { code: string; message: string }[]): EvSubmitCheck {
   return { can_submit: items.length === 0, reasons: items.map((item) => item.message), reason_items: items };
 }
@@ -104,7 +104,7 @@ describe("buildSubmitState — Gönder kontrol çubuğu (İ:493-510) + submitGat
   });
 });
 
-describe("reasonKind — backend gerekçe KODU → çip türü (EV-BORC-2 `reason_items`; metne bakılmaz)", () => {
+describe("reasonKind — backend gerekçe KODU → çip türü (EV-BORC-2 kapandı, `reason_items`; metne bakılmaz)", () => {
   it.each([
     ["no_quantity", "quantity"],
     ["overrun_without_reason", "overrun"],

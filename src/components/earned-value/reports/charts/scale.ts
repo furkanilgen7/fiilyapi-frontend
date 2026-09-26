@@ -1,7 +1,7 @@
 /**
  * PLN-F3.2b · Grafik kitinin ORTAK saf ölçekleme yardımcıları.
  *
- * F3-SOZLESME.md §0: backend zaten kümülatif/oranlı/bantlı alanları hesaplar
+ * Backend zaten kümülatif/oranlı/bantlı alanları hesaplar
  * (`s_curve`, `bars`, `pf_trend`, `histogram`) — bu dosya YALNIZ o dizileri
  * SVG koordinatına ÖLÇEKLER, hiçbir iş kuralı TÜRETMEZ.
  *

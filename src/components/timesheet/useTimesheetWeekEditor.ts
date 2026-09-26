@@ -112,8 +112,6 @@ export function useTimesheetWeekEditor({
     isoYear: week.isoYear,
     isoWeek: week.isoWeek,
   });
-  const [saveState, setSaveState] = useState<TimesheetSaveState>({ kind: "idle" });
-  const [copyState, setCopyState] = useState<TimesheetCopyState>({ kind: "idle" });
   const [exportState, setExportState] = useState<{ isExporting: boolean; error: string | null }>({
     isExporting: false,
     error: null,
@@ -137,6 +135,40 @@ export function useTimesheetWeekEditor({
     locks: readonly TimesheetDayLock[];
   }>({ scope, locks: [] });
   const conflictLocks = storedLocks.scope === scope ? storedLocks.locks : NO_LOCKS;
+  /**
+   * Kaydetme durumu (özellikle "locked" hata bandı) da taslak/kilitlerle AYNI
+   * kapsam kuralıyla saklanır: şantiye ya da hafta değişince bant düşer.
+   * Aksi hâlde bir haftada oluşan kilit hatası, kullanıcı başka haftaya
+   * geçtiğinde de görünmeye devam ederdi (madde 6).
+   */
+  const [storedSaveState, setStoredSaveState] = useState<{
+    scope: string;
+    state: TimesheetSaveState;
+  }>({ scope, state: { kind: "idle" } });
+  const saveState = storedSaveState.scope === scope ? storedSaveState.state : IDLE_SAVE_STATE;
+  const setSaveState = useCallback(
+    (state: TimesheetSaveState) => {
+      setStoredSaveState({ scope, state });
+    },
+    [scope],
+  );
+  /**
+   * "Önceki Haftayı Kopyala" bildirimi (`copied`/`failed`) de AYNI kapsam
+   * kuralıyla saklanır: şantiye ya da hafta değişince bant düşer. Aksi hâlde
+   * bir haftada oluşan "kopyalandı"/hata bildirimi, kullanıcı başka haftaya
+   * geçtiğinde de görünmeye devam ederdi (madde 6, `copyState` kısmı).
+   */
+  const [storedCopyState, setStoredCopyState] = useState<{
+    scope: string;
+    state: TimesheetCopyState;
+  }>({ scope, state: { kind: "idle" } });
+  const copyState = storedCopyState.scope === scope ? storedCopyState.state : IDLE_COPY_STATE;
+  const setCopyState = useCallback(
+    (state: TimesheetCopyState) => {
+      setStoredCopyState({ scope, state });
+    },
+    [scope],
+  );
   const dirtyKeys = useMemo(() => new Set(Object.keys(draft)), [draft]);
 
   const writeDraft = useCallback(
@@ -147,7 +179,7 @@ export function useTimesheetWeekEditor({
       }));
       setSaveState({ kind: "idle" });
     },
-    [scope],
+    [scope, setSaveState],
   );
 
   const commitHours = useCallback(
@@ -230,7 +262,7 @@ export function useTimesheetWeekEditor({
         });
       }
     },
-    [draft, queryClient, saveMutation, scope, siteId, week],
+    [draft, queryClient, saveMutation, scope, setSaveState, siteId, week],
   );
 
   /**
@@ -271,7 +303,7 @@ export function useTimesheetWeekEditor({
         setCopyState({ kind: "failed", message: timesheetSaveErrorMessage(error) });
       }
     },
-    [queryClient, siteId, week, writeDraft],
+    [queryClient, setCopyState, siteId, week, writeDraft],
   );
 
   const exportExcel = useCallback(
@@ -314,3 +346,5 @@ export function useTimesheetWeekEditor({
 }
 
 const NO_LOCKS: readonly TimesheetDayLock[] = [];
+const IDLE_SAVE_STATE: TimesheetSaveState = { kind: "idle" };
+const IDLE_COPY_STATE: TimesheetCopyState = { kind: "idle" };

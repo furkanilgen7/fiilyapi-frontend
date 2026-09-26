@@ -127,7 +127,7 @@ const SITE_NODE: TrailNode = {
       label: "Adam-Saat Bütçesi",
       href: (k) => routes.projects.sites.evBudget({ projectId: k.projectId, siteId: k.siteId }),
     },
-    // PLN-F3.6a · Panel/GİR/QURR (F3-SOZLESME.md §2) — `adam-saat-butcesi`
+    // PLN-F3.6a · Panel/GİR/QURR — `adam-saat-butcesi`
     // ile AYNI seviyede, K21 "İlerleme Raporları" parçası YOK (gruplanmaz).
     "planlama-paneli": {
       label: "Planlama Paneli",

@@ -2,7 +2,7 @@
  * PLN-F3.2b · Haftalık işçi histogramı SAF geometrisi.
  *
  * Kaynak: mockup `Planlama - Panel.dc.html:329-344` (viewBox 460×196).
- * F3-SOZLESME.md §0: backend `histogram: HistogramWeek[]` haftalık
+ * Backend `histogram: HistogramWeek[]` haftalık
  * planlı/gerçek KİŞİ sayısını ZATEN hesaplar — bu dosya YALNIZ ölçekler.
  *
  * `actual_basis === "equivalent"` (rapor kökündeki alan) → mockup'ın

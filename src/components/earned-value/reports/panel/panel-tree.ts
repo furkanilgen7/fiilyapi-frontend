@@ -1,7 +1,7 @@
 /**
  * PLN-F3.3 · Panel disiplin tablosunun SAF ağaç kurucusu.
  *
- * F3-SOZLESME.md §0: "İSTEMCİDE TÜRETME YOK — ağaç `parent_id`den". Backend
+ * PLANLAMA-SPEC.md §3.15 S1: "İSTEMCİDE TÜRETME YOK — ağaç `parent_id`den". Backend
  * `rows: PanelRow[]` DÜZ bir dizidir (Genel / Genel–Kendi / Genel–Taşeron /
  * disiplin / iş tipi), kendi `parent_id`sini taşır. Emsal: `qurr/qurr-tree.ts`
  * (B, PLN-F3.5) — AYNI desen, tek fark PanelRow'un tek bir veri TÜRÜ olması

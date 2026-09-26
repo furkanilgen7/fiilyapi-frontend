@@ -53,12 +53,19 @@ export function useEvSiteParam(options: UseEvSiteParamOptions = {}): UseEvSitePa
   }
 
   useEffect(() => {
+    // FIX-F2 · Ajan B madde 3 — soğuk önbellekte `options` PROJE BAŞINA AYRI
+    // sorgularla (`useQueries`) parça parça dolar; `siteOptions.isLoading`
+    // hâlâ true iken `siteParam` henüz gelmemiş bir şantiyeyi işaret
+    // edebilir (o projenin sorgusu dönmedi). Yükleme BİTMEDEN URL'e YAZMA —
+    // aksi hâlde `?site=X` bağlantısı X yüklenmeden başka şantiyeyle KALICI
+    // EZİLİR (X sonradan gelse bile URL zaten değişmiştir).
+    if (siteOptions.isLoading) return;
     if (selected === undefined || siteParam === selected.siteId) return;
     const params = new URLSearchParams(searchParams.toString());
     params.set(paramName, selected.siteId);
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selected?.siteId, siteParam]);
+  }, [selected?.siteId, siteParam, siteOptions.isLoading]);
 
   return {
     siteOptions,

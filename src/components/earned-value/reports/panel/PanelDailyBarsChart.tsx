@@ -31,9 +31,14 @@ export function PanelDailyBarsChart({ bars }: PanelDailyBarsChartProps) {
     return <p className="ev-panel-chart__empty">Günlük veri yok.</p>;
   }
 
-  const shownIndex = hover ?? (geo.today ? geo.bars.indexOf(geo.today) : null);
+  const todayIndex = geo.today ? geo.bars.indexOf(geo.today) : null;
+  const shownIndex = hover ?? todayIndex;
   const shownBar = shownIndex !== null ? geo.bars[shownIndex] : undefined;
   const shownRaw = shownIndex !== null ? bars[shownIndex] : undefined;
+  // FIX-F2 · Ajan B madde 2 — "Bugün" yalnız GERÇEKTEN ankor gündeyken
+  // basılır (emsal `PanelSCurveChart`); fare BAŞKA bir çubuktaysa ipucu
+  // yalnız o günün TARİHİNİ taşır.
+  const isShownToday = shownIndex !== null && shownIndex === todayIndex;
 
   return (
     <div className="ev-panel-chart-head">
@@ -103,7 +108,7 @@ export function PanelDailyBarsChart({ bars }: PanelDailyBarsChartProps) {
           <ChartTooltip
             x={Math.round((shownBar.x + 12) * scale)}
             y={Math.round(D_TOP * scale)}
-            title={`${dayShort(shownRaw.day)} · Bugün`}
+            title={isShownToday ? `${dayShort(shownRaw.day)} · Bugün` : dayShort(shownRaw.day)}
             rows={[
               { label: "Kazanılmış", value: shownRaw.earned_day === null ? "" : formatDecimal(shownRaw.earned_day, 0) },
               { label: "Harcanan", value: shownRaw.spent_day === null ? "" : formatDecimal(shownRaw.spent_day, 0) },

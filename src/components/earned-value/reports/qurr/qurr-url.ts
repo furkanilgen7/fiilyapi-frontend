@@ -1,6 +1,6 @@
 /**
- * PLN-F3.5 · `?hafta=` URL durumu (F3-SOZLESME.md §2 imzası: "Bütçe
- * `useBudgetScreenHooks` deseni" — `budget-url.ts`in AYNI şekli, tek param).
+ * PLN-F3.5 · `?hafta=` URL durumu ("Bütçe `useBudgetScreenHooks` deseni" —
+ * `budget-url.ts`in AYNI şekli, tek param).
  * Yoksa/geçersizse `null` — `useWeeklyReport(siteId, null)` backend'in
  * bugünün haftasına düşmesini sağlar (URL "haftasız" kalır).
  */

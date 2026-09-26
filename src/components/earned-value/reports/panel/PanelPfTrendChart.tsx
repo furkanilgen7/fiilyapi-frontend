@@ -42,9 +42,24 @@ export function PanelPfTrendChart({ pfTrend, pfBands, rangeLabel, reportDay }: P
   // 1`); dizi GELECEĞE uzanıyorsa bu bir gelecek günü "Bugün" diye
   // basıyordu. `geo.today.index` "Bugün"ün GERÇEK dizindeksidir (bkz.
   // `pfTrendGeometry` — son GELECEK-OLMAYAN nokta).
-  const shownIndex = hover ?? geo.today?.index ?? geo.points.length - 1;
+  const todayIndex = geo.today?.index ?? null;
+  const shownIndex = hover ?? todayIndex ?? geo.points.length - 1;
   const shownPoint = geo.points[shownIndex];
   const shownRaw = pfTrend[shownIndex];
+  // FIX-F2 · Ajan B madde 2 — "Bugün" yalnız GERÇEKTEN ankor gündeyken
+  // basılır (emsal `PanelSCurveChart`); fare BAŞKA (ör. GELECEK) bir
+  // noktadaysa ipucu yalnız o günün TARİHİNİ taşır.
+  const isShownToday = todayIndex !== null && shownIndex === todayIndex;
+  // FIX-F2 · Ajan D madde 2 — KANIT + DÜZELTME. `PfPoint` şemasında
+  // `is_future` YOK (bkz. `pfTrendGeometry` üstündeki not) ve backend
+  // `pf_day`/`pf_rolling`i GELECEK günler için nullamaz — `shownRaw` HAM
+  // veridir, geometri katmanının `y: null` kırpması yalnız ÇİZİME uygulanır,
+  // İPUCUNA DEĞİL. Emsal `PanelSCurveChart` gelecek günde "Gerçek"/"Sapma"yı
+  // HER ZAMAN boş basar (`sCurveGeometry`: `p.is_future` → `actualY: null`,
+  // ipucu `progress_pct_cum === null` kontrolüyle boşu basar). PF trendinde
+  // "planlı" YOK — `pf_day`/`pf_rolling` İKİSİ DE "gerçek" ölçüm olduğundan
+  // AYNI kural ikisine de uygulanır: gün `reportDay`den SONRAYSA değer YOK.
+  const isShownFuture = shownRaw !== undefined && shownRaw.day > reportDay;
 
   return (
     <div className="ev-panel-chart-head">
@@ -110,10 +125,10 @@ export function PanelPfTrendChart({ pfTrend, pfBands, rangeLabel, reportDay }: P
           <ChartTooltip
             x={Math.round((shownPoint.x - 124) * scale)}
             y={Math.round((PF_TOP + 8) * scale)}
-            title={`${dayShort(shownRaw.day)} · Bugün`}
+            title={isShownToday ? `${dayShort(shownRaw.day)} · Bugün` : dayShort(shownRaw.day)}
             rows={[
-              { label: "Günlük PF", value: shownRaw.pf_day === null ? "" : formatPf(shownRaw.pf_day) },
-              { label: "7 gün ort.", value: shownRaw.pf_rolling === null ? "" : formatPf(shownRaw.pf_rolling) },
+              { label: "Günlük PF", value: isShownFuture || shownRaw.pf_day === null ? "" : formatPf(shownRaw.pf_day) },
+              { label: "7 gün ort.", value: isShownFuture || shownRaw.pf_rolling === null ? "" : formatPf(shownRaw.pf_rolling) },
             ]}
           />
         )}

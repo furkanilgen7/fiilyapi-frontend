@@ -324,6 +324,98 @@ describe("🔴 K2 KAPSAM KURALI · bölüm süzgeci YALNIZ görünüme uygulanı
   });
 });
 
+describe("🔴 MADDE 5 KARARI (a) · KPI kartları YALNIZ görünen kümeden — CEO/kullanıcı kararı 2026-09-26", () => {
+  it("bölüm dışı kişinin Normal/FM'i karta SIZMAZ — sec-1 süzgeciyle bakarken sec-2'deki kişi görünmez", () => {
+    const payload = weekPayload([
+      weekRow(
+        "p1",
+        "Sec1 Kişi",
+        [{ work_date: "2026-07-13", hours: "9", code: null, section_id: "sec-1" }],
+        { normal_hours: "9", overtime_hours: "0", total_hours: "9" },
+      ),
+      weekRow(
+        "p2",
+        "Sec2 Kişi (görünmemeli)",
+        [{ work_date: "2026-07-14", hours: "40", code: null, section_id: "sec-2" }],
+        { normal_hours: "40", overtime_hours: "5", total_hours: "45" },
+      ),
+    ]);
+
+    const view = buildTimesheetWeekView({
+      week: WEEK,
+      personnel: [],
+      weekData: payload,
+      sectionId: "sec-1",
+    });
+
+    // Tablo/Hafta Toplamı yalnız sec-1'i görür.
+    expect(Number(view.totalHours)).toBe(9);
+    // Karar (a): Normal Mesai / Fazla Mesai kartı da yalnız GÖRÜNEN (sec-1'de
+    // hücresi olan) kişileri toplar — p2'nin 40+5 saati SIZMAZ.
+    expect(Number(view.normalHours)).toBe(9);
+    expect(Number(view.overtimeHours)).toBe(0);
+  });
+
+  it("K1 KORUNUR: süzgeçteki kişinin BÖLÜM DIŞI saatleri karttan DÜŞMEZ — Normal/FM haftalık bütündür", () => {
+    // Mehmet sec-1'de 9 saat, sec-2'de 40 saat çalışmış; backend haftalık
+    // bütünden Normal 45 / FM 4 hesaplamış (bölüme göre AYRIŞTIRMAZ, K1).
+    const payload = weekPayload([
+      weekRow(
+        "p1",
+        "Mehmet (iki bölümde)",
+        [
+          { work_date: "2026-07-13", hours: "9", code: null, section_id: "sec-1" },
+          { work_date: "2026-07-14", hours: "40", code: null, section_id: "sec-2" },
+        ],
+        { normal_hours: "45", overtime_hours: "4", total_hours: "49" },
+      ),
+    ]);
+
+    const view = buildTimesheetWeekView({
+      week: WEEK,
+      personnel: [],
+      weekData: payload,
+      sectionId: "sec-1",
+    });
+
+    // Mehmet sec-1'de GÖRÜNÜR (en az bir hücresi var) → kartı taşır; K1
+    // gereği Normal/FM bölüme göre YENİDEN HESAPLANMAZ, haftalık bütün
+    // (45/4) OLDUĞU GİBİ karta yansır — sec-2'deki 40 saat karttan DÜŞMEZ.
+    expect(Number(view.normalHours)).toBe(45);
+    expect(Number(view.overtimeHours)).toBe(4);
+    // Hafta Toplamı (düz saat toplamı) ise GÖRÜNEN hücrelerden — yalnız 9.
+    expect(Number(view.totalHours)).toBe(9);
+  });
+
+  it("süzgeç KAPALIYKEN (sectionId: null) toplamlar DEĞİŞMEZ — herkes görünür kümededir", () => {
+    const payload = weekPayload([
+      weekRow(
+        "p1",
+        "Sec1 Kişi",
+        [{ work_date: "2026-07-13", hours: "9", code: null, section_id: "sec-1" }],
+        { normal_hours: "9", overtime_hours: "0", total_hours: "9" },
+      ),
+      weekRow(
+        "p2",
+        "Sec2 Kişi",
+        [{ work_date: "2026-07-14", hours: "40", code: null, section_id: "sec-2" }],
+        { normal_hours: "40", overtime_hours: "5", total_hours: "45" },
+      ),
+    ]);
+
+    const view = buildTimesheetWeekView({
+      week: WEEK,
+      personnel: [],
+      weekData: payload,
+      sectionId: null,
+    });
+
+    expect(Number(view.totalHours)).toBe(49);
+    expect(Number(view.normalHours)).toBe(49);
+    expect(Number(view.overtimeHours)).toBe(5);
+  });
+});
+
 describe("buildTimesheetWeekView · ek satır süzgeçleri (E5 100-122)", () => {
   it("satır süzgeci GÖRÜNÜMÜ eler ama `allCells`e DOKUNMAZ", () => {
     const view = buildTimesheetWeekView({
