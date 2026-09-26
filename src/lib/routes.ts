@@ -116,7 +116,7 @@ export interface GeneralDiaryParams {
 }
 
 /**
- * PLN-F3.6a · Planlama raporları (Panel/GİR/QURR — F3-SOZLESME.md §2).
+ * PLN-F3.6a · Planlama raporları (Panel/GİR/QURR).
  * `?hafta=` — Haftalık QURR'un açık haftasının sorgu anahtarı; `EVB_WEEK_PARAM`
  * ile ekran (`WeeklyQurrScreen`, B) AYNI sabiti paylaşır.
  */

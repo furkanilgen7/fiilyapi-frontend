@@ -7,7 +7,8 @@
  * yalnız KENDİ bildiğini ekler: kilitli gün ve — taslak kirliyken — önizlenen
  * saat gerekçesi (kayıt `onBeforeSave` ile gönderimden önce yazılır, S1).
  *
- * Çipler backend gerekçe KODUNA göre ayrılır (EV-BORC-2 `reason_items`); metin
+ * Çipler backend gerekçe KODUNA göre ayrılır (EV-BORC-2 kapandı — backend
+ * `schemas_day.py` `reason_items`); metin
  * yalnız gösterilir. Tanınmayan kod kaybolmaz: kendi metniyle ayrı uyarı çipi olur.
  */
 import type { EvSubmitCheck } from "@/lib/api/models";

@@ -13,7 +13,7 @@ import type { ContractorFilter, PanelRange } from "@/lib/api/hooks/useEvReports"
  * + `scroll: false`, geçmiş/ileri gitmede URL TEK kaynak.
  *
  * Disiplin seçenekleri raporun KENDİ `disciplines[]` alanından gelir ve bu
- * filtreden BAĞIMSIZDIR (F3-SOZLESME.md §2 lider notu) — bu dosya yalnız
+ * filtreden BAĞIMSIZDIR (lider notu) — bu dosya yalnız
  * URL OKUR/YAZAR, seçenek listesini bilmez.
  */
 const DATE_PARAM = "tarih";

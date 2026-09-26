@@ -3,7 +3,7 @@ import { describe, it, expect } from "vitest";
 import { weeklyReportFailure } from "./report-errors";
 import { BackendError } from "@/lib/api/unwrap";
 
-// PLN-F3.1 · QURR 409 NO_BASELINE / 404 NO_WEEK ayrımı (F3-SOZLESME.md §0, §2).
+// PLN-F3.1 · QURR 409 NO_BASELINE / 404 NO_WEEK ayrımı (PLANLAMA-SPEC.md §3.15 S6).
 
 describe("weeklyReportFailure", () => {
   it("409 + backend'in NO_BASELINE metni → no_baseline", () => {

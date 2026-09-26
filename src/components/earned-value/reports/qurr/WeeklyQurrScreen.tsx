@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button/Button";
@@ -234,8 +235,7 @@ function QurrSkeleton({ weekNo }: { weekNo: number }) {
 }
 
 /**
- * PLN-F3.5 · Haftalık QURR ekranı (F3-SOZLESME.md §2, PLANLAMA-F3-PLAN.md
- * §1.3/§3/§6). `?hafta=` URL durumunu KENDİSİ yönetir (`useBudgetUrlState`
+ * PLN-F3.5 · Haftalık QURR ekranı. `?hafta=` URL durumunu KENDİSİ yönetir (`useBudgetUrlState`
  * deseni): ilk açılışta parametre yoksa `useWeeklyReport(siteId, null)` ile
  * backend'in bugünün haftasını ister, dönen `week_no`yu URL'e YAZAR (S1).
  */
@@ -577,7 +577,7 @@ export function WeeklyQurrScreen({ siteId, siteName, companyName, projectName, l
               <> ({data.draft_diary_dates.map((d) => formatDateDots(d)).join(" ve ")} taslak)</>
             )}
             {" · "}
-            <a href={links.dailyReport(data.week_end)}>Günlük İlerleme Raporu →</a>
+            <Link href={links.dailyReport(data.week_end)}>Günlük İlerleme Raporu →</Link>
           </p>
         </>
       )}

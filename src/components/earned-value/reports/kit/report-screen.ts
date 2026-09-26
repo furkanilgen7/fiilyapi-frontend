@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 
 /**
- * PLN-F3.6a · Rapor ekranlarının (Panel / GİR / QURR) ORTAK sözleşmesi
- * (F3-SOZLESME.md §2). Üç ekran (`PanelScreen`, `DailyReportScreen`,
+ * PLN-F3.6a · Rapor ekranlarının (Panel / GİR / QURR) ORTAK sözleşmesi.
+ * Üç ekran (`PanelScreen`, `DailyReportScreen`,
  * `WeeklyQurrScreen`) BU tipleri paylaşır; sahibi B/C bu imzalara KODLAR.
  *
  * Kaynak deseni: `BudgetScreen` (Adam-Saat Bütçesi) — `siteId`/`siteName`/

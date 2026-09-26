@@ -49,7 +49,7 @@ const OWNER_LABEL: Record<OwnerValue, string> = { own: "Kendi", subcon: "Taşero
 /**
  * PLN-F3.3 · Planlama Paneli — Panel:79-448. URL durumu `?tarih&aralik&
  * disiplin&yuklenici` (kök ikizde + `?site=`, `useEvSiteParam` çağıranda).
- * F3-SOZLESME.md §0: disiplin/kendi-taşeron filtresi BACKEND'e query olarak
+ * Disiplin/kendi-taşeron filtresi BACKEND'e query olarak
  * gider (`usePanel`) — istemci hiçbir satırı/uyarıyı KENDİSİ süzmez, S8
  * görünürlük süzgeci BİLE zaten-filtrelenmiş `report.rows`e göre çalışır.
  */

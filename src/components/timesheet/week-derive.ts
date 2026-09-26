@@ -37,6 +37,9 @@ import {
  *     cevap verir ve bordro ile puantaj tutmaz.
  *     🔴 Bir satırın Normal/FM değeri KİŞİ-HAFTA özelliğidir, bölüm
  *     özelliği DEĞİL: bölüm süzgeci onu değiştirmez, süzülmez.
+ *     (a) CEO/kullanıcı kararı 2026-09-26: KART TOPLAMLARI yalnız GÖRÜNEN
+ *     kümeden (o bölümde en az bir hücresi olan kişilerden) toplanır — K1
+ *     BOZULMAZ, yalnız bölümle hiç ilgisi olmayan kişi karta hiç girmez.
  *   • Taslak (kaydedilmemiş) değişiklik varsa backend türevi BAYATTIR;
  *     `isStale` ile işaretlenir — sessizce eski sayı basılmaz.
  */
@@ -162,17 +165,22 @@ export function buildTimesheetWeekView({
     days,
     rows,
     workerCount: visibleRows.length,
-    totalHours: sumDecimalStrings(rows.map((row) => row.totalHours)),
-    // 🔴 TOPLANIR, HESAPLANMAZ: her satırın Normal/FM değeri backend'den gelir.
+    // 🔴 KART TOPLAMLARI YALNIZ GÖRÜNEN KÜMEDEN (a) CEO/kullanıcı kararı
+    // 2026-09-26: bölümde en az bir hücresi olmayan kişi karta hiç girmez.
+    totalHours: sumDecimalStrings(visibleRows.map((row) => row.totalHours)),
+    // 🔴 TOPLANIR, HESAPLANMAZ: her satırın Normal/FM değeri backend'den gelir
+    // (KİŞİ-HAFTA bütününden — bölüme göre yeniden hesaplanmaz, K1). Yalnız
+    // GÖRÜNEN kişiler toplanır; bölüm dışı kişinin haftalık Normal/FM'i
+    // karta SIZMAZ (a) CEO/kullanıcı kararı 2026-09-26.
     normalHours: sumDecimalStrings(
-      rows.map((row) => row.normalHours).filter((value): value is string => value !== null),
+      visibleRows.map((row) => row.normalHours).filter((value): value is string => value !== null),
     ),
     overtimeHours: sumDecimalStrings(
-      rows.map((row) => row.overtimeHours).filter((value): value is string => value !== null),
+      visibleRows.map((row) => row.overtimeHours).filter((value): value is string => value !== null),
     ),
-    isStale: rows.some((row) => row.isStale),
-    leaveDayCount: countCode(rows, "leave"),
-    temporaryDutyDayCount: countCode(rows, "temporary_duty"),
+    isStale: visibleRows.some((row) => row.isStale),
+    leaveDayCount: countCode(visibleRows, "leave"),
+    temporaryDutyDayCount: countCode(visibleRows, "temporary_duty"),
     allCells,
   };
 }

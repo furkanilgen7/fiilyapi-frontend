@@ -1,7 +1,7 @@
 /**
  * PLN-F3.3 · Uyarılar kartının SAF filtre + bağlantı çözücüsü (S8).
  *
- * F3-SOZLESME.md §0 + lider emri: uyarı listesi İSTEMCİDE süzülür —
+ * PLANLAMA-SPEC.md §3.15 S8 + lider emri: uyarı listesi İSTEMCİDE süzülür —
  * disiplin/kendi-taşeron filtresi uygulandıktan sonra GÖRÜNÜR olmayan bir
  * kalemin uyarısı da gösterilmemelidir (görünmeyen bir satırın "Dağıt →"
  * bağlantısı KULLANICIYI BAŞKA bir disipline götürürdü).

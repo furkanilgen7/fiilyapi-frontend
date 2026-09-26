@@ -2,7 +2,9 @@
 
 import { useParams } from "next/navigation";
 
+import { AccessDenied } from "@/components/settings/AccessDenied";
 import { useSite } from "@/lib/api/hooks/useSites";
+import { isForbidden } from "@/lib/api/unwrap";
 import { routes } from "@/lib/routes";
 
 import { BudgetScreen } from "./BudgetScreen";
@@ -22,6 +24,12 @@ export function ManHourBudgetView() {
   const { projectId: projectKey, siteId: siteKey } = useParams<{ projectId: string; siteId: string }>();
   const site = useSite(siteKey, { project: projectKey });
   const params = { projectId: projectKey, siteId: siteKey };
+  // FIX-F2 · Ajan B madde 4 — emsal `SitePlanningView.tsx:91`: şantiye
+  // çözülemezse (404/ağ) `siteId` boş kalır ve `BudgetScreen` içindeki bütçe
+  // sorgusu boş id'de sessizce idle'da durur — hiç hata basılmadan SONSUZ
+  // İSKELET görünürdü. `useSite` hatası BURADA iletilir.
+  if (isForbidden(site.error)) return <AccessDenied />;
+  if (site.isError) return <p>Şantiye yüklenemedi</p>;
   return (
     <BudgetScreen
       siteId={site.data?.id ?? ""}

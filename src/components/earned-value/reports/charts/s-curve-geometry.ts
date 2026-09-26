@@ -2,7 +2,8 @@
  * PLN-F3.2b · S-eğrisi (kümülatif ilerleme) SAF geometrisi.
  *
  * Kaynak: mockup `Planlama - Panel.dc.html:197-222` (viewBox 760×256).
- * F3-SOZLESME.md §0: backend `s_curve: CurvePoint[]` GÜNLÜK kümülatif
+ * PLANLAMA-SPEC.md §3.15 S22 (CurvePoint.variance + durum, tek kaynak):
+ * backend `s_curve: CurvePoint[]` GÜNLÜK kümülatif
  * planlı/gerçek yüzdeyi ZATEN hesaplar (`planned_pct_cum`/`progress_pct_cum`)
  * — bu dosya YALNIZ ölçekler, YENİDEN HESAPLAMAZ.
  *
@@ -41,7 +42,7 @@ export type SCurveScaleRange = "4w" | "3m" | "all";
  * sınırlarına (ilk/son nokta) göre DARALIR, 'all'da SABİT 0–100 kalır
  * (mockup'ın kendi özel durumu). SAF fonksiyon: yalnız `points` dizisinin
  * İLK ve SON elemanına bakar (backend zaten seçili aralığa göre pencereler
- * — F3-SOZLESME §0, "istemci filtrelemez"), yeniden hesaplama YAPMAZ.
+ * — PLANLAMA-SPEC.md §3.15 S22, "istemci filtrelemez"), yeniden hesaplama YAPMAZ.
  * `planned_pct_cum` sınır noktalarında `null` ise (veri yok) SABİT eksene
  * DÜŞER — dinamik daralma "veri var" varsayar, uydurma sınır ÇİZMEZ.
  */

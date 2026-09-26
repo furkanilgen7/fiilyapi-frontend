@@ -2,7 +2,7 @@
  * PLN-F3.2b · PF trendi grafiğinin SAF geometrisi (S14).
  *
  * Kaynak: mockup `Planlama - Panel.dc.html:299-318` (viewBox 460×196).
- * F3-SOZLESME.md §0: backend `pf_trend: PfPoint[]` GÜNLÜK PF'yi (`pf_day`)
+ * Backend `pf_trend: PfPoint[]` GÜNLÜK PF'yi (`pf_day`)
  * VE 7 günlük ortalamayı (`pf_rolling`) ZATEN hesaplar — istemci YENİDEN
  * TÜRETMEZ, yalnız ölçekler.
  *

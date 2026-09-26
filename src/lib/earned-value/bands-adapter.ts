@@ -8,7 +8,7 @@
  *  - Rapor `pf_bands` (`PfBandsOut`, Panel/GİR/QURR): `daily.high_above`
  *    NULLABLE'dır — bu yüzden `DailyPfThresholds.highAbove` de `string | null`.
  *
- * RENK KURALI (F3-SOZLESME.md §2): yanıtta satırın kendi `*_band` alanı
+ * RENK KURALI: yanıtta satırın kendi `*_band` alanı
  * VARSA `reportBand(o)` kullanılır (backend zaten hesaplamış); YOKSA
  * `pfBand(değer, bandsFromReport(pf_bands) ?? ayar, kind)` ile İSTEMCİ
  * hesaplar. İstemci hiçbir zaman backend'in bandını YENİDEN türetmez.

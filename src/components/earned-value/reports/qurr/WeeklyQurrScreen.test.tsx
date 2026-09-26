@@ -122,6 +122,20 @@ describe("WeeklyQurrScreen", () => {
     expect(screen.getByText("1 m³ beton başına toplam betonarme a-s")).toBeInTheDocument();
   });
 
+  /**
+   * FIX-F2 · Ajan B ek madde — dipnottaki "Günlük İlerleme Raporu →" bağlantısı
+   * `next/link`in `Link`iyle client-taraflı geçiş yapmalı (ham `<a href>` tam
+   * sayfa yenilemesine yol açar). jsdom'da `Link` de `<a>` üretir — bu test
+   * yalnız href doğruluğunu ölçer; "ham `<a>` mı Link mi" ayrımı statik
+   * ölçümle (kaynak taramasıyla) doğrulanır, bkz. Ajan B raporu.
+   */
+  it("dipnottaki 'Günlük İlerleme Raporu →' bağlantısı hafta sonu tarihine gider", () => {
+    vi.mocked(useWeeklyReport).mockReturnValue(queryStub({ data: QURR_FIXTURE_READY }));
+    render(<WeeklyQurrScreen {...baseProps()} />);
+    const link = screen.getByRole("link", { name: "Günlük İlerleme Raporu →" });
+    expect(link).toHaveAttribute("href", `/gunluk-rapor?tarih=${QURR_FIXTURE_READY.week_end}`);
+  });
+
   it("veri yok haftasında boş durum kartı basar, tablo YOK, son geçerli haftaya dönüş düğmesi var", () => {
     vi.mocked(useWeeklyReport).mockReturnValue(queryStub({ data: QURR_FIXTURE_EMPTY }));
     render(<WeeklyQurrScreen {...baseProps()} />);

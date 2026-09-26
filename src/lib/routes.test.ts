@@ -109,7 +109,7 @@ describe("routes — uretilen URL bicimi (elle yazilmis beklentiler)", () => {
   });
 });
 
-// PLN-F3.0 · `?tarih=` — Günlük Kayıt'ın açık günü (F3-SOZLESME.md §2).
+// PLN-F3.0 · `?tarih=` — Günlük Kayıt'ın açık günü.
 describe("routes — Günlük Kayıt `?tarih=`", () => {
   it("tarih verilmezse eklenMEZ — bugünkü çıplak yolla BİREBİR", () => {
     expect(routes.projects.sites.diary({ projectId: P, siteId: S })).toBe(
@@ -138,7 +138,7 @@ describe("routes — Günlük Kayıt `?tarih=`", () => {
   });
 });
 
-// PLN-F3.6a · Panel/GİR/QURR (F3-SOZLESME.md §2).
+// PLN-F3.6a · Panel/GİR/QURR.
 describe("routes — Planlama raporları (Panel/GİR/QURR)", () => {
   it("şantiye altı: Panel parametresiz, GİR `?tarih=`, QURR `?hafta=` (verilmezse EKLENMEZ)", () => {
     expect(routes.projects.sites.evPanel({ projectId: P, siteId: S })).toBe(

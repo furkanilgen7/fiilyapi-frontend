@@ -8,7 +8,8 @@ import type { EvQurrReport } from "@/lib/api/models";
  * motorun kendisi TEKRAR YAZILMADI, yalnız görünür bir örnek üretildi).
  *
  * Şema alanları (`parent_id`, `q_band`/`r_band`, `changed_qty` vb.) EV-BORC-3
- * ile gelen GERÇEK backend alanlarıdır; istemci burada hiçbir şey TÜRETMEZ.
+ * kapandı (backend `schemas_reports.py:105/107/121` — PLANLAMA-SPEC.md §3.15
+ * S1/S2) ile gelen GERÇEK backend alanlarıdır; istemci burada hiçbir şey TÜRETMEZ.
  *
  * `QURR_FIXTURE_READY` — Hafta 21, veri dolu (Q ekranının "ekran" hâli).
  * `QURR_FIXTURE_EMPTY` — Hafta 22, henüz gönderilmiş günlük yok (Q:122-129).

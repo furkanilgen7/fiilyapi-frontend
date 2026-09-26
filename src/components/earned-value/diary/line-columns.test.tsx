@@ -29,7 +29,7 @@ describe("buildLineColumns — genişletilmiş yuvalar", () => {
     expect(columns(null).caption).toBeUndefined();
   });
 
-  it("renderItemCells: headers ile aynı uzunluk; kazanılmış + PF KALEM düğümünden (`progress.items`, EV-BORC-2)", () => {
+  it("renderItemCells: headers ile aynı uzunluk; kazanılmış + PF KALEM düğümünden (`progress.items`, EV-BORC-2 kapandı)", () => {
     const cols = columns();
     const cells = cols.renderItemCells?.(ITEM_KALIP) ?? [];
     expect(cells).toHaveLength(cols.headers.length);

@@ -5,7 +5,7 @@ import { DEFAULT_PF_BANDS } from "./bands";
 import type { EvPfBandsOut, EvSettingsRead } from "@/lib/api/models";
 
 // PLN-F3.1 · settings.pf_bands (HER ZAMAN dolu) ↔ report.pf_bands (nullable
-// high_above) ayrımı — bkz. F3-SOZLESME.md §2.
+// high_above) ayrımı.
 
 function settings(overrides: Partial<EvSettingsRead["pf_bands"]> = {}): EvSettingsRead {
   return {

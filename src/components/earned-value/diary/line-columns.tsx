@@ -57,7 +57,7 @@ export function buildLineColumns(input: LineColumnsInput): DiaryLineColumns {
 
 /**
  * G2 kalem BAŞLIK satırı: kazanılmış + PF kalem düğümünden (`progress.items`,
- * `i:<kalem>` — EV-BORC-2). Düğüm alt ağacı VE kaleme doğrudan yazılan saati
+ * `i:<kalem>` — EV-BORC-2 kapandı). Düğüm alt ağacı VE kaleme doğrudan yazılan saati
  * taşır; istemci yaprakları toplamaz (doğrudan saat yapraklarda görünmez).
  */
 function itemCells(boqItemId: string, { progress, bands }: LineColumnsInput) {

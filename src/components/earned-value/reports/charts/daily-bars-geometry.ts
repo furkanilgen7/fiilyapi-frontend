@@ -2,7 +2,7 @@
  * PLN-F3.2b · Günlük kazanılmış/harcanan ÇİFT ÇUBUK grafiğinin SAF geometrisi.
  *
  * Kaynak: mockup `Planlama - Panel.dc.html:271-287` (viewBox 460×196).
- * F3-SOZLESME.md §0: backend `bars: BarPoint[]` günlük `earned_day`/
+ * Backend `bars: BarPoint[]` günlük `earned_day`/
  * `spent_day`i ZATEN hesaplar — bu dosya YALNIZ ölçekler.
  *
  * "Gönderilmedi" noktası (mockup `db.un`): `diary_status ∈ {none, draft}` VE

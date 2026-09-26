@@ -8,7 +8,7 @@ import type { EvApprovalResult, EvContractorType, EvDailyReport, EvPanelReport, 
 import { invalidateDayLockQueries } from "./ev-day-lock-invalidation";
 
 // PLN-F3.1 · Raporlar (Panel / Günlük İlerleme Raporu / Haftalık QURR) —
-// backend B3 `earned_value` rapor uçları (F3-SOZLESME.md §2). Planlama
+// backend B3 `earned_value` rapor uçları. Planlama
 // tarafıdır: çekirdek ekranı bu dosyayı import ETMEZ (spec §2.7).
 
 /** Rapor sorgu anahtarlarının TEK kaynağı. */

@@ -60,13 +60,14 @@ export function parseLockedDays(value: unknown): string[] | null {
 
 /**
  * Kilidin kaynağı — hafta yanıtı (`TimesheetWeek`) ya da kilit 409'unun
- * gövdesi. YAPISAL tiptir: EV-BORC-4 `day_locks`i openapi'ye ekleyince hafta
- * tipi buraya DEĞİŞİKLİKSİZ uyar; 409 gövdesi ise openapi'de yok, dış veri
+ * gövdesi. YAPISAL tiptir: EV-BORC-4 kapandı, `day_locks` artık openapi
+ * şemasında (`TimesheetWeek.day_locks: TimesheetDayLock[]`) — hafta tipi
+ * buraya DEĞİŞİKLİKSİZ uyar; 409 gövdesi ise hâlâ openapi'de yok, dış veri
  * olarak `unknown` alanlarla gelir.
  */
 export interface DayLockSource {
   readonly locked_days?: unknown;
-  /** EV-BORC-4: `[{day, report_date}]` — bugünkü şemada YOK. */
+  /** `[{day, report_date}]` — `TimesheetWeek`te şemada VAR (EV-BORC-4 kapandı); 409 gövdesinde hâlâ dış veri. */
   readonly day_locks?: unknown;
 }
 
