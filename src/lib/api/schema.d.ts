@@ -14387,6 +14387,8 @@ export interface components {
             contractor_type: components["schemas"]["ContractorType"] | null;
             /** Earned Cum */
             earned_cum: string | null;
+            /** Indirect Item Names */
+            indirect_item_names?: string[];
             /** Name */
             name: string;
             /** Node Id */
