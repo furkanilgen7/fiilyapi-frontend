@@ -298,7 +298,20 @@
   color: var(--color-warning-deep-text);
   font-weight: var(--weight-bold);
 }
-/* İŞV 88-95 — yeşil iş kuralı bandı */
+/*
+ * F-SUBPX-3 (lider denetimi, ÇALIŞMA ZAMANI ölçüldü) · `var(--leading-loose)`
+ * (`tokens.css:291` → `1.7`) 12px yazı boyuyla çarpılınca `20.4px` — TAM SAYI
+ * DEĞİL. DOM'da yukarıdan aşağı taranınca `poz-ekle-isveren-yeni-grup`
+ * karesindeki kesrin (`.pif` `top=272.78125`) İLK KAYNAĞI bu kural (`.pif-rule`
+ * top=188 height=68.78125) çıktı; AYNI 20.4px `timesheet.css`teki `.ts-info`de
+ * de (orada ÇIPLAK `1.7` olarak) var — iki AYRI kareyi etkileyen ORTAK kaynak.
+ *
+ * `--leading-loose` TOKEN'ı en az on iki AYRI dosyada kullanılıyor
+ * (bkz. `timesheet.css` `.ts-info` yorumu) — oranı DEĞİŞTİRMEK
+ * (`tokens.css`) kapsamı aşar, CEO kararı gerektirir; DOKUNULMADI. Burada
+ * yalnız BU TEK KURALIN satır aralığı aynı görsel ORANI (12 × 1.7 ≈ 20.4)
+ * en yakın TAM PİKSELE (20px) SABİTLENDİ — paylaşılan TOKEN'a dokunulmadan.
+ */
 .pif-rule {
   display: flex;
   gap: 10px;
@@ -308,7 +321,7 @@
   background: var(--color-success-tint);
   border: 1px solid var(--color-success-tint-border);
   font-size: 12px;
-  line-height: var(--leading-loose);
+  line-height: 20px;
   color: var(--color-success-deep);
 }
 .pif-rule__icon {

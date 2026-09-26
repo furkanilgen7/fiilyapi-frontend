@@ -529,7 +529,27 @@
    dosyanın SATIR numaralarıdır. Çıplak hex/px yok — hepsi `tokens.css`ten.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ── Bilgi şeridi (E5 76-81) ───────────────────────────────────────────── */
+/*
+ * F-SUBPX-3 (lider denetimi, ÇALIŞMA ZAMANI ölçüldü) · `line-height: 1.7`
+ * (`--leading-loose` ORANIYLA AYNI değer, burada ÇIPLAK yazılı) 12px yazı
+ * boyuyla çarpılınca `20.4px` — TAM SAYI DEĞİL — veriyor. Bu, DOM'da yukarıdan
+ * aşağı taranan İLK kesirli-yükseklik elemanıydı (puantaj sayfası kökünde
+ * `.ts-info` · `top=216.5` `height=70.78125`); aynı 20.4px değeri
+ * `contract-item-form.css`teki `.pif-rule`de de (`var(--leading-loose)`
+ * üzerinden) çıkıyor — iki AYRI kareyi (`puantaj-kilitli-hucre-popover` ve
+ * `poz-ekle-isveren-yeni-grup`) etkileyen ORTAK kaynak BUYDU.
+ *
+ * `--leading-loose` TOKEN'ının kendisi `tokens.css:291`de tanımlı ve en az on
+ * iki AYRI dosyada (accounting · approval-roles · payroll-rates · invoices ·
+ * leaves · financial-instruments · warehouse-form · ai-panel ·
+ * personnel-document-form ×2 · progress-payment-form · contract-item-form)
+ * KULLANILIYOR — oranı DEĞİŞTİRMEK (tokens.css) kapsamı bu görevin çok
+ * ötesine taşır ve CEO kararı gerektirir; DOKUNULMADI. Burada yalnız BU
+ * TEK KURALIN kendi satır aralığı, aynı görsel ORANI (12 × 1.7 ≈ 20.4) en
+ * yakın TAM PİKSELE (20px, −0,4px ≈ %2 fark, algılanamaz) SABİTLENDİ —
+ * `--leading-timesheet-*` emsalinin (F-SUBPX PR #121) izlediği YÖNTEMİN
+ * aynısı: paylaşılan ORANA dokunma, TEK kuralın SONUCUNU tam piksele oturt.
+ */
 .ts-info {
   background: var(--color-info-tint);
   border: 1px solid var(--color-primary-ring);
@@ -537,7 +557,7 @@
   padding: var(--space-info-banner-y) var(--space-info-banner-x);
   margin-bottom: var(--space-4);
   font-size: 12px;
-  line-height: 1.7;
+  line-height: 20px;
   color: var(--color-primary-hover);
 }
 

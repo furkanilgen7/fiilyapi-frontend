@@ -122,3 +122,21 @@ describe("timesheet.css — F-SUBPX ızgara satırları tam piksel", () => {
     expect(ruleBody(`${row} > *`)).toMatch(/border-top:\s*var\(--border-width-total\) solid var\(--color-border\)/);
   });
 });
+
+/**
+ * F-SUBPX-3 (lider denetimi, ÇALIŞMA ZAMANI ölçüldü) · `.ts-info` satır
+ * aralığı KESİR ÜRETMEZ. Eskiden `line-height: 1.7` × `font-size: 12px` =
+ * `20.4px` — TAM SAYI DEĞİL — üretiyordu; DOM'da yukarıdan aşağı taranan İLK
+ * kesirli-yükseklik elemanı buydu (`puantaj-kilitli-hucre-popover` karesi).
+ * Paylaşılan `--leading-loose` (`tokens.css:291`) oranına DOKUNULMADI (on iki
+ * ayrı dosyada kullanılıyor); yalnız bu TEK kuralın SONUCU tam piksele
+ * (20px) oturtuldu.
+ */
+describe("timesheet.css — .ts-info satır aralığı tam piksel (F-SUBPX-3)", () => {
+  it("`line-height` tam PİKSEL değeridir — kesir üreten oran (1.7 vb.) YOKTUR", () => {
+    const body = ruleBody(".ts-info");
+    expect(body).toMatch(/line-height:\s*20px\s*;/);
+    expect(body).not.toMatch(/line-height:\s*1\.7/);
+    expect(body).not.toMatch(/line-height:\s*var\(--leading-loose\)/);
+  });
+});
