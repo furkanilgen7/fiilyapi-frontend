@@ -270,42 +270,9 @@
 .szl-progress__track--complete {
   background: var(--color-success-soft);
 }
-/*
- * F-SUBPX-3 · genişlik `--contract-progress-width` özel özelliğinden gelir
- * (`ContractsTable.tsx` → `contractProgressFillStyle`, ray `auto` tablo
- * yerleşiminden fractional genişlik alabildiği için sağ uç kesirli pikselde
- * kenar yumuşatması kararsızlığı üretiyordu — bkz. `contract-progress.ts`).
- *
- * 🔴 GERİ DÜŞÜŞ `@supports` İLE YAPILIR, İKİ ÇIPLAK `width` BİLDİRİMİYLE DEĞİL —
- * ÖLÇÜLDÜ, KASITLI: `width: var(--x); width: round(down, var(--x), 1px);`
- * gibi art arda iki bildirim GERİ DÜŞMEZ. `var()` içeren bir değer PARSE
- * ANINDA geçersiz sayılamaz (UA henüz ikame edilmiş değeri bilmiyor), yani
- * `round()`u TANIMAYAN bir tarayıcı ikinci bildirimi YİNE DE "kazanan
- * bildirim" olarak KAYDEDER; ancak hesaplanmış-değer anında `round` işlevini
- * tanımadığı için bildirim IACVT (invalid at computed-value time) olur —
- * spec bu durumda `width`i BİRİNCİ bildirime DÖNDÜRMEZ, `width`in başlangıç
- * değerine (`auto`) SIFIRLAR. Sonuç: çubuk genişliksiz (görünmez) kalır —
- * tam da kaçınılması istenen kusur. (Node + Playwright/Chromium'da sahte
- * `xround(down, var(--x), 1px)` ile ÖLÇÜLDÜ: `width` "auto"ya döndü, 138.9px
- * değil ray genişliğinin TAMAMI basıldı.)
- *
- * Doğru geri düşüş `@supports` STATİK sorgusuyladır — `@supports`un koşulu
- * `var()` İÇERMEZ, yani UA onu PARSE ANINDA değerlendirir ve `round()`u
- * TANIMIYORSA blok TAMAMEN atlanır, `.szl-progress__fill`in TEK `width`
- * bildirimi (düz `%`) YÜRÜRLÜKTE KALIR. Ölçüldü: `CSS.supports("width",
- * "xround(down, 1%, 1px)")` → `false` ve o zaman `width` 138.9px (düz yüzde)
- * basar; gerçek `round()` ile `CSS.supports(...)` → `true` ve `width` 138px
- * (tam piksel) basar.
- */
 .szl-progress__fill {
   height: 100%;
   border-radius: var(--radius-progress-bar);
-  width: var(--contract-progress-width);
-}
-@supports (width: round(down, 1%, 1px)) {
-  .szl-progress__fill {
-    width: round(down, var(--contract-progress-width), 1px);
-  }
 }
 .szl-progress__fill--complete {
   background: var(--color-success); /* 70 */

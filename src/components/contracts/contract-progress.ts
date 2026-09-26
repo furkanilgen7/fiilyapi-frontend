@@ -1,5 +1,3 @@
-import type { CSSProperties } from "react";
-
 /**
  * SZL "İlerleme" kolonunun ÇUBUK TONU (mockup 60, 70, 80, 90, 100).
  *
@@ -37,51 +35,10 @@ export function contractProgressTone(pct: number): ContractProgressTone {
   return "low";
 }
 
-/**
- * Çubuk genişliği YÜZDE metni olarak; 0-100 aralığına kırpılır.
- *
- * 🔴 F-SUBPX-3 · ray genişliği (`.szl-table__td` / taşeron kalem tablosunun
- * hücresi) `auto` tablo yerleşiminden gelir ve backend `progress_pct`i
- * kesirli olabilir (ör. `41.666...`) — ikisi çarpılınca çubuğun SAĞ UCU
- * (yuvarlak köşe) kesirli bir ekran pikseline denk düşer. Kesirli konum
- * tarayıcının kenar yumuşatmasını YARIM PİKSEL öteler ve bu yarım piksel,
- * sayfanın geri kalanındaki (font yükleme sırası, komşu kolonların metin
- * ölçüsü gibi) alakasız kesirli yerleşim değişiklikleriyle FARKLI
- * YUVARLANABİLİR — aynı commit'te iki koşu arasında ucun rengi 1-2 px
- * genişlikte değişir (bkz. `contracts-visual.spec.ts` ilerleme çubuğu ucu).
- *
- * Bu fonksiyon SADECE yüzde METNİNİ üretir (`"41.67%"`). Piksele oturtma
- * (CSS `round()`) BİLEREK burada YAPILMAZ — bkz. `contractProgressFillStyle`
- * ve `.szl-progress__fill` / `.tsd-progress__fill` kurallarındaki GERİ DÜŞÜŞ
- * gerekçesi: `round()`u doğrudan inline `width`e yazmak, onu DESTEKLEMEYEN
- * bir tarayıcıda (Safari < 15.4, Firefox < 118) TÜM bildirimi GEÇERSİZ kılar
- * ve çubuk genişliksiz (görünmez) kalırdı. Değer bunun yerine bir CSS ÖZEL
- * ÖZELLİĞİNE yazılır; asıl `width` bildirimi VE `round()` GERİ DÜŞÜŞÜ
- * STYLESHEET'te, `@supports` STATİK sorgusu ARKASINDA yaşar (ÖLÇÜLDÜ: art
- * arda iki çıplak `width` bildirimi burada İŞE YARAMAZ — `var()` içeren bir
- * bildirim parse anında geçersiz sayılamadığı için `round()`u tanımayan
- * tarayıcı yine de onu "kazanan" sayar ve hesaplanmış-değer anında `width`i
- * `auto`ya sıfırlar; `@supports`un koşulu `var()` İÇERMEDİĞİ için bu tuzağa
- * düşmez).
- */
+/** Çubuk genişliği yüzde metni olarak; 0-100 aralığına kırpılır. */
 export function contractProgressWidth(pct: number): string {
   const clamped = Math.min(Math.max(pct, 0), 100);
   return `${clamped}%`;
-}
-
-/** `contractProgressFillStyle`in ürettiği inline style tipi — CSS özel özelliği taşır. */
-export type ContractProgressFillStyle = CSSProperties & {
-  "--contract-progress-width"?: string;
-};
-
-/**
- * Dolgu elemanının inline style'ı. `width` YAZMAZ — yalnız `--contract-progress-width`
- * özel özelliğini yazar; gerçek `width` bildirimleri (düz % + `round()` geri
- * düşüşü) `.szl-progress__fill` / `.tsd-progress__fill` kurallarında yaşar
- * (bkz. `contracts.css` ve `subcontractor-contract-detail.css`).
- */
-export function contractProgressFillStyle(pct: number): ContractProgressFillStyle {
-  return { "--contract-progress-width": contractProgressWidth(pct) };
 }
 
 /**

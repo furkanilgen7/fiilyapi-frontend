@@ -321,24 +321,9 @@
   border-radius: var(--radius-progress-bar); /* 2px — 118 */
   overflow: hidden;
 }
-/*
- * F-SUBPX-3 · `contracts.css`teki `.szl-progress__fill` GERİ DÜŞÜŞ deseninin
- * BİREBİR aynısı (gerekçe orada, ÖLÇÜLDÜ) — TEK kaynak `contract-progress.ts`
- * `contractProgressFillStyle`. `@supports` STATİK sorgudur (koşulu `var()`
- * içermez) → `round()`u tanımayan tarayıcıda blok TAMAMEN atlanır ve TEK
- * `width` bildirimi (düz `%`) yürürlükte kalır; art arda iki çıplak `width`
- * bildirimi KULLANILMAZ (o desen `var()` yüzünden geri düşMEZ, IACVT ile
- * `width`i `auto`ya sıfırlar — bkz. `contracts.css`).
- */
 .tsd-progress__fill {
   height: 100%;
   border-radius: var(--radius-progress-bar);
-  width: var(--contract-progress-width);
-}
-@supports (width: round(down, 1%, 1px)) {
-  .tsd-progress__fill {
-    width: round(down, var(--contract-progress-width), 1px);
-  }
 }
 /* 118/130/157/169 mavi · 142 kehribar (eşik 50 — bkz. subcontractor-item-progress.ts) */
 .tsd-progress__fill--normal {

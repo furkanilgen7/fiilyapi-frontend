@@ -9,7 +9,7 @@ import type { SubcontractorContractItemResponse } from "@/lib/api/hooks/useSubco
 import { decimalInputValue, groupContractItems } from "@/components/subcontractor-contract-form/item-rows";
 import { FSO_TEXT } from "@/components/subcontractor-contract-form/constants";
 
-import { contractProgressFillStyle } from "./contract-progress";
+import { contractProgressWidth } from "./contract-progress";
 import { tsdProgressTone } from "./subcontractor-item-progress";
 import "./employer-contract-detail.css";
 import "./subcontractor-contract-detail.css";
@@ -297,7 +297,7 @@ function ItemGroup({
                         "tsd-progress__fill",
                         `tsd-progress__fill--${tsdProgressTone(pct)}`,
                       )}
-                      style={contractProgressFillStyle(pct)}
+                      style={{ width: contractProgressWidth(pct) }}
                     />
                   </div>
                   <div

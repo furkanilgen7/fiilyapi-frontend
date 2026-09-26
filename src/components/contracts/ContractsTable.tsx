@@ -10,8 +10,8 @@ import { pendingModuleLabel } from "@/lib/pending-modules";
 import type { ContractListItem, ContractType } from "@/lib/api/hooks/useContracts";
 
 import {
-  contractProgressFillStyle,
   contractProgressTone,
+  contractProgressWidth,
   isProvenZeroAmount,
 } from "./contract-progress";
 import { CONTRACT_STATUS_BADGE } from "./contract-status";
@@ -202,7 +202,7 @@ function ProgressCell({
       <div className={`szl-progress__track szl-progress__track--${tone}`}>
         <div
           className={`szl-progress__fill szl-progress__fill--${tone}`}
-          style={contractProgressFillStyle(value)}
+          style={{ width: contractProgressWidth(value) }}
         />
       </div>
       <div className={`szl-progress__label szl-progress__label--${tone}`}>

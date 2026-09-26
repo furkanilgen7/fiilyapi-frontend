@@ -478,41 +478,12 @@
 /* İ:666 `bg` — grup kodu kolonunun gövde hücresi satır zemininin üstüne kendi
    zeminini basar. Sınıfı AllocationGrid.tsx gövde <td>'si taşımalı (grup kodu). */
 .ev-diary-grid__row > .ev-diary-cell--group { background: var(--color-ev-diary-group-cell-bg); }
-/*
- * F-SUBPX-3 (lider denetimi, ÇALIŞMA ZAMANI ölçüldü) · `.ev-diary-grid`
- * `table-layout: auto` kullanır ve iş kodu kolonlarının (`.ev-diary-grid__code`)
- * genişliği yalnız tablet medya sorgusundaki `width: 104px` İPUCUYLA
- * SINIRLI DEĞİL — kolon başlığındaki metnin (`.ev-diary-grid__code-name`)
- * font ölçüsü daha GENİŞ istediği için tarayıcı kolonu bunun ÜSTÜNE
- * GENİŞLETİR ve bu genişletme kesirli piksel üretir (ÖLÇÜLDÜ, 1024 genişlik,
- * tablet: kolonlar 127.5 / 275.96875 / 270.40625 / 151.125 / 188.71875 px —
- * hiçbiri tam sayı DEĞİL, oysa `.ev-diary-grid__lead` 230px ve
- * `.ev-diary-grid__remain` 96px İPUCUNA UYUP tam sayı kalıyor çünkü onların
- * içeriği ipucundan DAR). `width:100%` olan bu girdi (`.input` temel sınıfı)
- * o kesirli kolonun İÇİNDE kesirli bir kutu basıyor; sağ/alt köşe
- * yuvarlaması kenar yumuşatmasını `gunluk-ilerleme-tablet.png`de kararsız
- * kılabiliyor (bkz. `AllocationCell.tsx`).
- *
- * Kolonun KENDİ genişliğine DOKUNULMAZ (metin ölçüsüne bağlı, İÇERİK kesilirse
- * ürün kararı olur) — yalnız GİRDİNİN KENDİ genişliği o kesirli kolonun
- * İÇİNDE tam piksele oturtulur (contracts.css'teki `.szl-progress__fill`
- * deseniyle AYNI GERİ DÜŞÜŞ kuralı: `@supports` STATİK sorgusu, art arda iki
- * çıplak `width` bildirimi DEĞİL — round()'u tanımayan tarayıcıda `var()`
- * OLMASA bile bu satırın kendisi round() TANIMLI DEĞİLSE `@supports` bloğu
- * hiç girmez ve TEK `width:100%` bildirimi yürürlükte kalır).
- */
 .input.ev-diary-cell__input {
   height: 28px;
   padding: 0 6px;
   border: 1px solid var(--color-ev-diary-grid-line); /* İ:666 bd */
   border-radius: var(--radius-sm);
   font-size: 12.5px;
-  width: 100%;
-}
-@supports (width: round(down, 1%, 1px)) {
-  .input.ev-diary-cell__input {
-    width: round(down, 100%, 1px);
-  }
 }
 .input.ev-diary-cell__input--filled { border-color: var(--color-primary-ring); background: var(--color-nav-active-bg); }
 .input.ev-diary-cell__input:disabled { background: var(--color-surface-2); color: var(--color-text); }
