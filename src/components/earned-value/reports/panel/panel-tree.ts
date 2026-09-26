@@ -12,15 +12,10 @@ import type { EvPanelReport } from "@/lib/api/models";
 
 /**
  * S32 (KULLANICI, 2026-09-26): `non_direct` satırının alt etiketi (dolaylı
- * kalem adları) backend'de EV-BORC-9 olarak açılacak — alan adı HENÜZ BELLİ
- * DEĞİL. `indirect_item_names` YEREL bir tip genişletmesidir, openapi
- * şemasının PARÇASI DEĞİL: backend alan adını netleştirince bu satır TEK
- * NOKTADAN openapi türüne bağlanır (istemci ŞİMDİ türetmez — plan §S32).
- * Alan yoksa (`undefined`) alt etiket HİÇ BASILMAZ.
+ * kalem adları) backend `PanelRow.indirect_item_names`ten gelir (EV-BORC-9,
+ * openapi PLN-F3.1c). Alan yoksa ya da boşsa alt etiket HİÇ BASILMAZ.
  */
-export type EvPanelRow = EvPanelReport["rows"][number] & {
-  readonly indirect_item_names?: readonly string[];
-};
+export type EvPanelRow = EvPanelReport["rows"][number];
 
 /**
  * `PanelRow.node_id` toplama satırlarında (Genel, Genel–Kendi, Genel–Taşeron,
