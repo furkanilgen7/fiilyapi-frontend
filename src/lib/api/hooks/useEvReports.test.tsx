@@ -162,6 +162,16 @@ describe("useWeeklyReport", () => {
     expect(client.getQueryData([EV_REPORT_KEYS.weekly, SITE, "current"])).toEqual(report);
   });
 
+  it("FIX-F3 · week === null → yanıt gelince kanonik [weekly, site, week_no] anahtarını da ÖNCEDEN doldurur (S1 URL kanonikleştirmesi ikinci isteğe yol açmasın)", async () => {
+    const report = { week_no: 21 };
+    vi.mocked(backendClient.GET).mockResolvedValue(ok(report));
+    const { result } = renderHook(() => useWeeklyReport(SITE, null), { wrapper });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(client.getQueryData([EV_REPORT_KEYS.weekly, SITE, 21])).toEqual(report);
+    // "current" anahtarı da yerinde kalır — ikisi de aynı yanıtı taşır.
+    expect(client.getQueryData([EV_REPORT_KEYS.weekly, SITE, "current"])).toEqual(report);
+  });
+
   it("409 (baseline yok) BackendError olarak yüzer", async () => {
     vi.mocked(backendClient.GET).mockResolvedValue(fail(409, "Şantiyede aktif (dondurulmuş) baseline yok"));
     const { result } = renderHook(() => useWeeklyReport(SITE, null), { wrapper });

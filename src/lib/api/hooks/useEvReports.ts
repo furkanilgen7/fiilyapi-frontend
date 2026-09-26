@@ -109,17 +109,32 @@ export function useApproveDailyReport(
  * onaylanmaz, canlı). `week === null` → sorgu `week` PARAMETRESİ OLMADAN
  * gider (backend bugünün haftasını döner). Baseline yok → 409, hafta
  * takvimde yok → 404 (bkz. `report-errors.ts`). Boş `siteId` → ağa ÇIKMAZ.
+ *
+ * FIX-F3 (ÖLÇÜLDÜ — QURR ağ iziyle): `week === null` açılışında ekran
+ * (`WeeklyQurrScreen`) S1 kanonikleştirmesiyle yanıttaki `week_no`yu
+ * `?hafta=`a YAZAR — bu, aynı rapor için `[weekly, siteId, week_no]`
+ * anahtarına GEÇER ve önbellekte yoksa ikinci bir `GET` tetiklerdi. Yanıt
+ * gelir gelmez o kanonik anahtarı BURADA ÖNCEDEN dolduruyoruz (Seçenek A):
+ * global `staleTime` (30 sn, `QueryProvider.tsx`) sayesinde yeni anahtarın
+ * gözlemcisi bağlanınca taze sayılır, ikinci istek gitmez. Fetch
+ * parametreleri/URL yazımı (S1) DEĞİŞMEDİ — yalnız önbellek önceden dolduruldu.
  */
 export function useWeeklyReport(siteId: string, week: number | null): UseQueryResult<EvQurrReport, Error> {
+  const queryClient = useQueryClient();
   return useQuery({
     enabled: siteId.length > 0,
     queryKey: [EV_REPORT_KEYS.weekly, siteId, week ?? "current"],
-    queryFn: async () =>
-      unwrap(
+    queryFn: async () => {
+      const data = await unwrap(
         await backendClient.GET("/sites/{site_id}/earned-value/reports/weekly", {
           params: { path: { site_id: siteId }, query: week === null ? {} : { week } },
         }),
-      ),
+      );
+      if (week === null) {
+        queryClient.setQueryData([EV_REPORT_KEYS.weekly, siteId, data.week_no], data);
+      }
+      return data;
+    },
   });
 }
 
